@@ -1,6 +1,6 @@
 /**
- * Sovereign v3.2.4: Imperial Roster
- * 50+ Enemy Variety, Weighted Pokerogue Spawning, and Visual Character Overhaul.
+ * Sovereign v3.2.6: Team Identity
+ * Unique CSS sprites for Guardians/Teen Team and logic mapping.
  */
 
 const Fighter = (() => {
@@ -21,34 +21,25 @@ const Fighter = (() => {
         lastArmUsed: 'right'
     };
 
-    // Imperial Roster: 50 Characters with Weights
-    // Weights: 1 (Weak), 5 (Strong), 10 (Elite/Boss)
+    // Updated Roster with Unique Class Mapping
     const roster = [
         { name: 'SEQUID HOST', class: 'sequid', weight: 1, hp: 120, power: 8 },
         { name: 'FLAXAN SCOUT', class: 'flaxan', weight: 1, hp: 150, power: 10 },
-        { name: 'REANIMEN UNIT', class: 'robot', weight: 1, hp: 180, power: 12 },
         { name: 'DUPLI-KATE', class: 'duplikate', weight: 1, hp: 140, power: 9 },
+        { name: 'SHRINKING RAE', class: 'shrinkingrae', weight: 1, hp: 130, power: 8 },
         { name: 'REX SPLODE', class: 'rexsplode', weight: 2, hp: 300, power: 15 },
-        { name: 'SHRINKING RAE', class: 'duplikate', weight: 2, hp: 250, power: 14 },
-        { name: 'MONSTER GIRL', class: 'monstergirl', weight: 3, hp: 600, power: 22 },
+        { name: 'ATOM EVE', class: 'atomeve', weight: 2, hp: 350, power: 16 },
         { name: 'ROBOT', class: 'robot', weight: 3, hp: 700, power: 25 },
-        { name: 'BLACK SAMSON', class: 'robot', weight: 3, hp: 550, power: 20 },
-        { name: 'IMMORTAL', class: 'omniman', weight: 4, hp: 1200, power: 30 },
-        { name: 'WAR WOMAN', class: 'omniman', weight: 4, hp: 1100, power: 28 },
-        { name: 'MARTIAN MAN', class: 'sequid', weight: 4, hp: 1300, power: 32 },
+        { name: 'MONSTER GIRL', class: 'monstergirl', weight: 3, hp: 800, power: 28 },
         { name: 'BATTLE BEAST', class: 'battlebeast', weight: 5, hp: 4000, power: 45 },
-        { name: 'LUCAN', class: 'omniman', weight: 5, hp: 3500, power: 40 },
         { name: 'ANISSA', class: 'omniman', weight: 8, hp: 6000, power: 55 },
         { name: 'THRAGG', class: 'thragg', weight: 10, hp: 15000, power: 80 },
         { name: 'OMNI-MAN', class: 'omniman', weight: 10, hp: 20000, power: 90 }
-        // Note: Expanding this to 50 via variations in factory logic
     ];
 
-    // Factory to populate the full roster of 50
     const fullRoster = [];
     roster.forEach(r => {
         fullRoster.push(r);
-        // Add variations for variety
         if (r.weight < 5) {
             fullRoster.push({ ...r, name: `ELITE ${r.name}`, hp: r.hp * 2, power: r.power * 1.5, weight: r.weight + 1 });
             fullRoster.push({ ...r, name: `ALPHA ${r.name}`, hp: r.hp * 3, power: r.power * 2, weight: r.weight + 2 });
@@ -95,16 +86,12 @@ const Fighter = (() => {
         });
     };
 
-    // Pokerogue Weighted RNG Logic
     const spawnNewEnemy = () => {
         const tier = state.run.tier;
-        // Target weight: Tiers 1-3 (Weight 1-2), 4-6 (Weight 2-4), 7+ (Weight 5-10)
         let minWeight = Math.max(1, Math.floor(tier / 2));
         let maxWeight = Math.min(10, tier + 1);
-
         const candidates = fullRoster.filter(r => r.weight >= minWeight && r.weight <= maxWeight);
         const base = candidates[Math.floor(Math.random() * candidates.length)] || roster[0];
-        
         const scaling = 1 + (state.run.kills * 0.1);
         state.currentTarget = {
             ...base,
@@ -112,13 +99,10 @@ const Fighter = (() => {
             maxHp: Math.floor(base.hp * scaling),
             attackRate: 4000 / (1 + (tier * 0.1)) / state.player.speed
         };
-
         const char = document.getElementById('enemy-character');
         const nameLabel = document.getElementById('enemy-name');
         if (char) { char.className = `enemy-character ${state.currentTarget.class}`; char.style.opacity = '1'; }
         if (nameLabel) nameLabel.innerText = `TARGET: ${state.currentTarget.name}`;
-        
-        log(`WAVE ${state.run.kills + 1} | TIER ${tier} | ${state.currentTarget.name}`);
         renderUI();
     };
 
@@ -126,10 +110,8 @@ const Fighter = (() => {
         if (state.isAttacking) return;
         state.isAttacking = true;
         state.lastArmUsed = side;
-
         const arm = document.querySelector(`.arm-${side}`);
         arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.15)`;
-        
         setTimeout(() => {
             handleImpact(x, y);
             setTimeout(() => {
@@ -142,22 +124,15 @@ const Fighter = (() => {
     const handleImpact = (x, y) => {
         const enemy = state.currentTarget;
         const enemyEl = document.getElementById('enemy-character');
-        
         triggerShake(15 + (100 - state.player.hp)/5);
-        
-        // Gore Scaling
         const hpPercent = enemy.hp / enemy.maxHp;
         const bloodVolume = 10 + Math.floor((1 - hpPercent) * 40);
         spawnBlood(x, y, bloodVolume);
-
         if (enemyEl) { enemyEl.classList.remove('hit-active'); void enemyEl.offsetWidth; enemyEl.classList.add('hit-active'); }
-
         let dmg = (10 + Math.floor(state.player.momentum / 5)) * state.player.strength;
-        if (Math.random() < state.player.luck) { dmg *= 3; log("CRITICAL BLOW!"); }
-        
+        if (Math.random() < state.player.luck) { dmg *= 3; }
         enemy.hp -= dmg;
         state.player.momentum = Math.min(100, state.player.momentum + 6);
-
         if (enemy.hp <= 0) defeatEnemy();
         renderUI();
     };
@@ -214,7 +189,6 @@ const Fighter = (() => {
         if (!state.run.active || state.run.choicesPending) return;
         const enemyEl = document.getElementById('enemy-character');
         if (enemyEl) enemyEl.classList.add('enemy-attack');
-        
         setTimeout(() => {
             if (enemyEl) enemyEl.classList.remove('enemy-attack');
             state.player.hp -= state.currentTarget.power * (1 + state.run.tier * 0.15);
@@ -238,11 +212,9 @@ const Fighter = (() => {
 
     const triggerShake = (i) => {
         const c = document.getElementById('game-container');
-        c.style.transform = `translate(${(Math.random()-0.5)*i}px, ${(Math.random()-0.5)*i}px)`;
-        setTimeout(() => c.style.transform = 'translate(0,0)', 50);
+        if (c) c.style.transform = `translate(${(Math.random()-0.5)*i}px, ${(Math.random()-0.5)*i}px)`;
+        setTimeout(() => { if (c) c.style.transform = 'translate(0,0)'; }, 50);
     };
-
-    const log = (msg) => { document.getElementById('combat-log-overlay').innerText = msg; };
 
     const gameLoop = () => {
         updateParticles();
