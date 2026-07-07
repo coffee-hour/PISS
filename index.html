@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Imperial Clicker</title>
+    <title>Sovereign: Imperial Clicker (v2.1.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-clicker">
-    <div id="app">
+    <div id="app" class="shake-layer">
         <!-- Main Clicker Section -->
         <main class="throne-room">
             <div class="imperial-header">
@@ -25,9 +25,11 @@
             </div>
 
             <div class="war-banner-container">
-                <button id="click-banner" class="banner-btn" onclick="Sovereign.manualClick(event)">
+                <button id="click-banner" class="banner-btn" onmousedown="Sovereign.handleInteraction(event)">
                     <div class="banner-graphic">
-                        <i data-lucide="shield" class="banner-icon"></i>
+                        <div id="banner-icon-container">
+                            <i data-lucide="sword" class="banner-icon"></i>
+                        </div>
                         <div class="banner-glow"></div>
                     </div>
                     <div class="click-ripple-container"></div>
@@ -52,8 +54,9 @@
             </div>
         </aside>
 
-        <!-- Floating Particles -->
-        <div id="particle-container"></div>
+        <!-- Dynamic Particle Canvas -->
+        <canvas id="particle-canvas"></canvas>
+        <div id="text-particle-container"></div>
     </div>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
