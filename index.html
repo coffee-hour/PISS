@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Viltrumite Combat (v2.7.0)</title>
+    <title>Sovereign: Viltrumite Combat (v2.7.1)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-clicker">
-    <!-- Fist Cursor -->
+    <!-- Fist Cursor Container -->
     <div id="custom-cursor">
         <div class="fist-wrapper">
             <i data-lucide="fist"></i>
         </div>
     </div>
 
-    <!-- Flash Layer -->
+    <!-- Screen Flash -->
     <div id="white-flash"></div>
 
     <div id="app" class="shake-layer">
         <div id="fury-overlay"></div>
 
-        <!-- Main Combat Section -->
         <main class="throne-room">
             <div class="combat-hud">
                 <div class="treasury-display">
@@ -35,7 +34,6 @@
                     <span id="passive-rate" class="rate-text">+0/s</span>
                 </div>
 
-                <!-- Xavier's Health (The User) -->
                 <div class="player-hud">
                     <div class="hud-label">XAVIER CONDITION</div>
                     <div class="health-bar-container player-health">
@@ -45,7 +43,6 @@
             </div>
 
             <div class="war-banner-container">
-                <!-- Threat Status -->
                 <div class="boss-display">
                     <div class="threat-label-row">
                         <div class="viltrumite-v">V</div>
@@ -65,9 +62,8 @@
                     </div>
                 </button>
 
-                <!-- Combo Gauge -->
                 <div class="combo-gauge-container">
-                    <div class="combo-label">Viltrumite Momentum</div>
+                    <div class="combo-label">Combat Momentum</div>
                     <div class="combo-meter">
                         <div id="combo-fill" class="combo-fill"></div>
                     </div>
@@ -80,7 +76,6 @@
             </div>
         </main>
 
-        <!-- Sidebar Section -->
         <aside class="sidebar-terminal glass-panel">
             <nav class="terminal-nav">
                 <button class="tab-btn active" onclick="Sovereign.switchTab('garrison')">Garrison</button>
@@ -90,7 +85,6 @@
             <div id="shop-garrison" class="shop-panel active">
                 <div class="shop-header">
                     <h2><i data-lucide="swords"></i> Viltrumite Garrison</h2>
-                    <p>Mobilize the Empire's Might.</p>
                 </div>
                 <div class="upgrade-list" id="upgrade-container"></div>
             </div>
@@ -98,7 +92,6 @@
             <div id="shop-attributes" class="shop-panel">
                 <div class="shop-header">
                     <h2><i data-lucide="activity"></i> Viltrumite Attributes</h2>
-                    <p>Core Viltrumite Potential.</p>
                 </div>
                 <div class="upgrade-list" id="advancement-container"></div>
             </div>
