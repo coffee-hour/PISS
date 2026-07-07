@@ -1,11 +1,11 @@
 /**
- * Sovereign: Statecraft - Sovereign Engine (AAA V4 - Forensic Fix)
+ * Sovereign: Statecraft - Sovereign Engine (V4.1 Targeted Fixes)
  */
 
 const Sovereign = (() => {
     // --- Realm State ---
     let state = {
-        resources: { food: 100, wood: 100, ore: 50, gold: 50, pop: 12, faith: 0 },
+        resources: { food: 100, wood: 100, ore: 50, gold: 50, pop: 100, faith: 0 },
         buildings: { farm: 0, lumber: 0, mine: 0, forge: 0, market: 0 },
         units: { guard: 0, ranger: 0, knight: 0, ram: 0 },
         clickLvl: 1,
@@ -29,6 +29,13 @@ const Sovereign = (() => {
         solar: { name: "Solar Path", effect: "+20% Agrarian Output", mult: { prod_food: 0.20 } },
         hearth: { name: "Cult of the Hearth", effect: "+15% Population Growth", mult: { prod_gold: 0.15 } }
     };
+
+    const councilMembers = [
+        { id: 'steward', name: 'High Steward', icon: 'key', desc: 'Oversees agrarian logistics and biomass distribution.' },
+        { id: 'marshal', name: 'Lord Marshal', icon: 'shield', desc: 'Commands the imperial garrison and tactical maneuvers.' },
+        { id: 'treasurer', name: 'Grand Treasurer', icon: 'banknote', desc: 'Manages merchant caravans and credit arbitrage.' },
+        { id: 'chancellor', name: 'High Chancellor', icon: 'scroll', desc: 'Scribes imperial decrees and diplomatic protocols.' }
+    ];
 
     const config = {
         buildings: {
@@ -129,10 +136,15 @@ const Sovereign = (() => {
                 rateEl.style.color = gen[res] >= 0 ? 'var(--success)' : 'var(--danger)';
             }
         }
+        // Handle pop separately
+        const popNode = document.getElementById('res-pop');
+        if (popNode) {
+            const popValEl = popNode.querySelector('.res-val');
+            if (popValEl) popValEl.innerText = Math.floor(state.pop || 0).toLocaleString();
+        }
     };
 
     const renderPrices = () => {
-        // Decree
         const decCost = Math.floor(120 * Math.pow(1.65, state.clickLvl - 1));
         const decPriceEl = document.getElementById('click-price');
         const upBtn = document.getElementById('upgrade-click-btn');
@@ -142,7 +154,6 @@ const Sovereign = (() => {
             if (upBtn) upBtn.disabled = !aff;
         }
 
-        // Buildings
         for (let id in config.buildings) {
             const b = config.buildings[id];
             const count = state.buildings[id];
@@ -162,7 +173,6 @@ const Sovereign = (() => {
             }
         }
 
-        // Units
         for (let id in config.units) {
             const u = config.units[id];
             const container = document.getElementById(`price-unit-${id}`);
@@ -190,6 +200,7 @@ const Sovereign = (() => {
         renderGarrison();
         renderDynasty();
         renderStatue();
+        renderGrandCouncil();
         const eraEl = document.getElementById('current-era');
         if (eraEl) eraEl.innerText = ["Age of Iron", "Feudal Reign", "Imperial Sovereignty", "Grand Dynasty"][state.era] || "Divine Reign";
         lucide.createIcons();
@@ -266,6 +277,21 @@ const Sovereign = (() => {
                 <button class="command-btn" onclick="Sovereign.trade('${t.id}', 10)">Trade 10</button>
                 <button class="command-btn" onclick="Sovereign.trade('${t.id}', 100)">Trade 100</button></div>`;
             container.appendChild(div);
+        });
+    };
+
+    const renderGrandCouncil = () => {
+        const container = document.getElementById('council-ministers');
+        if (!container) return;
+        container.innerHTML = '';
+        councilMembers.forEach(m => {
+            const card = document.createElement('div');
+            card.className = 'chamber-card iron-banded';
+            card.innerHTML = `
+                <div class="card-header"><h3><i data-lucide="${m.icon}" class="icon-stone"></i> ${m.name}</h3></div>
+                <div class="card-body"><p>${m.desc}</p>
+                <button class="action-btn candle-glow" onclick="Sovereign.notify('Minister ${m.name} assigned to regional oversight.')">Appoint Minister</button></div>`;
+            container.appendChild(card);
         });
     };
 
@@ -372,7 +398,7 @@ const Sovereign = (() => {
         if (gain < 1) return alert("INSUFFICIENT TREASURY.");
         state.legacyPoints += gain;
         state.modifiers.production = 1.0 + (state.legacyPoints * 0.15);
-        state.resources = { food: 100, wood: 100, ore: 50, gold: 50, pop: 12, faith: 0 };
+        state.resources = { food: 100, wood: 100, ore: 50, gold: 50, pop: 100, faith: 0 };
         state.buildings = { farm: 0, lumber: 0, mine: 0, forge: 0, market: 0 };
         state.units = { guard: 0, ranger: 0, knight: 0, ram: 0 };
         state.clickLvl = 1; state.faithId = 'none';
@@ -380,7 +406,6 @@ const Sovereign = (() => {
         save(); render();
     };
 
-    // --- Feedback ---
     const spawnParticle = (text, x, y) => {
         const container = document.getElementById('particle-container');
         if (!container) return;
@@ -410,7 +435,6 @@ const Sovereign = (() => {
         }
     };
 
-    // --- Canvas Logic ---
     let ctx, painting = false, color = '#f5f5f0', brushSize = 1;
     const setupCanvas = () => {
         const cvs = document.getElementById('statue-canvas');
@@ -438,10 +462,13 @@ const Sovereign = (() => {
             };
         });
 
-        document.getElementById('tool-clear').onclick = () => ctx.clearRect(0, 0, 64, 64);
-        document.getElementById('tool-grid').onclick = () => {
-            document.getElementById('canvas-grid').classList.toggle('hidden');
-            document.getElementById('tool-grid').classList.toggle('active');
+        const clearBtn = document.getElementById('tool-clear');
+        if (clearBtn) clearBtn.onclick = () => ctx.clearRect(0, 0, 64, 64);
+        const gridBtn = document.getElementById('tool-grid');
+        if (gridBtn) gridBtn.onclick = () => {
+            const g = document.getElementById('canvas-grid');
+            if (g) g.classList.toggle('hidden');
+            gridBtn.classList.toggle('active');
         };
 
         document.querySelectorAll('.bp-btn').forEach(btn => {
@@ -496,9 +523,10 @@ const Sovereign = (() => {
             const p = JSON.parse(s);
             state = { ...state, ...p, lastUpdate: Date.now() };
         }
+        if (isNaN(state.pop)) state.pop = 100;
     };
 
-    return { init, manualGather, buyBuilding, recruitUnit, trade, attack, upgradeDecree, carveStatue, concludeReign };
+    return { init, manualGather, buyBuilding, recruitUnit, trade, attack, upgradeDecree, carveStatue, concludeReign, notify };
 })();
 
 window.onload = Sovereign.init;
