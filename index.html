@@ -3,34 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Imperial Society Simulator</title>
+    <title>Sovereign: Statecraft</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="obsidian-theme">
+<body class="sovereign-statecraft">
     <div id="app">
-        <!-- Persistent Sidebar -->
+        <!-- The Great Hall (Sidebar) -->
         <aside class="sidebar no-select">
             <div class="sidebar-header">
-                <div class="brand-logo">
+                <div class="brand-seal">
                     <i data-lucide="crown"></i>
                 </div>
-                <h1 class="brand-name">SOVEREIGN</h1>
+                <h1 class="brand-title">SOVEREIGN</h1>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-btn active" data-tab="senate">
-                    <i data-lucide="building-2"></i>
-                    Imperial Senate
+                    <i data-lucide="castle"></i>
+                    Throne Room
                 </button>
                 <button class="nav-btn" data-tab="garrison">
-                    <i data-lucide="shield-half"></i>
-                    Garrison
+                    <i data-lucide="shield"></i>
+                    Imperial Garrison
                 </button>
                 <button class="nav-btn" data-tab="market">
-                    <i data-lucide="arrow-left-right"></i>
-                    Marketplace
+                    <i data-lucide="coins"></i>
+                    Merchant Ledger
                 </button>
                 <button class="nav-btn" data-tab="council">
                     <i data-lucide="users"></i>
@@ -38,169 +38,176 @@
                 </button>
                 <button class="nav-btn" data-tab="expansion">
                     <i data-lucide="map"></i>
-                    Imperial Expansion
+                    War Table
                 </button>
                 <button class="nav-btn" data-tab="tech">
-                    <i data-lucide="scroll-text"></i>
-                    Tech Tree
+                    <i data-lucide="scroll"></i>
+                    Imperial Archive
                 </button>
                 <button class="nav-btn" data-tab="dynasty">
-                    <i data-lucide="history"></i>
+                    <i data-lucide="landmark"></i>
                     Dynastic Legacy
                 </button>
             </nav>
             <div class="sidebar-footer">
-                <div class="status-card">
-                    <span class="label">Imperial Era</span>
-                    <span id="current-era" class="value">Age of Discovery</span>
+                <div class="era-seal">
+                    <span class="label">Reign Era</span>
+                    <span id="current-era" class="value">Age of Iron</span>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Dashboard -->
-        <main class="dashboard">
-            <!-- Resource Bar -->
-            <header class="resource-bar no-select">
-                <div class="res-node" id="res-food" title="Agrarian Output">
-                    <i data-lucide="wheat" class="res-icon"></i>
-                    <div class="res-meta">
+        <!-- The Realm Dashboard -->
+        <main class="realm-view">
+            <!-- Resource Ledger -->
+            <header class="resource-ledger no-select">
+                <div class="ledger-item" id="res-food">
+                    <i data-lucide="wheat" class="ledger-icon"></i>
+                    <div class="ledger-meta">
+                        <span class="res-label">Grain</span>
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="labor-btn" onclick="Sovereign.manualGather('food')">Levy</button>
+                    <button class="command-btn" onclick="Sovereign.manualGather('food')">Levy</button>
                 </div>
-                <div class="res-node" id="res-wood" title="Construction Reserves">
-                    <i data-lucide="axe" class="res-icon"></i>
-                    <div class="res-meta">
+                <div class="ledger-item" id="res-wood">
+                    <i data-lucide="hammer" class="ledger-icon"></i>
+                    <div class="ledger-meta">
+                        <span class="res-label">Lumber</span>
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="labor-btn" onclick="Sovereign.manualGather('wood')">Levy</button>
+                    <button class="command-btn" onclick="Sovereign.manualGather('wood')">Levy</button>
                 </div>
-                <div class="res-node" id="res-ore" title="Metallurgical Mining">
-                    <i data-lucide="pickaxe" class="res-icon"></i>
-                    <div class="res-meta">
+                <div class="ledger-item" id="res-ore">
+                    <i data-lucide="anvil" class="ledger-icon"></i>
+                    <div class="ledger-meta">
+                        <span class="res-label">Iron</span>
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="labor-btn" onclick="Sovereign.manualGather('ore')">Levy</button>
+                    <button class="command-btn" onclick="Sovereign.manualGather('ore')">Levy</button>
                 </div>
-                <div class="res-node" id="res-gold" title="Treasury Reserves">
-                    <i data-lucide="coins" class="res-icon"></i>
-                    <div class="res-meta">
+                <div class="ledger-item" id="res-gold">
+                    <i data-lucide="gem" class="ledger-icon"></i>
+                    <div class="ledger-meta">
+                        <span class="res-label">Treasury</span>
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
                 </div>
-                <div class="res-node population" id="res-pop" title="Imperial Population">
-                    <i data-lucide="users-2" class="res-icon"></i>
-                    <div class="res-meta">
+                <div class="ledger-item citizens" id="res-pop">
+                    <i data-lucide="users-2" class="ledger-icon"></i>
+                    <div class="ledger-meta">
+                        <span class="res-label">Subjects</span>
                         <span class="res-val">0</span>
-                        <span class="res-label">Population</span>
                     </div>
                 </div>
             </header>
 
-            <!-- Tab Content (One visible at a time) -->
-            <div class="tab-viewport">
+            <!-- Tab Viewport -->
+            <div class="parchment-viewport">
                 <section id="tab-senate" class="tab-panel active">
-                    <div class="panel-header">
-                        <h2>Imperial Senate</h2>
-                        <p>Manage the infrastructure and workforce of the society.</p>
+                    <div class="panel-intro">
+                        <h2>Throne Room</h2>
+                        <p>Command the subjects and infrastructure of your sovereign realm.</p>
                     </div>
-                    <div class="hub-container">
-                        <div class="upgrade-card primary-border">
+                    <div class="hall-layout">
+                        <div class="decree-card iron-banded">
                             <div class="card-header">
-                                <h3>Infrastructure Optimization</h3>
-                                <span class="badge" id="click-lvl">Lvl 1</span>
+                                <h3>Workforce Decrees</h3>
+                                <span class="seal" id="click-lvl">Decree I</span>
                             </div>
                             <div class="card-body">
-                                <p>Enhance the efficiency of manual labor levies. Current Power: +<span id="click-power">1</span></p>
-                                <button class="action-btn glow" id="upgrade-click-btn">Upgrade Infrastructure</button>
+                                <p>Imperial mandates to optimize serf labor efficiency. Current Command: +<span id="click-power">1</span></p>
+                                <button class="action-btn candle-glow" id="upgrade-click-btn">Scribe New Decree</button>
                             </div>
                         </div>
-                        <div class="card-grid" id="senate-buildings"></div>
+                        <div class="chamber-grid" id="senate-buildings"></div>
                     </div>
                 </section>
 
                 <section id="tab-garrison" class="tab-panel">
-                    <div class="panel-header">
+                    <div class="panel-intro">
                         <h2>Imperial Garrison</h2>
-                        <p>Train specialized military forces to secure and expand the empire.</p>
+                        <p>Recruit and discipline your forces for territorial expansion.</p>
                     </div>
-                    <div class="card-grid" id="garrison-units"></div>
+                    <div class="chamber-grid" id="garrison-units"></div>
                 </section>
 
                 <section id="tab-market" class="tab-panel">
-                    <div class="panel-header">
-                        <h2>Marketplace</h2>
-                        <p>Trade surplus agrarian and construction resources for treasury gold.</p>
+                    <div class="panel-intro">
+                        <h2>Merchant Ledger</h2>
+                        <p>Exchange surplus goods via merchant caravans for treasury gold.</p>
                     </div>
-                    <div class="market-list" id="market-list"></div>
+                    <div class="caravan-list" id="market-list"></div>
                 </section>
 
                 <section id="tab-council" class="tab-panel">
-                    <div class="panel-header">
+                    <div class="panel-intro">
                         <h2>Grand Council</h2>
-                        <p>Assign ministers to specialize in regional administration.</p>
+                        <p>Appoint ministers to oversee specialized regional administration.</p>
                     </div>
-                    <div class="card-grid" id="council-ministers"></div>
+                    <div class="chamber-grid" id="council-ministers"></div>
                 </section>
 
                 <section id="tab-expansion" class="tab-panel">
-                    <div class="panel-header">
-                        <h2>Imperial Expansion</h2>
-                        <p>Conquer outlying sectors to establish permanent tributes.</p>
+                    <div class="panel-intro">
+                        <h2>War Table</h2>
+                        <p>Command your legions to annex outlying territories.</p>
                     </div>
-                    <div class="expansion-layout">
-                        <div class="sector-map" id="expansion-map"></div>
-                        <div class="combat-console">
-                            <div class="console-header">Strategic Dispatch Log</div>
-                            <div class="console-body" id="log-entries"></div>
+                    <div class="war-layout">
+                        <div class="territory-map" id="expansion-map"></div>
+                        <div class="conquest-log-book iron-banded">
+                            <div class="log-header">Imperial Dispatch</div>
+                            <div class="log-entries" id="log-entries"></div>
                         </div>
                     </div>
                 </section>
 
                 <section id="tab-tech" class="tab-panel">
-                    <div class="panel-header">
-                        <h2>Tech Tree</h2>
-                        <p>Research breakthroughs to advance the society's capabilities.</p>
+                    <div class="panel-intro">
+                        <h2>Imperial Archive</h2>
+                        <p>Decipher ancient scripts to unlock sovereign breakthroughs.</p>
                     </div>
-                    <div class="tech-tree-view" id="tech-tree"></div>
+                    <div class="archive-grid" id="tech-tree"></div>
                 </section>
 
                 <section id="tab-dynasty" class="tab-panel">
-                    <div class="panel-header">
+                    <div class="panel-intro">
                         <h2>Dynastic Legacy</h2>
-                        <p>Restart the cycle for permanent imperial legacy modifiers.</p>
+                        <p>Seal your current reign to establish an eternal legacy.</p>
                     </div>
-                    <div class="legacy-card">
-                        <div class="legacy-stats">
-                            <div class="stat">
-                                <label>Legacy Points</label>
-                                <span id="legacy-points">0</span>
+                    <div class="dynastic-hall">
+                        <div class="legacy-seal prestige-card iron-banded">
+                            <h3>Eternal Registry</h3>
+                            <div class="legacy-stats">
+                                <div class="stat">
+                                    <label>Legacy Seal</label>
+                                    <span id="legacy-points">0</span>
+                                </div>
+                                <div class="stat">
+                                    <label>Agrarian Bonus</label>
+                                    <span id="prod-mult">1.0x</span>
+                                </div>
+                                <div class="stat">
+                                    <label>Warfare Bonus</label>
+                                    <span id="combat-bonus">0%</span>
+                                </div>
                             </div>
-                            <div class="stat">
-                                <label>Prod Multiplier</label>
-                                <span id="prod-mult">1.0x</span>
-                            </div>
-                            <div class="stat">
-                                <label>Combat Bonus</label>
-                                <span id="combat-bonus">0%</span>
-                            </div>
+                            <button class="action-btn candle-glow danger" id="prestige-btn">Conclude Current Reign</button>
                         </div>
-                        <button class="action-btn glow warning" id="prestige-btn">Authorize Dynastic Succession</button>
                     </div>
                 </section>
             </div>
         </main>
 
-        <!-- Modals -->
+        <!-- Decrees & Events -->
         <div id="event-overlay" class="modal-overlay">
-            <div class="modal-box">
+            <div class="scroll-modal">
                 <h2 id="event-title">Imperial Decree</h2>
                 <p id="event-desc"></p>
-                <div id="event-options" class="options-stack"></div>
+                <div id="event-options" class="command-stack"></div>
             </div>
         </div>
     </div>

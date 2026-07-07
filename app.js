@@ -1,13 +1,13 @@
 /**
- * Sovereign: Imperial Society Simulator - Core Logic
+ * Sovereign: Statecraft - Sovereign Engine
  */
 
 const Sovereign = (() => {
-    // --- State ---
+    // --- Realm State ---
     let state = {
-        resources: { food: 100, wood: 100, ore: 50, gold: 50, pop: 10 },
-        buildings: { farm: 0, lumber: 0, mine: 0, foundry: 0, market: 0 },
-        units: { militia: 0, ranger: 0, knight: 0, siege: 0 },
+        resources: { food: 100, wood: 100, ore: 50, gold: 50, pop: 12 },
+        buildings: { farm: 0, lumber: 0, mine: 0, forge: 0, market: 0 },
+        units: { guard: 0, ranger: 0, knight: 0, ram: 0 },
         clickLvl: 1,
         ministers: [],
         tech: [],
@@ -15,52 +15,52 @@ const Sovereign = (() => {
         legacyPoints: 0,
         modifiers: { production: 1.0, combat: 1.0 },
         regions: [
-            { id: 'r1', name: 'Agrarian Frontier', difficulty: 1, captured: false, tribute: { food: 0.5 } },
-            { id: 'r2', name: 'Highlands Timber', difficulty: 5, captured: false, tribute: { wood: 0.5 } },
-            { id: 'r3', name: 'Iron Peaks', difficulty: 20, captured: false, tribute: { ore: 0.8 } },
-            { id: 'r4', name: 'Imperial Hub', difficulty: 100, captured: false, tribute: { gold: 1.0 } }
+            { id: 'r1', name: 'Agrarian Outpost', difficulty: 1, captured: false, tribute: { food: 0.6 } },
+            { id: 'r2', name: 'Blackwood Forest', difficulty: 5, captured: false, tribute: { wood: 0.6 } },
+            { id: 'r3', name: 'Iron Vein Peak', difficulty: 25, captured: false, tribute: { ore: 0.9 } },
+            { id: 'r4', name: 'Merchant Trade-Hub', difficulty: 120, captured: false, tribute: { gold: 1.2 } }
         ],
         lastUpdate: Date.now()
     };
 
     const config = {
-        eras: ["Age of Discovery", "Feudal Hegemony", "Imperial Sovereignty", "Industrial Epoch"],
+        eras: ["Age of Iron", "Feudal Reign", "Imperial Sovereignty", "Grand Dynasty"],
         buildings: {
-            farm: { name: "Communal Farm", res: "food", baseCost: { wood: 15, food: 5 }, prod: 1.5, pop: 2 },
-            lumber: { name: "Lumber Yard", res: "wood", baseCost: { food: 20, wood: 5 }, prod: 1.2, pop: 2 },
-            mine: { name: "Basic Shaft", res: "ore", baseCost: { wood: 40, ore: 10 }, prod: 1.0, pop: 3 },
-            foundry: { name: "Great Smelter", res: "ore", baseCost: { wood: 150, ore: 80 }, prod: 5.0, pop: 5 },
-            market: { name: "Town Square", res: "gold", baseCost: { wood: 100, gold: 50 }, prod: 0.5, pop: 1 }
+            farm: { name: "Tenant Farm", res: "food", baseCost: { wood: 15, food: 5 }, prod: 1.5, pop: 3, icon: 'wheat' },
+            lumber: { name: "Woodman's Camp", res: "wood", baseCost: { food: 20, wood: 5 }, prod: 1.2, pop: 2, icon: 'axe' },
+            mine: { name: "Dug Quarry", res: "ore", baseCost: { wood: 45, ore: 10 }, prod: 1.0, pop: 4, icon: 'pickaxe' },
+            forge: { name: "Iron Forge", res: "ore", baseCost: { wood: 180, ore: 100 }, prod: 6.0, pop: 6, icon: 'anvil' },
+            market: { name: "Village Fair", res: "gold", baseCost: { wood: 120, gold: 60 }, prod: 0.6, pop: 2, icon: 'store' }
         },
         units: {
-            militia: { name: "Imperial Militia", baseCost: { food: 60, ore: 10 }, power: 12, upkeep: { food: 0.5 } },
-            ranger: { name: "Frontier Ranger", baseCost: { food: 40, wood: 50 }, power: 18, upkeep: { food: 0.4 } },
-            knight: { name: "Order Knight", baseCost: { food: 150, ore: 80, gold: 30 }, power: 75, upkeep: { food: 3, gold: 0.5 } },
-            siege: { name: "Empire Ram", baseCost: { wood: 400, ore: 300, gold: 150 }, power: 300, upkeep: { gold: 6 } }
+            guard: { name: "Steel Guard", baseCost: { food: 60, ore: 15 }, power: 15, upkeep: { food: 0.6 }, icon: 'shield' },
+            ranger: { name: "Crossbowman", baseCost: { food: 45, wood: 60 }, power: 22, upkeep: { food: 0.5 }, icon: 'target' },
+            knight: { name: "Imperial Knight", baseCost: { food: 200, ore: 120, gold: 50 }, power: 90, upkeep: { food: 4, gold: 1.0 }, icon: 'swords' },
+            ram: { name: "Iron Ram", baseCost: { wood: 500, ore: 400, gold: 200 }, power: 400, upkeep: { gold: 8 }, icon: 'hammer' }
         },
         ministers: {
-            steward: { id: 'steward', name: "High Steward", cost: { gold: 600 }, effect: "+20% Prod", production: 0.2 },
-            marshal: { id: 'marshal', name: "Lord Marshal", cost: { gold: 800 }, effect: "+25% Combat", combat: 0.25 },
-            treasurer: { id: 'treasurer', name: "Imperial Treasurer", cost: { gold: 1500 }, effect: "+60% Tribute", tribute: 0.6 }
+            steward: { id: 'steward', name: "High Steward", cost: { gold: 750 }, effect: "+20% Prod", production: 0.2, icon: 'briefcase' },
+            marshal: { id: 'marshal', name: "Lord Marshal", cost: { gold: 1000 }, effect: "+30% Power", combat: 0.3, icon: 'shield-check' },
+            treasurer: { id: 'treasurer', name: "Chancellor", cost: { gold: 2000 }, effect: "+75% Tribute", tribute: 0.75, icon: 'book-open' }
         },
         tech: [
-            { id: 't1', name: 'Irrigation Schemes', cost: { food: 200, wood: 100 }, effect: '+15% Food production' },
-            { id: 't2', name: 'Scaffold Engineering', cost: { wood: 500, gold: 100 }, effect: '+20% Construction efficiency' },
-            { id: 't3', name: 'Logistical Codex', cost: { gold: 1000 }, effect: '-25% Army upkeep' }
+            { id: 't1', name: 'Crop Rotation Scrip', cost: { food: 250, wood: 150 }, effect: '+20% Grain prod', icon: 'scroll' },
+            { id: 't2', name: 'Masonry Guilds', cost: { wood: 600, gold: 200 }, effect: '+25% Construction', icon: 'hammer' },
+            { id: 't3', name: 'Military Logistics', cost: { gold: 1200 }, effect: '-30% Upkeep', icon: 'map' }
         ],
         trades: [
-            { id: 'f_sell', name: 'Levy Food for Gold', from: 'food', to: 'gold', rate: 0.12 },
-            { id: 'w_sell', name: 'Levy Wood for Gold', from: 'wood', to: 'gold', rate: 0.18 },
-            { id: 'o_sell', name: 'Levy Ore for Gold', from: 'ore', to: 'gold', rate: 0.35 }
+            { id: 'f_sell', name: 'Grain Caravan', from: 'food', to: 'gold', rate: 0.15 },
+            { id: 'w_sell', name: 'Lumber Caravan', from: 'wood', to: 'gold', rate: 0.20 },
+            { id: 'o_sell', name: 'Iron Caravan', from: 'ore', to: 'gold', rate: 0.40 }
         ]
     };
 
+    // --- Core Loops ---
     const init = () => {
         load();
         setupNav();
         render();
         startLoop();
-        lucide.createIcons();
     };
 
     const setupNav = () => {
@@ -76,9 +76,9 @@ const Sovereign = (() => {
             });
         });
         const upBtn = document.getElementById('upgrade-click-btn');
-        if (upBtn) upBtn.addEventListener('click', upgradeClick);
+        if (upBtn) upBtn.addEventListener('click', upgradeDecree);
         const presBtn = document.getElementById('prestige-btn');
-        if (presBtn) presBtn.addEventListener('click', prestige);
+        if (presBtn) presBtn.addEventListener('click', concludeReign);
     };
 
     const startLoop = () => {
@@ -96,33 +96,34 @@ const Sovereign = (() => {
             const b = config.buildings[id];
             state.resources[b.res] += b.prod * state.buildings[id] * delta * state.modifiers.production;
         }
-        const tributeMult = state.ministers.includes('treasurer') ? 1.6 : 1.0;
+        const tributeMult = state.ministers.includes('treasurer') ? 1.75 : 1.0;
         state.regions.filter(r => r.captured).forEach(r => {
             for (let res in r.tribute) state.resources[res] += r.tribute[res] * delta * state.modifiers.production * tributeMult;
         });
-        const upkeepMult = state.tech.includes('t3') ? 0.75 : 1.0;
+        const upkeepMult = state.tech.includes('t3') ? 0.7 : 1.0;
         for (let id in state.units) {
             const u = config.units[id];
             for (let res in u.upkeep) state.resources[res] = Math.max(0, state.resources[res] - (u.upkeep[res] * state.units[id] * delta * upkeepMult));
         }
-        renderResourcesOnly();
+        renderLedgerOnly();
     };
 
+    // --- Rendering ---
     const render = () => {
-        renderResourcesOnly();
-        renderSenate();
+        renderLedgerOnly();
+        renderThroneRoom();
         renderGarrison();
         renderMarket();
         renderCouncil();
-        renderExpansion();
-        renderTech();
-        renderPrestige();
+        renderWarTable();
+        renderArchive();
+        renderDynasty();
         const eraEl = document.getElementById('current-era');
-        if (eraEl) eraEl.innerText = config.eras[state.era] || "Ascended Society";
+        if (eraEl) eraEl.innerText = config.eras[state.era] || "Divine Dynasty";
         lucide.createIcons();
     };
 
-    const renderResourcesOnly = () => {
+    const renderLedgerOnly = () => {
         for (let res in state.resources) {
             const node = document.getElementById(`res-${res}`);
             if (node) {
@@ -139,21 +140,21 @@ const Sovereign = (() => {
         }
         const popEl = document.getElementById('res-pop');
         if (popEl) {
-            let currentPop = 10;
+            let currentPop = 12;
             for (let id in state.buildings) currentPop += config.buildings[id].pop * state.buildings[id];
             popEl.querySelector('.res-val').innerText = currentPop.toLocaleString();
         }
     };
 
-    const renderSenate = () => {
+    const renderThroneRoom = () => {
         const lvlEl = document.getElementById('click-lvl');
         const powEl = document.getElementById('click-power');
         const upBtn = document.getElementById('upgrade-click-btn');
-        if (lvlEl) lvlEl.innerText = `Lvl ${state.clickLvl}`;
+        if (lvlEl) lvlEl.innerText = `Decree ${state.clickLvl}`;
         if (powEl) powEl.innerText = state.clickLvl;
-        const cost = Math.floor(100 * Math.pow(1.6, state.clickLvl - 1));
+        const cost = Math.floor(120 * Math.pow(1.65, state.clickLvl - 1));
         if (upBtn) {
-            upBtn.innerText = `Optimize Workforce (${cost} Gold)`;
+            upBtn.innerText = `Scribe Decree (${cost} Gold)`;
             upBtn.disabled = state.resources.gold < cost;
         }
 
@@ -165,12 +166,12 @@ const Sovereign = (() => {
             const count = state.buildings[id];
             const cost = calcCost(b.baseCost, count);
             const card = document.createElement('div');
-            card.className = 'upgrade-card';
+            card.className = 'chamber-card iron-banded';
             card.innerHTML = `
-                <div class="card-header"><h3>${b.name}</h3><span class="badge">Lv ${count}</span></div>
-                <div class="card-body"><p>Imperial production yielding ${b.prod} ${b.res}/s. Employs ${b.pop} Citizens.</p>
-                <div class="cost-group">${renderCosts(cost)}</div>
-                <button class="action-btn glow" ${!canAfford(cost)?'disabled':''} onclick="Sovereign.buyBuilding('${id}')">Authorize Infrastructure</button></div>`;
+                <div class="card-header"><h3><i data-lucide="${b.icon}"></i> ${b.name}</h3><span class="seal">Lv ${count}</span></div>
+                <div class="card-body"><p>Sovereign yield: ${b.prod} ${b.res}/s. Employs ${b.pop} subjects.</p>
+                <div class="cost-stack">${renderCosts(cost)}</div>
+                <button class="action-btn candle-glow" ${!canAfford(cost)?'disabled':''} onclick="Sovereign.buyBuilding('${id}')">Authorize Lease</button></div>`;
             container.appendChild(card);
         }
     };
@@ -183,12 +184,12 @@ const Sovereign = (() => {
             const u = config.units[id];
             const count = state.units[id];
             const card = document.createElement('div');
-            card.className = 'action-card';
+            card.className = 'chamber-card iron-banded';
             card.innerHTML = `
-                <div class="card-header"><h3>${u.name}</h3><span class="badge">${count} Armed</span></div>
+                <div class="card-header"><h3><i data-lucide="${u.icon}"></i> ${u.name}</h3><span class="seal">${count} Ready</span></div>
                 <div class="card-body"><p>Tactical Power: ${u.power} | Upkeep: ${Object.entries(u.upkeep).map(([r,v])=>`${v}${r[0].toUpperCase()}`).join(', ')}</p>
-                <div class="cost-group">${renderCosts(u.baseCost)}</div>
-                <button class="action-btn glow" ${!canAfford(u.baseCost)?'disabled':''} onclick="Sovereign.recruitUnit('${id}')">Draft Unit</button></div>`;
+                <div class="cost-stack">${renderCosts(u.baseCost)}</div>
+                <button class="action-btn candle-glow" ${!canAfford(u.baseCost)?'disabled':''} onclick="Sovereign.recruitUnit('${id}')">Mobilize</button></div>`;
             container.appendChild(card);
         }
     };
@@ -199,10 +200,10 @@ const Sovereign = (() => {
         container.innerHTML = '';
         config.trades.forEach(t => {
             const div = document.createElement('div');
-            div.className = 'market-item';
+            div.className = 'caravan-item iron-banded';
             div.innerHTML = `
-                <div class="m-info"><h3>${t.name}</h3><p>Imperial Rate: 1 ${t.from.toUpperCase()} = ${t.rate} Gold</p></div>
-                <div class="m-actions">
+                <div class="caravan-info"><h3><i data-lucide="truck"></i> ${t.name}</h3><p>Merchant Rate: 1 ${t.from.toUpperCase()} = ${t.rate} Gold</p></div>
+                <div class="caravan-actions">
                     <button class="action-btn" onclick="Sovereign.trade('${t.id}', 10)">Trade 10</button>
                     <button class="action-btn" onclick="Sovereign.trade('${t.id}', 100)">Trade 100</button>
                 </div>`;
@@ -218,47 +219,47 @@ const Sovereign = (() => {
             const m = config.ministers[id];
             const owned = state.ministers.includes(id);
             const card = document.createElement('div');
-            card.className = 'action-card primary-border';
+            card.className = 'chamber-card iron-banded';
             card.innerHTML = `
-                <div class="card-header"><h3>${m.name}</h3>${owned?'<span class="badge">Appointed</span>':''}</div>
-                <div class="card-body"><p>${m.effect}</p><div class="cost-group">${renderCosts(m.cost)}</div>
-                <button class="action-btn glow" ${owned||!canAfford(m.cost)?'disabled':''} onclick="Sovereign.hireMinister('${id}')">${owned?'In Service':'Assign Seat'}</button></div>`;
+                <div class="card-header"><h3><i data-lucide="${m.icon}"></i> ${m.name}</h3>${owned?'<span class="seal">In Seat</span>':''}</div>
+                <div class="card-body"><p>${m.effect}</p><div class="cost-stack">${renderCosts(m.cost)}</div>
+                <button class="action-btn candle-glow" ${owned||!canAfford(m.cost)?'disabled':''} onclick="Sovereign.hireMinister('${id}')">${owned?'In Service':'Assign Seat'}</button></div>`;
             container.appendChild(card);
         }
     };
 
-    const renderExpansion = () => {
+    const renderWarTable = () => {
         const map = document.getElementById('expansion-map');
         if (!map) return;
         map.innerHTML = '';
         state.regions.forEach(r => {
             const card = document.createElement('div');
-            card.className = 'action-card';
+            card.className = 'chamber-card iron-banded';
             card.innerHTML = `
-                <div class="card-header"><h3>${r.name}</h3><span class="badge">${r.captured?'Secured':'Hostile'}</span></div>
-                <div class="card-body"><p>Defense Multiplier: ${r.difficulty}</p>
-                <button class="action-btn glow" ${r.captured?'disabled':''} onclick="Sovereign.attack('${r.id}')">${r.captured?'Region Levying':'Mobilize Legions'}</button></div>`;
+                <div class="card-header"><h3>${r.name}</h3><span class="seal">${r.captured?'Annexed':'Hostile'}</span></div>
+                <div class="card-body"><p>Fortification Strength: ${r.difficulty}</p>
+                <button class="action-btn candle-glow" ${r.captured?'disabled':''} onclick="Sovereign.attack('${r.id}')">${r.captured?'Tribute Secured':'Mobilize Legion'}</button></div>`;
             map.appendChild(card);
         });
     };
 
-    const renderTech = () => {
+    const renderArchive = () => {
         const container = document.getElementById('tech-tree');
         if (!container) return;
         container.innerHTML = '';
         config.tech.forEach(t => {
             const owned = state.tech.includes(t.id);
             const card = document.createElement('div');
-            card.className = 'upgrade-card';
+            card.className = 'chamber-card iron-banded';
             card.innerHTML = `
-                <div class="card-header"><h3>${t.name}</h3>${owned?'<span class="badge">Deciphered</span>':''}</div>
-                <div class="card-body"><p>${t.effect}</p><div class="cost-group">${renderCosts(t.cost)}</div>
-                <button class="action-btn glow" ${owned||!canAfford(t.cost)?'disabled':''} onclick="Sovereign.research('${t.id}')">Authorize Research</button></div>`;
+                <div class="card-header"><h3><i data-lucide="${t.icon}"></i> ${t.name}</h3>${owned?'<span class="seal">Deciphered</span>':''}</div>
+                <div class="card-body"><p>${t.effect}</p><div class="cost-stack">${renderCosts(t.cost)}</div>
+                <button class="action-btn candle-glow" ${owned||!canAfford(t.cost)?'disabled':''} onclick="Sovereign.research('${t.id}')">Decipher Script</button></div>`;
             container.appendChild(card);
         });
     };
 
-    const renderPrestige = () => {
+    const renderDynasty = () => {
         const legEl = document.getElementById('legacy-points');
         const prodEl = document.getElementById('prod-mult');
         const combEl = document.getElementById('combat-bonus');
@@ -267,14 +268,14 @@ const Sovereign = (() => {
         if (combEl) combEl.innerText = ((state.modifiers.combat - 1) * 100).toFixed(0) + '%';
     };
 
-    // --- Actions ---
+    // --- Sovereignty Actions ---
     const manualGather = (res) => {
         state.resources[res] += state.clickLvl;
-        renderResourcesOnly();
+        renderLedgerOnly();
     };
 
-    const upgradeClick = () => {
-        const cost = Math.floor(100 * Math.pow(1.6, state.clickLvl - 1));
+    const upgradeDecree = () => {
+        const cost = Math.floor(120 * Math.pow(1.65, state.clickLvl - 1));
         if (state.resources.gold >= cost) {
             state.resources.gold -= cost;
             state.clickLvl++;
@@ -315,24 +316,24 @@ const Sovereign = (() => {
     };
     const attack = (rid) => {
         const r = state.regions.find(x => x.id === rid);
-        if (getTotalPower() >= r.difficulty * 50) {
+        if (getTotalPower() >= r.difficulty * 60) {
             r.captured = true;
-            Sovereign.notify(`STRATEGIC VICTORY: SECTOR ${r.name.toUpperCase()} SECURED.`);
+            Sovereign.notify(`ANNEXATION LOG: TERRITORY ${r.name.toUpperCase()} HAS SURRENDERED.`);
         } else {
             for (let id in state.units) state.units[id] = Math.floor(state.units[id] * 0.7);
-            Sovereign.notify(`STRATEGIC DEFEAT: ATTEMPT ON ${r.name.toUpperCase()} FAILED. 30% LOSSES.`);
+            Sovereign.notify(`ANNEXATION LOG: THE LEGION WAS REPELLED FROM ${r.name.toUpperCase()}. HEAVY LOSSES.`);
         }
         render();
     };
-    const prestige = () => {
-        const gain = Math.floor(state.resources.gold / 2500);
-        if (gain < 1) return alert("INSUFFICIENT TREASURY FOR DYNASTIC SUCCESSION.");
+    const concludeReign = () => {
+        const gain = Math.floor(state.resources.gold / 3000);
+        if (gain < 1) return alert("TREASURY INSUFFICIENT TO SEAL DYNASTIC LEGACY.");
         state.legacyPoints += gain;
-        state.modifiers.production = 1.0 + (state.legacyPoints * 0.12);
-        state.modifiers.combat = 1.0 + (state.legacyPoints * 0.08);
-        state.resources = { food: 100, wood: 100, ore: 50, gold: 50, pop: 10 };
-        state.buildings = { farm: 0, lumber: 0, mine: 0, foundry: 0, market: 0 };
-        state.units = { militia: 0, ranger: 0, knight: 0, siege: 0 };
+        state.modifiers.production = 1.0 + (state.legacyPoints * 0.15);
+        state.modifiers.combat = 1.0 + (state.legacyPoints * 0.10);
+        state.resources = { food: 100, wood: 100, ore: 50, gold: 50, pop: 12 };
+        state.buildings = { farm: 0, lumber: 0, mine: 0, forge: 0, market: 0 };
+        state.units = { guard: 0, ranger: 0, knight: 0, ram: 0 };
         state.tech = []; state.ministers = []; state.clickLvl = 1;
         state.regions.forEach(r => r.captured = false);
         save(); render();
@@ -341,7 +342,7 @@ const Sovereign = (() => {
     // --- Helpers ---
     const calcCost = (base, count) => {
         const cost = {};
-        for (let r in base) cost[r] = Math.floor(base[r] * Math.pow(1.3, count));
+        for (let r in base) cost[r] = Math.floor(base[r] * Math.pow(1.35, count));
         return cost;
     };
     const canAfford = (costs) => {
@@ -353,7 +354,7 @@ const Sovereign = (() => {
         let h = '';
         for (const r in costs) {
             const aff = state.resources[r] >= costs[r];
-            h += `<span class="cost-tag ${aff ? 'affordable' : ''}">${costs[r]} ${r.toUpperCase()}</span>`;
+            h += `<span class="cost-scroll ${aff ? 'can-pay' : ''}">${costs[r]} ${r.toUpperCase()}</span>`;
         }
         return h;
     };
@@ -366,12 +367,12 @@ const Sovereign = (() => {
         const entries = document.getElementById('log-entries');
         if (!entries) return;
         const d = document.createElement('div');
-        d.innerHTML = `<span style="color:var(--slate-dim)">[${new Date().toLocaleTimeString()}]</span> > ${msg}`;
+        d.innerHTML = `<span style="color:var(--ink-dim)">[LEGALIS]</span> > ${msg}`;
         entries.prepend(d);
     };
-    const save = () => localStorage.setItem('sov_society_save_v1', JSON.stringify(state));
+    const save = () => localStorage.setItem('sov_statecraft_v1', JSON.stringify(state));
     const load = () => {
-        const s = localStorage.getItem('sov_society_save_v1');
+        const s = localStorage.getItem('sov_statecraft_v1');
         if (s) {
             const p = JSON.parse(s);
             state = { ...state, ...p };
