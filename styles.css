@@ -1,0 +1,72 @@
+body {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background-color: #ffeef8;
+    color: #ff69b4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+#game-container {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(255, 105, 180, 0.3);
+    text-align: center;
+    width: 400px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+#currency-display {
+    font-size: 20px;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+#chibi-character {
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+#chibi-character:active {
+    transform: scale(0.9);
+}
+
+#chibi-character img {
+    width: 150px;
+}
+
+#upgrades-section {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.upgrade {
+    background: #fff0f5;
+    border: 2px solid #ffb6c1;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.upgrade:hover {
+    background: #ffe4e1;
+}
+
+.upgrade .name {
+    font-weight: bold;
+}
+
+#stats {
+    margin-top: 20px;
+    font-size: 14px;
+}
