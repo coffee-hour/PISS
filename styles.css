@@ -15,6 +15,7 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
     position: relative; 
     width: 100vw; height: 100vh; 
     display: flex; align-items: center; justify-content: center;
+    transition: background 0.5s;
 }
 
 #top-stat-bar {
@@ -24,13 +25,13 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
     z-index: 500; font-family: var(--font-mono); gap: 20px;
 }
 
-/* --- v3.3.2 SPRITE REGISTRY REWRITE (DECOUPLED) --- */
+/* --- v4.0.0 SUPER HOT ARCHITECTURE --- */
 
-/* 1. Layout Logic (Purely Positioning) */
 #arena { 
     position: absolute; inset: 0; 
     display: flex; align-items: center; justify-content: center;
     z-index: 1;
+    filter: saturate(0.2) contrast(1.2); /* Noir Aesthetic */
 }
 
 #enemy-target-container {
@@ -39,7 +40,6 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
     z-index: 10;
 }
 
-/* 2. Sprite Core (Geometry Only) */
 .enemy-sprite {
     position: relative; width: 150px; height: 300px;
     display: flex; flex-direction: column; align-items: center;
@@ -47,55 +47,52 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 
 .stick-head { width: 50px; height: 50px; border: 4px solid currentColor; border-radius: 50%; }
 .stick-body { width: 4px; height: 100px; background: currentColor; }
-
 .stick-arm { position: absolute; width: 60px; height: 4px; background: currentColor; top: 80px; transform-origin: center; }
 .stick-arm.left { transform: rotate(-30deg) translateX(-30px); }
 .stick-arm.right { transform: rotate(30deg) translateX(30px); }
+.stick-leg { position: absolute; width: 70px; height: 4px; background: currentColor; top: 150px; transform-origin: top center; }
+.stick-leg.left { transform: rotate(75deg) translateX(-30px); }
+.stick-leg.right { transform: rotate(-75deg) translateX(30px); }
 
-/* Leg Geometry Hard-Clamp: Forced Neutral Standing */
-.stick-leg { 
-    position: absolute; width: 70px; height: 4px; background: currentColor; top: 150px;
-    transform-origin: top center !important; /* HARD CLAMP */
-}
-.stick-leg.left { transform: rotate(75deg) translateX(-30px) !important; }
-.stick-leg.right { transform: rotate(-75deg) translateX(30px) !important; }
-
-/* 3. Hard-Coded Color Registry (Manual Audit) */
-.sequid { color: #ff80ab !important; }        /* Pink */
-.flaxan { color: #e65100 !important; }        /* Technical Orange */
-.duplikate { color: #1e88e5 !important; }     /* Guardian Blue */
-.shrinkingrae { color: #9e9e9e !important; }  /* Tactical Gray */
-.rexsplode { color: #fb8c00 !important; }     /* Explosive Orange */
-.atomeve { color: #f06292 !important; }       /* Signature Pink */
-.robot { color: #43a047 !important; }         /* Metallic Green */
-.monstergirl { color: #81c784 !important; }    /* Ogre Green */
-.battlebeast { color: #455a64 !important; }   /* Steel Gray */
-.omniman { color: #f8fafc !important; }       /* Imperial White */
-.thragg { color: #b91c1c !important; }        /* Regent Red */
-
-/* Special Overrides */
-.atomeve .stick-head { box-shadow: 0 0 15px #f06292; }
-.omniman .stick-head { border-color: #b91c1c; }
+/* Color Registry (v3.3.2) */
+.sequid { color: #ff80ab !important; }
+.flaxan { color: #e65100 !important; }
+.duplikate { color: #1e88e5 !important; }
+.shrinkingrae { color: #9e9e9e !important; }
+.rexsplode { color: #fb8c00 !important; }
+.atomeve { color: #f06292 !important; }
+.robot { color: #43a047 !important; }
+.monstergirl { color: #81c784 !important; }
+.battlebeast { color: #455a64 !important; }
+.omniman { color: #f8fafc !important; }
+.thragg { color: #b91c1c !important; }
 
 /* UI & FX */
 #target-hud { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 300; pointer-events: none; }
-.target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 6px; }
+.target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; }
 .target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
-.target-bar-fill { height: 100%; background: var(--crimson); transition: width 0.3s; }
+.target-bar-fill { height: 100%; background: var(--crimson); transition: width 0.1s; }
 
 #arms-container { position: absolute; bottom: -80px; width: 100%; height: 400px; display: flex; justify-content: space-between; padding: 0 10%; z-index: 200; pointer-events: none; }
-.arm { width: 300px; height: 600px; background: linear-gradient(to top, #000, #1a1a1a 30%, #444 100%); border: 5px solid #000; border-radius: 80px 80px 0 0; transform: translateY(150px); transition: transform 0.1s; }
+.arm { width: 300px; height: 600px; background: linear-gradient(to top, #000, #1a1a1a 30%, #444 100%); border: 5px solid #000; border-radius: 80px 80px 0 0; transform: translateY(150px); transition: transform 0.05s; }
 .arm-left { transform: rotate(15deg) translateY(150px); }
 .arm-right { transform: rotate(-15deg) translateY(150px); }
 
-.choice-list { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; width: 100%; }
-.augment-btn { background: var(--slate); border: 2px solid var(--amber); padding: 20px; text-align: left; cursor: pointer; pointer-events: auto; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
-.augment-btn:hover { background: var(--amber); color: #000; transform: scale(1.02); }
-.augment-info b { display: block; font-size: 1.1rem; color: var(--amber); margin-bottom: 5px; text-transform: uppercase; }
-.augment-btn:hover b { color: #000; }
+#interaction-layer { position: absolute; inset: 0; z-index: 400; cursor: crosshair; }
+#blood-canvas { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
 
+/* Overlays */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .hidden { display: none !important; }
 .glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; width: 500px; text-align: center; }
-#interaction-layer { position: absolute; inset: 0; z-index: 400; cursor: crosshair; }
-#blood-canvas { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+.augment-btn { background: var(--slate); border: 2px solid var(--amber); padding: 20px; text-align: left; cursor: pointer; pointer-events: auto; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; margin-top: 10px; }
+.augment-btn:hover { background: var(--amber); color: #000; }
+
+#time-status {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: 1.2rem; font-weight: 900;
+    letter-spacing: 4px; color: var(--amber); opacity: 0.5; z-index: 300;
+    pointer-events: none;
+}
+.time-frozen { text-shadow: 0 0 10px var(--amber-glow); }
+.time-active { opacity: 1 !important; color: #fff; }

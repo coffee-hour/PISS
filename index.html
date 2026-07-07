@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Perfected (v3.3.0)</title>
+    <title>Sovereign: Invincible-Hot (v4.0.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,6 @@
     <canvas id="blood-canvas"></canvas>
     
     <div id="game-container">
-        <!-- Persistent Top Stat Bar -->
         <header id="top-stat-bar">
             <div class="stat-group condition">
                 <label>COND:</label>
@@ -26,26 +25,15 @@
                 <span id="run-tier" class="stat-value">1</span>
             </div>
             <div class="stat-divider"></div>
-            <div class="stat-group momentum">
-                <label>MOMENTUM:</label>
-                <div class="mini-bar-container"><div id="momentum-fill" class="mini-bar-fill"></div></div>
-            </div>
-            <div class="stat-divider"></div>
             <div class="stat-group kills">
                 <label>KILLS:</label>
                 <span id="enemies-defeated" class="stat-value">0</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-group modifier">
-                <label>BUFF:</label>
-                <span id="run-modifier" class="stat-value">STR +0%</span>
             </div>
         </header>
 
         <div id="arena">
             <div id="enemy-target-container">
                 <div id="enemy-character" class="enemy-character">
-                    <!-- v3.3.0 Stick-Man Sprite Model -->
                     <div id="enemy-visual" class="enemy-sprite">
                         <div class="stick-head"></div>
                         <div class="stick-body"></div>
@@ -70,27 +58,24 @@
             </div>
         </div>
 
-        <div id="combat-log-overlay">VILTRUMITE LOGIC INITIALIZED...</div>
+        <div id="time-status" class="time-frozen">TIME FROZEN</div>
         <div id="interaction-layer"></div>
 
         <div id="choice-overlay" class="overlay hidden">
-            <div class="choice-content glass-panel">
-                <h2 class="amber-header">VICTORY SECURED</h2>
-                <p class="choice-subtitle">SELECT AN IMPERIAL AUGMENTATION</p>
-                <div id="choice-list" class="choice-list"></div>
+            <div class="glass-panel">
+                <h2>AUGMENTATION READY</h2>
+                <div id="choice-list"></div>
             </div>
         </div>
 
         <div id="death-overlay" class="overlay hidden">
-            <div class="death-content">
-                <h1 class="glitch-text">CONDITION LOST</h1>
-                <p>THE EMPIRE FALLS WITH YOU.</p>
-                <button class="retry-btn" onclick="Fighter.resetRun()">START NEW CONQUEST</button>
+            <div class="glass-panel">
+                <h1>RUN TERMINATED</h1>
+                <button class="retry-btn" onclick="Fighter.resetRun()">RETRY CONQUEST</button>
             </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
 </body>
 </html>

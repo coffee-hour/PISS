@@ -1,24 +1,17 @@
 /**
- * Sovereign v3.3.1: Attack & Offset Fix
- * Fixed click listener registration and stick-figure leg alignment.
+ * Sovereign v4.0.0: Invincible-Hot
+ * Time-dilation engine: Time moves only when you move or strike.
  */
 
 const Fighter = (() => {
     let state = {
-        player: { 
-            hp: 100, maxHp: 100, momentum: 0, 
-            strength: 1, speed: 1, luck: 0.1
-        },
-        run: {
-            kills: 0,
-            tier: 1,
-            active: true,
-            choicesPending: false
-        },
+        player: { hp: 100, maxHp: 100, strength: 1, speed: 1, luck: 0.1 },
+        run: { kills: 0, tier: 1, active: true, choicesPending: false },
         currentTarget: null,
         isAttacking: false,
-        lastAttackTime: Date.now(),
-        lastArmUsed: 'right'
+        lastArmUsed: 'right',
+        timeDilation: 0, // 0 to 1
+        lastMouseMove: Date.now()
     };
 
     const roster = [
@@ -38,8 +31,7 @@ const Fighter = (() => {
     const augmentations = [
         { id: 'str', name: 'Pure Strength', desc: 'Punch Output +50%', apply: () => state.player.strength += 0.5 },
         { id: 'hp', name: 'Imperial Vitality', desc: 'Full Heal & +50 Max HP', apply: () => { state.player.maxHp += 50; state.player.hp = state.player.maxHp; } },
-        { id: 'spd', name: 'Viltrumite Speed', desc: 'Enemy Attack Delay +15%', apply: () => state.player.speed *= 1.15 },
-        { id: 'luck', name: 'Combat Precision', desc: 'Critical Strike Chance +10%', apply: () => state.player.luck += 0.1 }
+        { id: 'spd', name: 'Viltrumite Reflex', desc: 'Time Flow Dilation +20%', apply: () => state.player.speed *= 1.2 }
     ];
 
     let bloodParticles = [];
@@ -52,26 +44,29 @@ const Fighter = (() => {
         setupListeners();
         spawnNewEnemy();
         gameLoop();
-        console.log("Sovereign v3.3.1: Attack & Offset Repair Live.");
+        console.log("v4.0.0: TIME ONLY MOVES WHEN YOU MOVE.");
     };
 
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
 
     const setupListeners = () => {
-        // REPAIR: Ensuring interaction layer catch all clicks globally for centering consistency
         const layer = document.getElementById('interaction-layer');
-        if (layer) {
-            layer.addEventListener('mousedown', (e) => {
-                if (!state.run.active || state.run.choicesPending) return;
-                const side = state.lastArmUsed === 'left' ? 'right' : 'left';
-                executePunch(side, e.clientX, e.clientY);
-            });
-        }
+        
+        layer.addEventListener('mousedown', (e) => {
+            if (!state.run.active || state.run.choicesPending) return;
+            state.timeDilation = 1.0; // Instant time burst on strike
+            const side = state.lastArmUsed === 'left' ? 'right' : 'left';
+            executePunch(side, e.clientX, e.clientY);
+        });
 
         document.addEventListener('mousemove', (e) => {
             if (state.run.choicesPending) return;
-            const x = (e.clientX / window.innerWidth - 0.5) * 8;
-            const y = (e.clientY / window.innerHeight - 0.5) * 8;
+            state.timeDilation = 1.0;
+            state.lastMouseMove = Date.now();
+            
+            // Parallax
+            const x = (e.clientX / window.innerWidth - 0.5) * 15;
+            const y = (e.clientY / window.innerHeight - 0.5) * 15;
             const arena = document.getElementById('arena');
             const arms = document.getElementById('arms-container');
             if (arena) arena.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
@@ -81,24 +76,20 @@ const Fighter = (() => {
 
     const spawnNewEnemy = () => {
         const tier = state.run.tier;
-        let minWeight = Math.max(1, Math.floor(tier / 2));
-        let maxWeight = Math.min(10, tier + 1);
-        
-        const pool = roster.filter(r => r.weight >= minWeight && r.weight <= maxWeight);
+        const pool = roster.filter(r => r.weight >= Math.max(1, tier-2) && r.weight <= tier + 1);
         const base = pool[Math.floor(Math.random() * pool.length)] || roster[0];
-        const scaling = 1 + (state.run.kills * 0.12);
         
         state.currentTarget = {
             ...base,
-            hp: Math.floor(base.hp * scaling),
-            maxHp: Math.floor(base.hp * scaling),
-            attackRate: 3500 / (1 + (tier * 0.1)) / state.player.speed
+            hp: Math.floor(base.hp * (1 + state.run.kills * 0.1)),
+            maxHp: Math.floor(base.hp * (1 + state.run.kills * 0.1)),
+            attackProgress: 0
         };
 
         const char = document.getElementById('enemy-character');
         const nameLabel = document.getElementById('enemy-name');
-        if (char) { char.className = `enemy-character ${state.currentTarget.class}`; }
-        if (nameLabel) nameLabel.innerText = `TARGET: ${state.currentTarget.name}`;
+        if (char) char.className = `enemy-character ${state.currentTarget.class}`;
+        if (nameLabel) nameLabel.innerText = state.currentTarget.name;
         
         renderUI();
     };
@@ -108,32 +99,31 @@ const Fighter = (() => {
         state.isAttacking = true;
         state.lastArmUsed = side;
         const arm = document.querySelector(`.arm-${side}`);
-        if (arm) arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.15)`;
+        if (arm) arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.1)`;
         
         setTimeout(() => {
             handleImpact(x, y);
             setTimeout(() => {
                 if (arm) arm.style.transform = `translateY(150px) rotate(${side === 'left' ? 15 : -15}deg)`;
                 state.isAttacking = false;
-            }, 60);
-        }, 80);
+            }, 50);
+        }, 50);
     };
 
     const handleImpact = (x, y) => {
         const enemy = state.currentTarget;
         const enemyEl = document.getElementById('enemy-character');
-        triggerShake(15);
         
-        const bloodVolume = 10 + Math.floor((1 - (enemy.hp / enemy.maxHp)) * 50);
+        const bloodVolume = 5 + Math.floor((1 - (enemy.hp / enemy.maxHp)) * 40);
         spawnBlood(x, y, bloodVolume);
 
-        if (enemyEl) { enemyEl.classList.remove('hit-active'); void enemyEl.offsetWidth; enemyEl.classList.add('hit-active'); }
+        if (enemyEl) { 
+            enemyEl.classList.remove('hit-active'); 
+            void enemyEl.offsetWidth; 
+            enemyEl.classList.add('hit-active'); 
+        }
         
-        let dmg = (10 + Math.floor(state.player.momentum / 5)) * state.player.strength;
-        if (Math.random() < state.player.luck) { dmg *= 3; log("CRITICAL BLOW!"); }
-        
-        enemy.hp -= dmg;
-        state.player.momentum = Math.min(100, state.player.momentum + 6);
+        enemy.hp -= 15 * state.player.strength;
         if (enemy.hp <= 0) defeatEnemy();
         renderUI();
     };
@@ -141,18 +131,18 @@ const Fighter = (() => {
     const spawnBlood = (x, y, volume) => {
         for (let i = 0; i < volume; i++) {
             bloodParticles.push({
-                x, y, vx: (Math.random() - 0.5) * 35, vy: (Math.random() - 0.5) * 35,
-                life: 1.0, size: Math.random() * 8 + 2
+                x, y, vx: (Math.random() - 0.5) * 40, vy: (Math.random() - 0.5) * 40,
+                life: 1.0, size: Math.random() * 10 + 2
             });
         }
     };
 
-    const updateParticles = () => {
+    const updateParticles = (dt) => {
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         bloodParticles = bloodParticles.filter(p => p.life > 0);
         bloodParticles.forEach(p => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.8; p.life -= 0.035;
+            p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.8 * dt; p.life -= 0.02 * dt;
             ctx.fillStyle = `rgba(185, 28, 28, ${p.life})`;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
         });
@@ -161,7 +151,6 @@ const Fighter = (() => {
     const defeatEnemy = () => {
         state.run.kills++;
         state.run.tier = Math.floor(state.run.kills / 2) + 1;
-        state.player.momentum = Math.min(100, state.player.momentum + 50);
         if (state.run.kills % 2 === 0) presentChoices();
         else spawnNewEnemy();
     };
@@ -176,10 +165,8 @@ const Fighter = (() => {
         if (list) {
             list.innerHTML = shuffled.map(a => `
                 <div class="augment-btn" onclick="Fighter.applyAugment('${a.id}')">
-                    <div class="augment-info">
-                        <b>${a.name}</b>
-                        <span>${a.desc}</span>
-                    </div>
+                    <b>${a.name}</b>
+                    <span>${a.desc}</span>
                 </div>
             `).join('');
         }
@@ -189,61 +176,54 @@ const Fighter = (() => {
         const aug = augmentations.find(a => a.id === id);
         if (aug) aug.apply();
         state.run.choicesPending = false;
-        const overlay = document.getElementById('choice-overlay');
-        if (overlay) overlay.classList.add('hidden');
+        document.getElementById('choice-overlay').classList.add('hidden');
         spawnNewEnemy();
     };
 
-    const enemyAttack = () => {
-        if (!state.run.active || state.run.choicesPending) return;
-        const enemyEl = document.getElementById('enemy-character');
-        if (enemyEl) enemyEl.classList.add('enemy-attack');
-        setTimeout(() => {
-            if (enemyEl) enemyEl.classList.remove('enemy-attack');
-            state.player.hp -= state.currentTarget.power * (1 + state.run.tier * 0.15);
-            triggerShake(40);
-            if (state.player.hp <= 0) die();
-            renderUI();
-        }, 200);
+    const gameLoop = () => {
+        const now = Date.now();
+        
+        // Time Dilation Logic
+        if (now - state.lastMouseMove > 100 && !state.isAttacking) {
+            state.timeDilation = Math.max(0, state.timeDilation - 0.05);
+        }
+
+        const dt = state.timeDilation;
+        const timeStatus = document.getElementById('time-status');
+        if (timeStatus) {
+            timeStatus.innerText = dt > 0.1 ? "TIME MOVING" : "TIME FROZEN";
+            timeStatus.className = dt > 0.1 ? "time-active" : "time-frozen";
+        }
+
+        updateParticles(dt);
+
+        if (state.run.active && !state.run.choicesPending && state.currentTarget) {
+            // Enemy Attack Progress moves with Time
+            state.currentTarget.attackProgress += (0.01 * state.run.tier * dt);
+            if (state.currentTarget.attackProgress >= 1.0) {
+                state.player.hp -= state.currentTarget.power;
+                state.currentTarget.attackProgress = 0;
+                if (state.player.hp <= 0) die();
+            }
+        }
+
+        renderUI();
+        requestAnimationFrame(gameLoop);
     };
 
-    const die = () => { state.run.active = false; const d = document.getElementById('death-overlay'); if (d) d.classList.remove('hidden'); };
+    const die = () => { state.run.active = false; document.getElementById('death-overlay').classList.remove('hidden'); };
     const resetRun = () => { location.reload(); };
 
     const renderUI = () => {
         const php = document.getElementById('player-hp');
         const ehp = document.getElementById('enemy-hp');
-        const d = document.getElementById('enemies-defeated');
-        const m = document.getElementById('momentum-fill');
-        const t = document.getElementById('run-tier');
-        const mod = document.getElementById('run-modifier');
-
         if (php) php.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
         if (ehp && state.currentTarget) ehp.style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
-        if (d) d.innerText = state.run.kills;
-        if (m) m.style.width = `${state.player.momentum}%`;
-        if (t) t.innerText = state.run.tier;
-        if (mod) mod.innerText = `STR +${((state.player.strength - 1) * 100).toFixed(0)}%`;
-    };
-
-    const triggerShake = (i) => {
-        const c = document.getElementById('game-container');
-        if (c) c.style.transform = `translate(${(Math.random()-0.5)*i}px, ${(Math.random()-0.5)*i}px)`;
-        setTimeout(() => { if (c) c.style.transform = 'translate(0,0)'; }, 50);
-    };
-
-    const log = (msg) => { const l = document.getElementById('combat-log-overlay'); if (l) l.innerText = msg; };
-
-    const gameLoop = () => {
-        updateParticles();
-        if (state.run.active && !state.run.choicesPending) {
-            if (!state.isAttacking && state.player.momentum > 0) state.player.momentum -= 0.15;
-            const now = Date.now();
-            if (state.currentTarget && now - state.lastAttackTime >= state.currentTarget.attackRate) {
-                enemyAttack(); state.lastAttackTime = now;
-            }
-        }
-        requestAnimationFrame(gameLoop);
+        
+        const kills = document.getElementById('enemies-defeated');
+        const tier = document.getElementById('run-tier');
+        if (kills) kills.innerText = state.run.kills;
+        if (tier) tier.innerText = state.run.tier;
     };
 
     return { init, applyAugment, resetRun };
