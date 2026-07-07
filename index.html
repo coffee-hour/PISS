@@ -3,103 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Viltrumite Combat (v2.7.2)</title>
+    <title>Sovereign: First-Person Fighter (v3.0.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="sovereign-clicker">
-    <!-- Fist Cursor Container -->
-    <div id="custom-cursor">
-        <div class="fist-wrapper">
-            <i data-lucide="fist"></i>
+<body>
+    <!-- The Arena Viewport -->
+    <div id="game-container">
+        <!-- World Layer -->
+        <div id="arena">
+            <!-- Perspective-warped background -->
+            <div id="environment" class="skyline"></div>
+            
+            <!-- Enemy Rendering Layer -->
+            <div id="enemy-target-container">
+                <div id="enemy-character" class="fighter-idle">
+                    <div class="enemy-sprite"></div>
+                    <div class="enemy-aura"></div>
+                </div>
+            </div>
+
+            <!-- Viewport Effects (Blood, Cracks, Flashes) -->
+            <div id="fx-layer"></div>
         </div>
+
+        <!-- First-Person HUD -->
+        <div id="hud">
+            <div class="hud-top">
+                <div class="hud-box condition">
+                    <label>VILTRUMITE CONDITION</label>
+                    <div class="bar-container">
+                        <div id="player-hp" class="bar-fill"></div>
+                    </div>
+                </div>
+                <div class="hud-box threat">
+                    <label id="enemy-name">TARGET: ???</label>
+                    <div class="bar-container">
+                        <div id="enemy-hp" class="bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-bottom">
+                <div class="momentum-gauge">
+                    <div id="momentum-fill"></div>
+                    <div id="momentum-text">MOMENTUM x0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- First-Person Arms/Fists -->
+        <div id="arms-container">
+            <div class="arm arm-left"></div>
+            <div class="arm arm-right"></div>
+        </div>
+
+        <!-- Interaction Layer -->
+        <div id="interaction-layer"></div>
     </div>
 
-    <!-- Screen Flash -->
-    <div id="white-flash"></div>
-
-    <div id="app" class="shake-layer">
-        <div id="fury-overlay"></div>
-
-        <main class="throne-room">
-            <div class="combat-hud">
-                <div class="treasury-display">
-                    <span class="label">Viltrumite Energy</span>
-                    <div class="value-container">
-                        <i data-lucide="zap" class="icon-gold"></i>
-                        <span id="treasury-count">0</span>
-                    </div>
-                    <span id="passive-rate" class="rate-text">+0/s</span>
-                </div>
-
-                <div class="player-hud">
-                    <div class="hud-label">HEALTH:</div>
-                    <div class="health-bar-container player-health">
-                        <div id="player-health-fill" class="health-fill"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="war-banner-container">
-                <div class="boss-display">
-                    <div class="threat-label-row">
-                        <div class="viltrumite-v">V</div>
-                        <div id="boss-name" class="boss-name">SEQUID SWARM</div>
-                    </div>
-                    <div class="health-bar-container threat-health">
-                        <div id="boss-health-fill" class="health-fill"></div>
-                    </div>
-                </div>
-
-                <button id="click-banner" class="banner-btn" onmousedown="Sovereign.handleInteraction(event)">
-                    <div class="enemy-model-container">
-                        <div id="enemy-sprite" class="enemy-sprite">
-                            <div id="enemy-visual" class="enemy-visual-geometric"></div>
-                            <div class="enemy-aura"></div>
-                        </div>
-                    </div>
-                </button>
-
-                <div class="combo-gauge-container">
-                    <div class="combo-label">Combat Momentum</div>
-                    <div class="combo-meter">
-                        <div id="combo-fill" class="combo-fill"></div>
-                    </div>
-                    <div id="combo-text" class="combo-text">STRIKE x0</div>
-                </div>
-            </div>
-
-            <div class="dispatch-footer glass-panel">
-                <div class="log-container" id="log-entries"></div>
-            </div>
-        </main>
-
-        <aside class="sidebar-terminal glass-panel">
-            <nav class="terminal-nav">
-                <button class="tab-btn active" onclick="Sovereign.switchTab('garrison')">Garrison</button>
-                <button class="tab-btn" onclick="Sovereign.switchTab('attributes')">Attributes</button>
-            </nav>
-
-            <div id="shop-garrison" class="shop-panel active">
-                <div class="shop-header">
-                    <h2><i data-lucide="swords"></i> Viltrumite Garrison</h2>
-                </div>
-                <div class="upgrade-list" id="upgrade-container"></div>
-            </div>
-
-            <div id="shop-attributes" class="shop-panel">
-                <div class="shop-header">
-                    <h2><i data-lucide="activity"></i> Viltrumite Attributes</h2>
-                </div>
-                <div class="upgrade-list" id="advancement-container"></div>
-            </div>
-        </aside>
-
-        <canvas id="particle-canvas"></canvas>
-        <div id="text-particle-container"></div>
-    </div>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
 </body>
