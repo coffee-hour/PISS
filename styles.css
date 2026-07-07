@@ -26,81 +26,117 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
 .mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
 
-/* v3.2.6: Unique Character Sprite Definitions */
+/* v3.2.7: Sprite Audit & Fixes */
 .enemy-character { position: relative; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .enemy-sprite { position: relative; width: 280px; height: 460px; display: flex; align-items: center; justify-content: center; }
 .layer { position: absolute; transition: all 0.3s; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); }
 
-/* Robot: Distinctive metallic green, blocky but segmented */
-.robot .layer-body { 
-    width: 200px; height: 300px; background: linear-gradient(135deg, #388e3c, #1b5e20);
-    border: 4px solid #000; border-radius: 15px; 
+/* --- TIER 1: EARLY RUN --- */
+
+/* Sequid: Pink body with tentacles (Fixing visibility/anchor) */
+.sequid .layer-body { 
+    width: 120px; height: 140px; background: linear-gradient(135deg, #ff80ab, #f06292); 
+    border-radius: 50%; z-index: 5;
 }
-.robot .layer-detail { 
-    width: 140px; height: 100px; top: 10%; background: rgba(255,255,255,0.1); 
-    clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%); 
+.sequid .tentacle { 
+    position: absolute; width: 12px; height: 100px; background: #f06292; 
+    border-radius: 6px; top: 50%; transform-origin: top center; 
+    animation: tentacleWave 2s infinite ease-in-out; z-index: 4;
 }
-.robot .layer-eyes { 
-    width: 110px; height: 14px; background: #fff; box-shadow: 0 0 15px #a5d6a7; top: 25%; z-index: 10;
+.sequid .t1 { left: 10px; --rot: -30deg; }
+.sequid .t2 { left: 40px; --rot: -10deg; }
+.sequid .t3 { right: 40px; --rot: 10deg; }
+.sequid .t4 { right: 10px; --rot: 30deg; }
+
+/* Flaxan Scout: Sharp orange tech design */
+.flaxan .layer-body { 
+    width: 180px; height: 320px; background: linear-gradient(135deg, #fb8c00, #e65100);
+    clip-path: polygon(50% 0, 100% 20%, 100% 100%, 0 100%, 0 20%); border-radius: 5px;
+}
+.flaxan .layer-detail { 
+    width: 100%; height: 20px; background: rgba(0,0,0,0.2); top: 30%; 
+    box-shadow: 0 40px 0 rgba(0,0,0,0.1), 0 80px 0 rgba(0,0,0,0.1);
 }
 
-/* Rex Splode: Orange/Yellow explosive gear aesthetic */
-.rexsplode .layer-body { 
-    width: 180px; height: 380px; background: linear-gradient(to bottom, #f57c00, #bf360c);
-    border: 4px solid #000; border-radius: 30px 30px 0 0;
-}
-.rexsplode .layer-detail {
-    width: 100%; height: 120px; top: 15%; background: #ffeb3b; 
-    clip-path: polygon(0 20%, 100% 20%, 100% 40%, 0 40%, 0 60%, 100% 60%); opacity: 0.8;
-}
-.rexsplode .layer-eyes {
-    width: 80px; height: 20px; background: #000; top: 22%; border-radius: 10px;
-}
-
-/* Dupli-Kate: Blue/White patterned costume */
+/* Dupli-Kate: Blue/White patterned */
 .duplikate .layer-body { 
     width: 170px; height: 380px; background: linear-gradient(135deg, #1976d2, #0d47a1);
-    border: 4px solid #000; border-radius: 50% 50% 0 0 / 20% 20% 0 0;
+    border-radius: 40% 40% 0 0;
 }
 .duplikate .layer-detail {
-    width: 100%; height: 100%; background: #fff; 
-    clip-path: polygon(45% 0, 55% 0, 55% 100%, 45% 100%, 0 55%, 0 45%, 100% 45%, 100% 55%);
-    opacity: 0.9;
+    width: 100%; height: 100%; background: #fff; opacity: 0.8;
+    clip-path: polygon(48% 0, 52% 0, 52% 100%, 48% 100%, 0 52%, 0 48%, 100% 48%, 100% 52%);
 }
 
-/* Atom Eve: Pink energetic theme with symbol */
+/* --- TIER 2: MID RUN --- */
+
+/* Robot: Metallic green blocky */
+.robot .layer-body { 
+    width: 200px; height: 300px; background: linear-gradient(135deg, #43a047, #1b5e20);
+    border-radius: 10px; border: 4px solid #000;
+}
+.robot .layer-eyes { 
+    width: 100px; height: 10px; background: #fff; box-shadow: 0 0 15px #c8e6c9; top: 20%;
+}
+
+/* Rex Splode: Orange/Yellow explosive */
+.rexsplode .layer-body { 
+    width: 180px; height: 380px; background: linear-gradient(135deg, #ff9800, #e65100);
+    border-radius: 25px 25px 0 0;
+}
+.rexsplode .layer-detail {
+    width: 100%; height: 100px; background: #ffeb3b; top: 15%; opacity: 0.7;
+    clip-path: polygon(0 20%, 100% 20%, 100% 30%, 0 30%, 0 50%, 100% 50%, 100% 60%, 0 60%);
+}
+
+/* Atom Eve: Pink energetic with symbol */
 .atomeve .layer-body { 
-    width: 180px; height: 380px; background: linear-gradient(to bottom, #f06292, #ad1457);
-    border: 4px solid #000; border-radius: 40px;
+    width: 180px; height: 380px; background: linear-gradient(135deg, #f06292, #880e4f);
+    border-radius: 50px;
 }
 .atomeve .layer-detail {
-    width: 100px; height: 100px; background: #fff; border-radius: 50%;
-    border: 8px solid #f06292; display: flex; align-items: center; justify-content: center;
+    width: 80px; height: 80px; background: #fff; border-radius: 50%;
+    border: 6px solid #f06292; display: flex; align-items: center; justify-content: center;
 }
-.atomeve .layer-detail::after {
-    content: 'E'; font-family: var(--font-mono); font-weight: 900; color: #f06292; font-size: 2rem;
-}
+.atomeve .layer-detail::after { content: 'E'; font-weight: 900; color: #f06292; font-size: 1.5rem; }
 
-/* Shrinking Rae: Minimalist gray/red tactical suit */
-.shrinkingrae .layer-body {
-    width: 140px; height: 300px; background: linear-gradient(135deg, #424242, #212121);
-    border: 3px solid #f44336; border-radius: 20px;
-}
-.shrinkingrae .layer-eyes {
-    width: 60px; height: 6px; background: #f44336; top: 20%; box-shadow: 0 0 10px #ef5350;
-}
-
-/* Monster Girl: Large green ogre-like silhouette */
+/* Monster Girl: Large green silhouette */
 .monstergirl .layer-body {
-    width: 260px; height: 420px; background: linear-gradient(to bottom, #4caf50, #1b5e20);
-    border: 5px solid #000; clip-path: polygon(15% 0, 85% 0, 100% 20%, 100% 100%, 0 100%, 0 20%);
-}
-.monstergirl .layer-detail {
-    width: 100%; height: 80px; top: 10%; background: #81c784;
-    clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+    width: 260px; height: 420px; background: linear-gradient(135deg, #4caf50, #1b5e20);
+    clip-path: polygon(20% 0, 80% 0, 100% 30%, 100% 100%, 0 100%, 0 30%);
 }
 
-/* Common Overlay & FX */
+/* --- TIER 3: ELITE / BOSS --- */
+
+/* Battle Beast: Fierce dark shape */
+.battlebeast .layer-body {
+    width: 260px; height: 440px; background: linear-gradient(135deg, #455a64, #263238);
+    clip-path: polygon(50% 0, 100% 15%, 100% 100%, 0 100%, 0 15%);
+}
+
+/* Omni-Man: Red/White imperial */
+.omniman .layer-body { 
+    width: 220px; height: 420px; background: linear-gradient(135deg, #ffffff, #e2e8f0);
+    border-radius: 20px 20px 0 0; border: 6px solid #b91c1c;
+}
+.omniman .layer-accessory { 
+    width: 120px; height: 30px; background: #1a1a1a; top: 32%;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 60%, 50% 100%, 20% 60%, 0% 100%);
+}
+
+/* Thragg: Heavy metallic red */
+.thragg .layer-body { 
+    width: 300px; height: 460px; background: linear-gradient(135deg, #b91c1c, #450a0a);
+    border: 8px solid #fff; border-radius: 5px;
+}
+
+/* Common Animations */
+@keyframes tentacleWave { 
+    0%, 100% { transform: scaleY(1) rotate(var(--rot)); } 
+    50% { transform: scaleY(1.2) rotate(calc(var(--rot) + 10deg)); } 
+}
+
+/* Arena & Combat */
 #arena { position: absolute; inset: 0; transform-style: preserve-3d; background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%); }
 #environment { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px); background-size: 100px 100px; transform: rotateX(60deg); }
 #enemy-target-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center; }
