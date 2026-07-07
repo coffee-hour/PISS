@@ -1,6 +1,6 @@
 /**
- * Sovereign: Imperial Clicker (v2.1.0 - Impact Update)
- * Special Tactile Mechanics & Procedural Audio
+ * Sovereign: Imperial Clicker (v2.2.0 - Fury Update)
+ * Combo Meter & Imperial Fury Mode
  */
 
 const Sovereign = (() => {
@@ -12,7 +12,12 @@ const Sovereign = (() => {
             trebuchet: 0, commander: 0, arsenal: 0, automata: 0
         },
         totalGoldEarned: 0,
-        lastUpdate: Date.now()
+        lastUpdate: Date.now(),
+        // Combo System
+        comboValue: 0, // 0 to 10
+        lastClickTime: 0,
+        furyActive: false,
+        furyTimer: 0
     };
 
     const config = {
@@ -34,23 +39,23 @@ const Sovereign = (() => {
         ]
     };
 
-    // --- Audio Synthesis (Web Audio API) ---
+    // --- Audio Synthesis ---
     let audioCtx = null;
-    const playImpactSound = () => {
+    const playImpactSound = (fury = false) => {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         const filter = audioCtx.createBiquadFilter();
 
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.type = fury ? 'square' : 'sawtooth';
+        osc.frequency.setValueAtTime(fury ? 200 : 150, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
 
         filter.type = 'highpass';
-        filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+        filter.frequency.setValueAtTime(fury ? 500 : 1000, audioCtx.currentTime);
 
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.setValueAtTime(fury ? 0.4 : 0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
 
         osc.connect(filter);
@@ -61,7 +66,7 @@ const Sovereign = (() => {
         osc.stop(audioCtx.currentTime + 0.1);
     };
 
-    // --- Particle System (Canvas) ---
+    // --- Particle System ---
     let canvas, ctx, particles = [];
     const initParticles = () => {
         canvas = document.getElementById('particle-canvas');
@@ -76,15 +81,16 @@ const Sovereign = (() => {
         canvas.height = window.innerHeight;
     };
 
-    const spawnSparks = (x, y) => {
-        for (let i = 0; i < 8; i++) {
+    const spawnSparks = (x, y, multiplier = 1) => {
+        const count = 8 * multiplier;
+        for (let i = 0; i < count; i++) {
             particles.push({
                 x, y,
-                vx: (Math.random() - 0.5) * 15,
-                vy: (Math.random() - 0.5) * 15 - 5,
+                vx: (Math.random() - 0.5) * (15 + multiplier * 5),
+                vy: (Math.random() - 0.5) * (15 + multiplier * 5) - 5,
                 life: 1.0,
                 color: Math.random() > 0.5 ? '#f59e0b' : '#fbbf24',
-                size: Math.random() * 3 + 1
+                size: Math.random() * (3 + multiplier) + 1
             });
         }
     };
@@ -95,7 +101,7 @@ const Sovereign = (() => {
             const p = particles[i];
             p.x += p.vx;
             p.y += p.vy;
-            p.vy += 0.4; // Gravity
+            p.vy += 0.4;
             p.life -= 0.02;
             
             if (p.life <= 0) {
@@ -118,7 +124,7 @@ const Sovereign = (() => {
         render();
         startLoop();
         updateMilestoneIcon();
-        notify("Throne Secured. Fund the machine.");
+        notify("Imperial Fury Online. Strike with haste.");
     };
 
     const startLoop = () => {
@@ -132,9 +138,21 @@ const Sovereign = (() => {
     };
 
     const updateState = (delta) => {
+        // Passive Income
         const passiveRate = calculatePassiveRate();
         state.treasury += passiveRate * delta;
         state.totalGoldEarned += passiveRate * delta;
+
+        // Combo Decay
+        if (!state.furyActive) {
+            state.comboValue = Math.max(0, state.comboValue - 1.5 * delta);
+        } else {
+            state.furyTimer -= delta;
+            if (state.furyTimer <= 0) {
+                deactivateFury();
+            }
+        }
+
         renderUI();
     };
 
@@ -143,27 +161,51 @@ const Sovereign = (() => {
     };
 
     const calculateClickPower = () => {
-        return 1 + config.upgrades.reduce((acc, u) => acc + (state.upgrades[u.id] * u.click), 0);
+        const base = 1 + config.upgrades.reduce((acc, u) => acc + (state.upgrades[u.id] * u.click), 0);
+        return state.furyActive ? base * 2 : base;
     };
 
     const handleInteraction = (e) => {
+        const now = Date.now();
         const power = calculateClickPower();
         state.treasury += power;
         state.totalGoldEarned += power;
-        
+
+        // Combo Logic
+        if (!state.furyActive) {
+            state.comboValue = Math.min(10, state.comboValue + 0.4);
+            if (state.comboValue >= 10) {
+                activateFury();
+            }
+        }
+
         // Impact Visuals
         triggerRecoil();
-        spawnSparks(e.clientX, e.clientY);
+        spawnSparks(e.clientX, e.clientY, state.furyActive ? 5 : 1);
         spawnTextParticle(`+${power}`, e.clientX, e.clientY);
-        playImpactSound();
+        playImpactSound(state.furyActive);
         updateMilestoneIcon();
         renderUI();
+    };
+
+    const activateFury = () => {
+        state.furyActive = true;
+        state.furyTimer = 5;
+        document.body.classList.add('fury-active');
+        notify("IMPERIAL FURY ACTIVATED: 2X CLICK POWER!");
+    };
+
+    const deactivateFury = () => {
+        state.furyActive = false;
+        state.comboValue = 0;
+        document.body.classList.remove('fury-active');
+        notify("Fury exhausted. Regrouping.");
     };
 
     const triggerRecoil = () => {
         const app = document.getElementById('app');
         app.classList.remove('recoil');
-        void app.offsetWidth; // Force reflow
+        void app.offsetWidth;
         app.classList.add('recoil');
     };
 
@@ -171,6 +213,7 @@ const Sovereign = (() => {
         const container = document.getElementById('text-particle-container');
         const p = document.createElement('div');
         p.className = 'text-particle';
+        if (state.furyActive) p.style.color = '#fff';
         p.innerText = text;
         p.style.left = `${x}px`;
         p.style.top = `${y}px`;
@@ -201,7 +244,7 @@ const Sovereign = (() => {
         if (state.treasury >= cost) {
             state.treasury -= cost;
             state.upgrades[id]++;
-            notify(`Reinforcement: ${u.name} deployed.`);
+            notify(`Logistics: ${u.name} reinforced.`);
             playImpactSound();
             render();
         }
@@ -219,12 +262,10 @@ const Sovereign = (() => {
         config.upgrades.forEach(u => {
             const cost = calculateCost(u);
             const count = state.upgrades[u.id];
-            
             const card = document.createElement('div');
             card.className = `upgrade-card ${state.treasury < cost ? 'disabled' : ''}`;
             card.id = `upgrade-${u.id}`;
             card.onclick = () => buyUpgrade(u.id);
-            
             card.innerHTML = `
                 <div class="upgrade-icon"><i data-lucide="${u.icon}"></i></div>
                 <div class="upgrade-info">
@@ -240,12 +281,27 @@ const Sovereign = (() => {
     };
 
     const renderUI = () => {
+        // Treasury
         const countEl = document.getElementById('treasury-count');
         const rateEl = document.getElementById('passive-rate');
-        
         if (countEl) countEl.innerText = Math.floor(state.treasury).toLocaleString();
         if (rateEl) rateEl.innerText = `+${calculatePassiveRate().toFixed(1)}/s`;
         
+        // Combo Meter
+        const fillEl = document.getElementById('combo-fill');
+        const textEl = document.getElementById('combo-text');
+        if (fillEl) fillEl.style.width = `${state.comboValue * 10}%`;
+        if (textEl) {
+            if (state.furyActive) {
+                textEl.innerText = `FURY: ${state.furyTimer.toFixed(1)}s`;
+                textEl.style.color = '#fff';
+            } else {
+                textEl.innerText = `COMBO x${Math.floor(state.comboValue)}`;
+                textEl.style.color = 'var(--primary)';
+            }
+        }
+
+        // Shop state
         config.upgrades.forEach(u => {
             const card = document.getElementById(`upgrade-${u.id}`);
             if (card) {
@@ -265,13 +321,15 @@ const Sovereign = (() => {
         if (container.children.length > 5) container.lastChild.remove();
     };
 
-    const save = () => localStorage.setItem('sov_impact_v21', JSON.stringify(state));
+    const save = () => localStorage.setItem('sov_fury_v22', JSON.stringify(state));
     const load = () => {
-        const s = localStorage.getItem('sov_impact_v21');
+        const s = localStorage.getItem('sov_fury_v22');
         if (s) {
             try {
                 const p = JSON.parse(s);
                 state = { ...state, ...p, lastUpdate: Date.now() };
+                state.furyActive = false; // Reset fury on load
+                state.comboValue = 0;
             } catch(e) {}
         }
     };

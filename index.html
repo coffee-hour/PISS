@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Imperial Clicker (v2.1.0)</title>
+    <title>Sovereign: Imperial Clicker (v2.2.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -11,6 +11,9 @@
 </head>
 <body class="sovereign-clicker">
     <div id="app" class="shake-layer">
+        <!-- Fury Overlay -->
+        <div id="fury-overlay"></div>
+
         <!-- Main Clicker Section -->
         <main class="throne-room">
             <div class="imperial-header">
@@ -25,6 +28,15 @@
             </div>
 
             <div class="war-banner-container">
+                <!-- Combo Gauge -->
+                <div class="combo-gauge-container">
+                    <div class="combo-label">Imperial Fury</div>
+                    <div class="combo-meter">
+                        <div id="combo-fill" class="combo-fill"></div>
+                    </div>
+                    <div id="combo-text" class="combo-text">COMBO x0</div>
+                </div>
+
                 <button id="click-banner" class="banner-btn" onmousedown="Sovereign.handleInteraction(event)">
                     <div class="banner-graphic">
                         <div id="banner-icon-container">
