@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign 3D Expanded (v4.2.0)</title>
+    <title>Sovereign 3D Expanded (v4.2.1)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
             --crimson: #b91c1c;
             --obsidian: #050608;
             --slate: #0a0e17;
-            --glass: rgba(10, 14, 23, 0.95);
+            --glass: rgba(10, 14, 23, 0.98);
             --font-mono: 'JetBrains Mono', monospace;
         }
 
@@ -23,13 +23,16 @@
 
         canvas { display: block; }
 
-        #ui-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
+        #ui-overlay { 
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 100;
+        }
 
         #top-stat-bar {
             position: absolute; top: 0; left: 0; width: 100%; height: 60px;
             background: var(--glass); border-bottom: 1px solid var(--amber);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; font-family: var(--font-mono);
+            padding: 0 30px; font-family: var(--font-mono); pointer-events: auto;
         }
 
         .stat-group { display: flex; align-items: center; gap: 10px; }
@@ -41,7 +44,7 @@
             position: absolute; top: 80px; right: 20px;
             width: 200px; height: 200px;
             border: 2px solid var(--amber);
-            background: rgba(0,0,0,0.5);
+            background: rgba(10, 14, 23, 0.9);
         }
 
         #fists {
@@ -49,10 +52,10 @@
             display: flex; justify-content: space-between; padding: 0 10%;
         }
         .fist {
-            width: 250px; height: 100%;
-            background: linear-gradient(to top, #111, #333);
-            border: 4px solid #000; border-radius: 50px 50px 0 0;
-            transition: transform 0.1s;
+            width: 280px; height: 100%;
+            background: linear-gradient(to top, #050608, #1a1a1a);
+            border: 5px solid #000; border-radius: 60px 60px 0 0;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         #target-hud {
@@ -75,9 +78,9 @@
 
         #crosshair {
             position: absolute; top: 50%; left: 50%;
-            width: 12px; height: 12px;
+            width: 14px; height: 14px;
             border: 2px solid var(--amber); border-radius: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%); opacity: 0.7;
         }
     </style>
 </head>
@@ -92,7 +95,7 @@
                 <span class="stat-label">XP</span>
                 <div class="bar-container"><div id="xp-fill" class="bar-fill" style="background: #4caf50;"></div></div>
             </div>
-            <div style="display: flex; gap: 20px;">
+            <div style="display: flex; gap: 20px; font-size: 0.8rem;">
                 <div>TIER: <span id="run-tier">1</span></div>
                 <div>KILLS: <span id="enemies-defeated">0</span></div>
             </div>
@@ -101,14 +104,18 @@
         <canvas id="minimap" width="200" height="200"></canvas>
 
         <div id="skill-hub">
-            <div style="font-size: 0.7rem; color: var(--amber);">PTS: <span id="skill-points">0</span></div>
+            <div style="font-size: 0.7rem; color: var(--amber);">POINTS: <span id="skill-points">0</span></div>
             <button class="skill-btn" onclick="Fighter.upgrade('range')">EXTEND REACH</button>
-            <button class="skill-btn" onclick="Fighter.upgrade('speed')">REFLEX UPGRADE</button>
-            <div style="font-size: 0.5rem; margin-top: 10px; color: #666;">SPACE: SLOW TIME (SPEED MODE)<br>F: TOGGLE FLIGHT</div>
+            <button class="skill-btn" onclick="Fighter.upgrade('speed')">STRENGTH UPGRADE</button>
+            <div style="font-size: 0.5rem; margin-top: 10px; color: rgba(255,255,255,0.4);">
+                WASD: MOVE<br>
+                SPACE: SLOW TIME (SPEED)<br>
+                F: TOGGLE FLIGHT
+            </div>
         </div>
 
         <div id="target-hud">
-            <div id="enemy-name" class="target-label">SCANNING...</div>
+            <div id="enemy-name" class="target-label">READY...</div>
             <div class="bar-container" style="width: 250px;"><div id="enemy-hp" class="bar-fill" style="background: var(--crimson);"></div></div>
         </div>
 
