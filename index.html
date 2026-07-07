@@ -3,52 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chibi Idle Adventure</title>
+    <title>Chibi Empire: Smooth Conquest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div id="game-container">
-        <header>
-            <h1>Chibi Idle Adventure</h1>
-            <div id="currency-display">Hearts: <span id="hearts">0</span></div>
-        </header>
-        
-        <main>
-            <div id="chibi-character-section">
-                <div id="chibi-character" onclick="clickChibi()">
-                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Lucky" alt="Chibi">
-                </div>
-                <p>Click the Chibi!</p>
+<body class="dark-theme">
+    <div id="game-app">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="brand">
+                <div class="logo-icon"></div>
+                <span class="brand-name">Chibi Empire</span>
             </div>
+            <ul class="nav-links">
+                <li class="active" data-tab="civilization">Civ Center</li>
+                <li data-tab="military">Iron Barracks</li>
+                <li data-tab="campaign">Campaign Map</li>
+                <li data-tab="research">Cute Tech</li>
+                <li data-tab="prestige">Phoenix Rise</li>
+            </ul>
+            <div class="era-badge">
+                <span id="current-era">Chibi Tribe</span>
+            </div>
+        </nav>
 
-            <div id="upgrades-section">
-                <h2>Upgrades</h2>
-                <div class="upgrade" onclick="buyPet()">
-                    <span class="name">Chibi Pet</span>
-                    <span class="cost">Cost: <span id="pet-cost">10</span> Hearts</span>
-                    <span class="owned">Owned: <span id="pets-owned">0</span></span>
+        <!-- Main Content Area -->
+        <main class="content">
+            <!-- Global Resource Header -->
+            <header class="resource-bar">
+                <div class="res-item" title="Food">
+                    <span class="icon">🍎</span>
+                    <span id="res-food">0</span>
+                    <span class="rate" id="rate-food">+0/s</span>
                 </div>
-                <div class="upgrade" onclick="buyHouse()">
-                    <span class="name">Chibi House</span>
-                    <span class="cost">Cost: <span id="house-cost">100</span> Hearts</span>
-                    <span class="owned">Owned: <span id="houses-owned">0</span></span>
+                <div class="res-item" title="Gold">
+                    <span class="icon">🪙</span>
+                    <span id="res-gold">0</span>
+                    <span class="rate" id="rate-gold">+0/s</span>
                 </div>
-                <div class="upgrade" onclick="buyCastle()">
-                    <span class="name">Chibi Castle</span>
-                    <span class="cost">Cost: <span id="castle-cost">1000</span> Hearts</span>
-                    <span class="owned">Owned: <span id="castles-owned">0</span></span>
+                <div class="res-item" title="Materials">
+                    <span class="icon">⚒️</span>
+                    <span id="res-materials">0</span>
+                    <span class="rate" id="rate-materials">+0/s</span>
                 </div>
-            </div>
+                <div class="res-item" title="Recruits">
+                    <span class="icon">⚔️</span>
+                    <span id="res-recruits">0</span>
+                    <span class="rate" id="rate-recruits">+0/s</span>
+                </div>
+            </header>
+
+            <!-- Tab Content: Civilization -->
+            <section id="tab-civilization" class="tab-pane active">
+                <div class="pane-header">
+                    <h2>Civilization Hub</h2>
+                    <p>Build the foundation of your cute empire.</p>
+                </div>
+                <div class="grid-container">
+                    <div class="card build-card" onclick="game.build('farm')">
+                        <div class="card-icon">🧺</div>
+                        <div class="card-info">
+                            <h3>Chibi Farm</h3>
+                            <p>Produces Food.</p>
+                            <span class="cost" id="cost-farm">Food: 10</span>
+                        </div>
+                        <div class="count-badge" id="count-farm">0</div>
+                    </div>
+                    <div class="card build-card" onclick="game.build('market')">
+                        <div class="card-icon">⚖️</div>
+                        <div class="card-info">
+                            <h3>Tiny Market</h3>
+                            <p>Produces Gold.</p>
+                            <span class="cost" id="cost-market">Gold: 15</span>
+                        </div>
+                        <div class="count-badge" id="count-market">0</div>
+                    </div>
+                    <div class="card build-card" onclick="game.build('quarry')">
+                        <div class="card-icon">🪨</div>
+                        <div class="card-info">
+                            <h3>Pebble Quarry</h3>
+                            <p>Produces Materials.</p>
+                            <span class="cost" id="cost-quarry">Materials: 25</span>
+                        </div>
+                        <div class="count-badge" id="count-quarry">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Other tabs are dynamically handled/hidden -->
+            <section id="tab-military" class="tab-pane">
+                <div class="pane-header">
+                    <h2>Iron Barracks</h2>
+                    <p>Train your specialized military units.</p>
+                </div>
+                <div class="grid-container" id="unit-container">
+                    <!-- Units injected by JS -->
+                </div>
+            </section>
+
+            <section id="tab-campaign" class="tab-pane">
+                <div class="pane-header">
+                    <h2>Campaign Map</h2>
+                    <p>Conquer the world, one cute territory at a time.</p>
+                </div>
+                <div class="map-container" id="map-grid">
+                    <!-- Map territories -->
+                </div>
+            </section>
         </main>
-
-        <div id="stats">
-            <p>Hearts per second: <span id="hps">0</span></p>
-        </div>
-
-        <footer>
-            <p>Built for coffee-hour/PISS</p>
-        </footer>
     </div>
+
+    <!-- Notification system -->
+    <div id="notif-container"></div>
+
     <script src="app.js"></script>
 </body>
 </html>
