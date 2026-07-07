@@ -1,6 +1,6 @@
 /**
- * Sovereign v3.2.8: The Perfect Build
- * Hard-mapped sprites, redesigned choice UI, and calibrated progression.
+ * Sovereign v3.3.1: Attack & Offset Fix
+ * Fixed click listener registration and stick-figure leg alignment.
  */
 
 const Fighter = (() => {
@@ -21,7 +21,6 @@ const Fighter = (() => {
         lastArmUsed: 'right'
     };
 
-    // v3.2.8 Hard-Mapped Roster
     const roster = [
         { id: 'sequid', name: 'SEQUID HOST', class: 'sequid', weight: 1, hp: 120, power: 8 },
         { id: 'flaxan', name: 'FLAXAN SCOUT', class: 'flaxan', weight: 1, hp: 150, power: 10 },
@@ -53,18 +52,21 @@ const Fighter = (() => {
         setupListeners();
         spawnNewEnemy();
         gameLoop();
-        console.log("Sovereign v3.2.8: The Perfect Build.");
+        console.log("Sovereign v3.3.1: Attack & Offset Repair Live.");
     };
 
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
 
     const setupListeners = () => {
+        // REPAIR: Ensuring interaction layer catch all clicks globally for centering consistency
         const layer = document.getElementById('interaction-layer');
-        layer.addEventListener('mousedown', (e) => {
-            if (!state.run.active || state.run.choicesPending) return;
-            const side = state.lastArmUsed === 'left' ? 'right' : 'left';
-            executePunch(side, e.clientX, e.clientY);
-        });
+        if (layer) {
+            layer.addEventListener('mousedown', (e) => {
+                if (!state.run.active || state.run.choicesPending) return;
+                const side = state.lastArmUsed === 'left' ? 'right' : 'left';
+                executePunch(side, e.clientX, e.clientY);
+            });
+        }
 
         document.addEventListener('mousemove', (e) => {
             if (state.run.choicesPending) return;
@@ -95,7 +97,7 @@ const Fighter = (() => {
 
         const char = document.getElementById('enemy-character');
         const nameLabel = document.getElementById('enemy-name');
-        if (char) { char.className = `enemy-character ${state.currentTarget.class}`; char.style.opacity = '1'; }
+        if (char) { char.className = `enemy-character ${state.currentTarget.class}`; }
         if (nameLabel) nameLabel.innerText = `TARGET: ${state.currentTarget.name}`;
         
         renderUI();
@@ -106,11 +108,12 @@ const Fighter = (() => {
         state.isAttacking = true;
         state.lastArmUsed = side;
         const arm = document.querySelector(`.arm-${side}`);
-        arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.15)`;
+        if (arm) arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.15)`;
+        
         setTimeout(() => {
             handleImpact(x, y);
             setTimeout(() => {
-                arm.style.transform = `translateY(150px) rotate(${side === 'left' ? 15 : -15}deg)`;
+                if (arm) arm.style.transform = `translateY(150px) rotate(${side === 'left' ? 15 : -15}deg)`;
                 state.isAttacking = false;
             }, 60);
         }, 80);
@@ -167,24 +170,27 @@ const Fighter = (() => {
         state.run.choicesPending = true;
         const overlay = document.getElementById('choice-overlay');
         const list = document.getElementById('choice-list');
-        overlay.classList.remove('hidden');
+        if (overlay) overlay.classList.remove('hidden');
         
         const shuffled = [...augmentations].sort(() => 0.5 - Math.random()).slice(0, 3);
-        list.innerHTML = shuffled.map(a => `
-            <div class="augment-btn" onclick="Fighter.applyAugment('${a.id}')">
-                <div class="augment-info">
-                    <b>${a.name}</b>
-                    <span>${a.desc}</span>
+        if (list) {
+            list.innerHTML = shuffled.map(a => `
+                <div class="augment-btn" onclick="Fighter.applyAugment('${a.id}')">
+                    <div class="augment-info">
+                        <b>${a.name}</b>
+                        <span>${a.desc}</span>
+                    </div>
                 </div>
-                <div class="augment-cost">FREE</div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     };
 
     const applyAugment = (id) => {
-        augmentations.find(a => a.id === id).apply();
+        const aug = augmentations.find(a => a.id === id);
+        if (aug) aug.apply();
         state.run.choicesPending = false;
-        document.getElementById('choice-overlay').classList.add('hidden');
+        const overlay = document.getElementById('choice-overlay');
+        if (overlay) overlay.classList.add('hidden');
         spawnNewEnemy();
     };
 
@@ -201,16 +207,23 @@ const Fighter = (() => {
         }, 200);
     };
 
-    const die = () => { state.run.active = false; document.getElementById('death-overlay').classList.remove('hidden'); };
+    const die = () => { state.run.active = false; const d = document.getElementById('death-overlay'); if (d) d.classList.remove('hidden'); };
     const resetRun = () => { location.reload(); };
 
     const renderUI = () => {
-        document.getElementById('player-hp').style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
-        if (state.currentTarget) document.getElementById('enemy-hp').style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
-        document.getElementById('enemies-defeated').innerText = state.run.kills;
-        document.getElementById('momentum-fill').style.width = `${state.player.momentum}%`;
-        document.getElementById('run-tier').innerText = state.run.tier;
-        document.getElementById('run-modifier').innerText = `STR +${((state.player.strength - 1) * 100).toFixed(0)}%`;
+        const php = document.getElementById('player-hp');
+        const ehp = document.getElementById('enemy-hp');
+        const d = document.getElementById('enemies-defeated');
+        const m = document.getElementById('momentum-fill');
+        const t = document.getElementById('run-tier');
+        const mod = document.getElementById('run-modifier');
+
+        if (php) php.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
+        if (ehp && state.currentTarget) ehp.style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
+        if (d) d.innerText = state.run.kills;
+        if (m) m.style.width = `${state.player.momentum}%`;
+        if (t) t.innerText = state.run.tier;
+        if (mod) mod.innerText = `STR +${((state.player.strength - 1) * 100).toFixed(0)}%`;
     };
 
     const triggerShake = (i) => {
@@ -219,10 +232,7 @@ const Fighter = (() => {
         setTimeout(() => { if (c) c.style.transform = 'translate(0,0)'; }, 50);
     };
 
-    const log = (msg) => { 
-        const logEl = document.getElementById('combat-log-overlay');
-        if (logEl) logEl.innerText = msg;
-    };
+    const log = (msg) => { const l = document.getElementById('combat-log-overlay'); if (l) l.innerText = msg; };
 
     const gameLoop = () => {
         updateParticles();

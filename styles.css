@@ -36,7 +36,7 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
 .mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; box-shadow: 0 0 10px var(--amber-glow); }
 
-/* --- v3.3.0 STICK-MAN PERFECT CENTERING --- */
+/* --- v3.3.1 CENTERING & OFFSET FIXES --- */
 
 #arena { 
     position: absolute; inset: 0; 
@@ -63,7 +63,6 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 }
 
-/* High-Contrast Stick-Figure Architecture */
 .enemy-sprite {
     position: relative;
     width: 200px;
@@ -80,11 +79,13 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .stick-arm { position: absolute; width: 80px; height: 5px; background: currentColor; top: 100px; transform-origin: center; }
 .stick-arm.left { transform: rotate(-30deg) translateX(-40px); }
 .stick-arm.right { transform: rotate(30deg) translateX(40px); }
-.stick-leg { position: absolute; width: 90px; height: 5px; background: currentColor; top: 185px; transform-origin: top center; }
-.stick-leg.left { transform: rotate(45deg) translateX(-45px); }
-.stick-leg.right { transform: rotate(-45deg) translateX(45px); }
 
-/* Identity Coloring via currentColor */
+/* Recalibrated Leg Alignment - Fix for Atom Eve & Others */
+.stick-leg { position: absolute; width: 90px; height: 5px; background: currentColor; top: 185px; transform-origin: top center; }
+.stick-leg.left { transform: rotate(45deg) translateX(-42px); } /* Adjusted offset for visual centering */
+.stick-leg.right { transform: rotate(-45deg) translateX(42px); }
+
+/* Identity Coloring */
 .omniman { color: #f8fafc; }
 .thragg { color: #b91c1c; }
 .atomeve { color: #f06292; }
@@ -97,12 +98,9 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .shrinkingrae { color: #9e9e9e; }
 .flaxan { color: #e65100; }
 
-/* Stick Man Special Details */
-.omniman .stick-head { border-color: #b91c1c; }
 .atomeve .stick-head { box-shadow: 0 0 20px #f06292; }
-.sequid .stick-body { width: 40px; border-radius: 20px; } /* Sequid is a bit thicker */
 
-/* --- UI/UX & FX --- */
+/* Target HUD & Interaction Layer */
 #target-hud { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 300; pointer-events: none; }
 .target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 6px; }
 .target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
@@ -128,3 +126,6 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .hidden { display: none !important; }
 .glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; width: 500px; text-align: center; }
 #combat-log-overlay { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); z-index: 300; }
+
+/* REPAIR: Absolute overlay for interaction to ensure clicks are caught */
+#interaction-layer { position: absolute; inset: 0; z-index: 400; cursor: crosshair; }
