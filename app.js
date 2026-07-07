@@ -1,6 +1,6 @@
 /**
- * Sovereign: Slaughter (v2.5.3)
- * Grey Sword Cursor with Dynamic Tilt and Tab Clean-up.
+ * Sovereign: Tactility (v2.6.0)
+ * Kinetic Combat, Boss Cycles, Critical Strikes, and Dynamic Screen Shake.
  */
 
 const Sovereign = (() => {
@@ -22,10 +22,20 @@ const Sovereign = (() => {
         lastUpdate: Date.now(),
         comboValue: 0,
         furyActive: false,
-        furyTimer: 0
+        furyTimer: 0,
+        // v2.6.0 Systems
+        bossIndex: 0,
+        bossHealth: 1000
     };
 
     const config = {
+        bosses: [
+            { name: "NEMESIS HUSK", health: 1000, reward: 500 },
+            { name: "FLAXAN COMMAND", health: 10000, reward: 5000 },
+            { name: "REANIMAN", health: 100000, reward: 50000 },
+            { name: "BATTLE BEAST", health: 1000000, reward: 500000 },
+            { name: "OMNI-MAN", health: 10000000, reward: 5000000 }
+        ],
         upgrades: [
             { id: 'militia', name: "Conscripted Militia", desc: "Basic levies. +0.1 Passive/s", baseCost: 15, passive: 0.1, click: 0, icon: 'users' },
             { id: 'scouts', name: "Border Scouts", desc: "Raiding scouts. +1 per Click", baseCost: 50, passive: 0, click: 1, icon: 'eye' },
@@ -91,18 +101,18 @@ const Sovereign = (() => {
     };
 
     let audioCtx = null;
-    const playImpactSound = (fury = false) => {
+    const playImpactSound = (crit = false, frenzy = false) => {
         try {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = fury ? 'square' : 'sawtooth';
-            osc.frequency.setValueAtTime(fury ? 240 : 180, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.type = crit ? 'square' : 'sawtooth';
+            osc.frequency.setValueAtTime(crit ? 100 : frenzy ? 240 : 180, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(crit ? 0.5 : 0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.15);
         } catch(e) {}
     };
 
@@ -116,12 +126,14 @@ const Sovereign = (() => {
         requestAnimationFrame(updateParticles);
     };
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
-    const spawnSparks = (x, y, multiplier = 1) => {
-        for (let i = 0; i < 10 * multiplier; i++) {
+    const spawnSparks = (x, y, multiplier = 1, crit = false) => {
+        const count = (crit ? 30 : 10) * multiplier;
+        for (let i = 0; i < count; i++) {
             particles.push({
-                x, y, vx: (Math.random() - 0.5) * (18 + multiplier * 6),
-                vy: (Math.random() - 0.5) * (18 + multiplier * 6) - 5,
-                life: 1.0, color: Math.random() > 0.5 ? '#f59e0b' : '#ef4444', size: Math.random() * (4 + multiplier) + 1
+                x, y, vx: (Math.random() - 0.5) * (crit ? 30 : 18 + multiplier * 6),
+                vy: (Math.random() - 0.5) * (crit ? 30 : 18 + multiplier * 6) - 5,
+                life: 1.0, color: crit ? '#ff4500' : (Math.random() > 0.5 ? '#f59e0b' : '#ef4444'), 
+                size: Math.random() * (4 + multiplier) + (crit ? 4 : 1)
             });
         }
     };
@@ -182,20 +194,72 @@ const Sovereign = (() => {
     };
 
     const handleInteraction = (e) => {
-        const power = calculateClickPower();
+        let power = calculateClickPower();
+        const critChance = 0.1 + (state.comboValue / 50) + (state.furyActive ? 0.15 : 0);
+        const isCrit = Math.random() < critChance;
+        
+        if (isCrit) power *= 5;
+
         state.treasury += power; state.totalGoldEarned += power;
+        state.bossHealth -= power;
+
+        // Visual Feedback
         const enemy = document.getElementById('enemy-sprite');
-        if (enemy) {
-            enemy.classList.remove('enemy-hit'); void enemy.offsetWidth; enemy.classList.add('enemy-hit');
-        }
+        if (enemy) { enemy.classList.remove('enemy-hit'); void enemy.offsetWidth; enemy.classList.add('enemy-hit'); }
+        
         if (!state.furyActive) {
             const bt = Math.pow(config.advancements[3].multiplier, state.advancements.bloodthirst || 0);
-            state.comboValue = Math.min(10, state.comboValue + 0.4 * bt);
+            state.comboValue = Math.min(10, state.comboValue + (isCrit ? 0.8 : 0.4) * bt);
             if (state.comboValue >= 10) activateFury();
         }
-        triggerRecoil(); spawnSparks(e.clientX, e.clientY, state.furyActive ? 5 : 1);
-        spawnTextParticle(`+${Math.floor(power)}`, e.clientX, e.clientY);
-        playImpactSound(state.furyActive); renderUI();
+
+        triggerShake(isCrit ? 20 : 2 + state.comboValue);
+        spawnSparks(e.clientX, e.clientY, state.furyActive ? 5 : 1, isCrit);
+        spawnCombatNumber(isCrit ? `CRITICAL! +${Math.floor(power)}` : `+${Math.floor(power)}`, e.clientX, e.clientY, isCrit);
+        playImpactSound(isCrit, state.furyActive);
+        
+        if (state.bossHealth <= 0) defeatBoss();
+        renderUI();
+    };
+
+    const defeatBoss = () => {
+        const boss = config.bosses[state.bossIndex % config.bosses.length];
+        state.treasury += boss.reward;
+        
+        document.body.classList.add('flashing');
+        setTimeout(() => document.body.classList.remove('flashing'), 100);
+        
+        state.bossIndex++;
+        const nextBoss = config.bosses[state.bossIndex % config.bosses.length];
+        state.bossHealth = nextBoss.health * Math.pow(1.5, Math.floor(state.bossIndex / config.bosses.length));
+        
+        notify(`BOSS DEFEATED: ${boss.name}. SPOILS: ${boss.reward.toLocaleString()} GOLD.`);
+        spawnSparks(window.innerWidth / 2, window.innerHeight / 2, 20, true);
+    };
+
+    const triggerShake = (intensity) => {
+        const app = document.getElementById('app');
+        if (!app) return;
+        const x = (Math.random() - 0.5) * intensity;
+        const y = (Math.random() - 0.5) * intensity;
+        app.style.transform = `translate(${x}px, ${y}px)`;
+        setTimeout(() => app.style.transform = `translate(0, 0)`, 50);
+    };
+
+    const spawnCombatNumber = (text, x, y, crit) => {
+        const container = document.getElementById('text-particle-container');
+        if (!container) return;
+        const p = document.createElement('div');
+        p.className = `text-particle ${crit ? 'crit' : ''}`;
+        p.innerText = text;
+        p.style.left = `${x}px`;
+        p.style.top = `${y}px`;
+        const tx = (Math.random() - 0.5) * 200;
+        const ty = -100 - Math.random() * 100;
+        p.style.setProperty('--target-x', `${tx}px`);
+        p.style.setProperty('--target-y', `${ty}px`);
+        container.appendChild(p);
+        setTimeout(() => p.remove(), 800);
     };
 
     const activateFury = () => {
@@ -209,19 +273,6 @@ const Sovereign = (() => {
     const deactivateFury = () => {
         state.furyActive = false; state.comboValue = 0;
         document.body.classList.remove('fury-active');
-    };
-
-    const triggerRecoil = () => {
-        const app = document.getElementById('app');
-        if (app) { app.classList.remove('recoil'); void app.offsetWidth; app.classList.add('recoil'); }
-    };
-
-    const spawnTextParticle = (text, x, y) => {
-        const container = document.getElementById('text-particle-container');
-        if (!container) return;
-        const p = document.createElement('div');
-        p.className = 'text-particle'; p.innerText = text; p.style.left = `${x}px`; p.style.top = `${y}px`;
-        container.appendChild(p); setTimeout(() => p.remove(), 800);
     };
 
     const buyUpgrade = (id) => {
@@ -282,10 +333,22 @@ const Sovereign = (() => {
         const rateEl = document.getElementById('passive-rate');
         if (countEl) countEl.innerText = Math.floor(state.treasury).toLocaleString();
         if (rateEl) rateEl.innerText = `+${calculatePassiveRate().toFixed(1)}/s`;
+        
         const fillEl = document.getElementById('combo-fill');
         const textEl = document.getElementById('combo-text');
         if (fillEl) fillEl.style.width = `${state.comboValue * 10}%`;
-        if (textEl) textEl.innerText = state.furyActive ? `SLAUGHTER: ${state.furyTimer.toFixed(1)}s` : `STRIKE x${Math.floor(state.comboValue)}`;
+        if (textEl) textEl.innerText = state.furyActive ? `FRENZY: ${state.furyTimer.toFixed(1)}s` : `STRIKE x${Math.floor(state.comboValue)}`;
+
+        // Boss UI
+        const boss = config.bosses[state.bossIndex % config.bosses.length];
+        const bossNameEl = document.getElementById('boss-name');
+        const bossFillEl = document.getElementById('boss-health-fill');
+        if (bossNameEl) bossNameEl.innerText = boss.name;
+        if (bossFillEl) {
+            const max = boss.health * Math.pow(1.5, Math.floor(state.bossIndex / config.bosses.length));
+            bossFillEl.style.width = `${Math.max(0, (state.bossHealth / max) * 100)}%`;
+        }
+
         config.upgrades.forEach(u => {
             const card = document.getElementById(`upgrade-${u.id}`);
             if (card) {
@@ -302,17 +365,15 @@ const Sovereign = (() => {
         container.prepend(div); if (container.children.length > 5) container.lastChild.remove();
     };
 
-    const save = () => localStorage.setItem('sov_slaughter_v25', JSON.stringify(state));
+    const save = () => localStorage.setItem('sov_tactility_v26', JSON.stringify(state));
     const load = () => {
-        const s = localStorage.getItem('sov_slaughter_v25');
+        const s = localStorage.getItem('sov_tactility_v26') || localStorage.getItem('sov_slaughter_v25');
         if (s) {
             try { 
                 const p = JSON.parse(s); 
                 state = { ...state, ...p, lastUpdate: Date.now() }; 
                 state.furyActive = false; 
-                state.comboValue = 0; 
-                if (!state.advancements) state.advancements = {};
-                if (!state.upgrades) state.upgrades = {};
+                state.comboValue = 0;
             } catch(e) {}
         }
     };

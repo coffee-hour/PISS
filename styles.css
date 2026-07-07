@@ -3,9 +3,9 @@
     --bg-panel: rgba(10, 12, 16, 0.85);
     --bg-card: rgba(15, 18, 24, 0.6);
     --border: #1e242e;
-    --primary: #f59e0b;
-    --primary-glow: rgba(245, 158, 11, 0.25);
-    --primary-bright: #fbbf24;
+    --primary: #ff8c00; /* Amber-Orange */
+    --primary-glow: rgba(255, 140, 0, 0.3);
+    --primary-bright: #ff4500; /* Red-Orange */
     --grey-sword: #94a3b8;
     --text: #f8fafc;
     --text-dim: #64748b;
@@ -28,6 +28,18 @@ body {
 
 #app { display: flex; height: 100vh; width: 100vw; position: relative; }
 
+/* White Flash Layer */
+#white-flash {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.05s linear;
+}
+.flashing #white-flash { opacity: 0.8; }
+
 /* Custom Grey Sword Cursor */
 #custom-cursor {
     position: fixed;
@@ -36,11 +48,9 @@ body {
     transform: translate(-50%, -50%);
     color: var(--grey-sword);
     filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-    transition: left 0.05s linear, top 0.05s linear;
 }
 
 .sword-wrapper {
-    /* Standard pointer tilt */
     transform: rotate(-15deg);
     transition: transform 0.1s cubic-bezier(0.2, 0, 0.2, 1.5);
     transform-origin: 20% 20%;
@@ -51,7 +61,6 @@ body {
     height: 64px;
 }
 
-/* Strike Animation - tilted swing */
 .sword-strike {
     transform: rotate(60deg) scale(1.1) !important;
 }
@@ -62,6 +71,44 @@ body {
     backdrop-filter: var(--glass);
     -webkit-backdrop-filter: var(--glass);
     border: 1px solid var(--border);
+}
+
+/* Boss Health Display */
+.boss-display {
+    width: 400px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.boss-name {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--danger);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.boss-health-container {
+    width: 100%;
+    height: 12px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.boss-health-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #991b1b, #ef4444);
+    transition: width 0.1s ease-out;
 }
 
 /* Fury Mode Effects */
@@ -80,10 +127,7 @@ body.fury-active #fury-overlay {
     animation: furyPulse 1s infinite alternate ease-in-out;
 }
 
-@keyframes furyPulse {
-    0% { opacity: 0.4; }
-    100% { opacity: 0.8; }
-}
+@keyframes furyPulse { 0% { opacity: 0.4; } 100% { opacity: 0.8; } }
 
 /* Throne Room */
 .throne-room {
@@ -128,20 +172,7 @@ body.fury-active #fury-overlay {
     animation: enemyFloat 4s infinite ease-in-out;
 }
 
-.enemy-icon {
-    width: 110px;
-    height: 110px;
-    color: var(--text-dim);
-    transition: color 0.1s;
-}
-
-.enemy-aura {
-    position: absolute;
-    inset: -15px;
-    border-radius: inherit;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    animation: auraPulse 2s infinite ease-in-out;
-}
+.enemy-icon { width: 110px; height: 110px; color: var(--text-dim); }
 
 .enemy-hit {
     animation: hitEffect 0.15s ease-out;
@@ -155,24 +186,10 @@ body.fury-active #fury-overlay {
     100% { transform: scale(1) skewX(0deg); }
 }
 
-@keyframes enemyFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(3deg); }
-}
-
-@keyframes auraPulse {
-    0% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.15); opacity: 0.2; }
-    100% { transform: scale(1); opacity: 0.5; }
-}
+@keyframes enemyFloat { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(3deg); } }
 
 /* Sidebar */
-.sidebar-terminal {
-    width: 460px;
-    display: flex;
-    flex-direction: column;
-}
-
+.sidebar-terminal { width: 460px; display: flex; flex-direction: column; }
 .terminal-nav { display: flex; background: #000; border-bottom: 1px solid var(--border); }
 .tab-btn {
     flex: 1; padding: 18px; background: none; border: none; color: var(--text-dim);
@@ -184,10 +201,6 @@ body.fury-active #fury-overlay {
 .shop-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
 .shop-panel.active { display: flex; }
 
-.shop-header { padding: 32px; border-bottom: 1px solid var(--border); }
-.shop-header h2 { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 12px; margin-bottom: 4px; color: var(--primary); letter-spacing: 2px; text-transform: uppercase; }
-.shop-header p { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-
 .upgrade-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding: 24px 32px; gap: 12px; }
 
 .upgrade-card {
@@ -198,19 +211,8 @@ body.fury-active #fury-overlay {
 .upgrade-card:hover:not(.disabled) { border-color: var(--primary); transform: translateX(-4px); background: rgba(26, 32, 44, 0.6); }
 .upgrade-card.disabled { opacity: 0.25; filter: grayscale(1); }
 
-.upgrade-icon { width: 56px; height: 56px; background: #050608; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
-
-.upgrade-info { flex: 1; min-width: 0; }
-.upgrade-name { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 1px; color: var(--text); }
-.upgrade-desc { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.upgrade-cost { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; color: var(--primary-bright); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 2px; display: inline-block; }
-
-/* Footer Log */
-.dispatch-footer { width: 100%; max-width: 800px; margin-bottom: 20px; border-radius: 8px; }
-.log-container { height: 100px; padding: 15px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--success); overflow: hidden; }
-
 /* Combo Meter */
-.combo-gauge-container { width: 220px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.combo-gauge-container { width: 220px; margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .combo-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; color: var(--text-dim); }
 .combo-meter { width: 100%; height: 8px; background: #000; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
 .combo-fill { height: 100%; width: 0%; background: var(--primary); box-shadow: 0 0 15px var(--primary-glow); transition: width 0.1s ease-out; }
@@ -220,13 +222,28 @@ body.fury-active #fury-overlay {
 
 #particle-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 999; }
 #text-particle-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; }
+
 .text-particle { 
-    position: absolute; color: var(--primary-bright); font-family: var(--font-mono); 
+    position: absolute; color: var(--primary); font-family: var(--font-mono); 
     font-weight: 800; pointer-events: none; text-shadow: 0 0 10px var(--primary-glow); 
-    animation: floatUpFade 0.8s forwards ease-out; font-size: 1.6rem; 
+    animation: combatFloat 0.8s forwards ease-out; font-size: 1.2rem;
+    white-space: nowrap;
 }
 
-@keyframes floatUpFade { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-140px); opacity: 0; } }
+.text-particle.crit {
+    color: var(--primary-bright);
+    font-size: 2rem;
+    z-index: 1001;
+    text-shadow: 0 0 15px var(--primary-bright);
+}
+
+@keyframes combatFloat {
+    0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+    20% { transform: translate(0, -20px) scale(1.2); opacity: 1; }
+    100% { transform: translate(var(--target-x), var(--target-y)) scale(1); opacity: 0; }
+}
+
+.shake-layer { transition: transform 0.05s linear; }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
