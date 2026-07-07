@@ -9,6 +9,7 @@
     --text: #f8fafc;
     --text-dim: #64748b;
     --success: #10b981;
+    --danger: #ef4444;
     --font-mono: 'JetBrains Mono', monospace;
     --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -25,39 +26,20 @@ body {
 
 #app { display: flex; height: 100vh; width: 100vw; position: relative; }
 
-/* Custom Cursor */
+/* Custom Sword Cursor */
 #custom-cursor {
     position: fixed;
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--primary);
-    border-radius: 50%;
     pointer-events: none;
     z-index: 9999;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 10px var(--primary-glow);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    color: var(--primary);
+    filter: drop-shadow(0 0 5px var(--primary-glow));
+    transition: transform 0.05s linear;
 }
 
-#custom-cursor::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 2px;
-    height: 12px;
-    background: var(--primary);
-    transform: translate(-50%, -50%);
-}
-
-#custom-cursor::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 2px;
-    background: var(--primary);
-    transform: translate(-50%, -50%);
+#custom-cursor .lucide {
+    width: 28px;
+    height: 28px;
 }
 
 /* Fury Mode Effects */
@@ -99,27 +81,75 @@ body.fury-active #fury-overlay {
 .value-container { display: flex; align-items: center; gap: 16px; font-family: var(--font-mono); font-size: 4rem; font-weight: 800; color: var(--primary); text-shadow: 0 0 40px var(--primary-glow); }
 .rate-text { font-family: var(--font-mono); font-size: 1.1rem; color: var(--success); font-weight: 700; letter-spacing: 1px; }
 
-/* Ornate Crest Styling */
-.crest-wrapper { position: relative; display: flex; align-items: center; justify-content: center; }
-.crest-icon { width: 120px; height: 120px; color: var(--primary); filter: drop-shadow(0 0 20px var(--primary-glow)); z-index: 2; }
-.crest-ornament {
-    position: absolute;
-    width: 180px;
-    height: 180px;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    animation: spin 10s linear infinite;
-}
-.crest-ornament::after {
-    content: '';
-    position: absolute;
-    inset: -10px;
-    border: 2px solid var(--primary-glow);
-    border-radius: 50%;
-    border-top-color: var(--primary);
+/* Nemesis Enemy Model */
+.enemy-model-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.enemy-sprite {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    background: rgba(10, 12, 16, 0.8);
+    border: 2px solid var(--border);
+    border-radius: 20% 50% 20% 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(239, 68, 68, 0.1);
+    transition: transform 0.1s, border-color 0.2s, background 0.1s;
+    animation: enemyFloat 4s infinite ease-in-out;
+}
+
+.enemy-icon {
+    width: 100px;
+    height: 100px;
+    color: var(--text-dim);
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+    transition: color 0.1s;
+}
+
+.enemy-aura {
+    position: absolute;
+    inset: -15px;
+    border-radius: inherit;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    animation: auraPulse 2s infinite ease-in-out;
+}
+
+/* Hit Animation */
+.enemy-hit {
+    animation: hitEffect 0.15s ease-out;
+    border-color: var(--danger) !important;
+    background: rgba(239, 68, 68, 0.2) !important;
+}
+
+.enemy-hit .enemy-icon {
+    color: var(--danger) !important;
+    transform: scale(1.1);
+}
+
+@keyframes hitEffect {
+    0% { transform: scale(1) skewX(0deg); }
+    50% { transform: scale(0.9) skewX(10deg); filter: brightness(2); }
+    100% { transform: scale(1) skewX(0deg); }
+}
+
+@keyframes enemyFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(2deg); }
+}
+
+@keyframes auraPulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.2; }
+    100% { transform: scale(1); opacity: 0.5; }
+}
 
 /* Sidebar Terminal */
 .sidebar-terminal {
@@ -171,21 +201,9 @@ body.fury-active #fury-overlay {
 .combo-fill { height: 100%; width: 0%; background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); transition: width 0.1s ease-out; }
 .combo-text { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 800; color: var(--primary); }
 
-/* Banner Button */
-.banner-btn { background: none; border: none; outline: none; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.banner-btn:active { transform: scale(0.85) scaleY(0.9); }
-.banner-graphic {
-    width: 260px; height: 260px; background: #000; border: 2px solid var(--border);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 0 10px #000, 0 0 0 11px var(--border); position: relative;
-}
-.banner-glow {
-    position: absolute; inset: -20px; border-radius: 50%;
-    background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
-    animation: bannerPulse 3s infinite ease-in-out; z-index: -1;
-}
-
-@keyframes bannerPulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.15); opacity: 0.8; } }
+/* Interaction Button */
+.banner-btn { background: none; border: none; outline: none; }
+.banner-btn:active .enemy-sprite { transform: scale(0.95); }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 4px; }

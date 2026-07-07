@@ -3,25 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Ascension (v2.3.0)</title>
+    <title>Sovereign: Nemesis (v2.4.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-clicker">
-    <!-- Custom Cursor -->
-    <div id="custom-cursor"></div>
+    <!-- Custom Sword Cursor -->
+    <div id="custom-cursor">
+        <i data-lucide="sword"></i>
+    </div>
 
     <div id="app" class="shake-layer">
         <!-- Fury Overlay -->
         <div id="fury-overlay"></div>
 
-        <!-- Main Clicker Section -->
+        <!-- Main Combat Section -->
         <main class="throne-room">
             <div class="imperial-header">
                 <div class="treasury-display">
-                    <span class="label">Imperial Treasury</span>
+                    <span class="label">Spoils of War</span>
                     <div class="value-container">
                         <i data-lucide="gem" class="icon-gold"></i>
                         <span id="treasury-count">0</span>
@@ -33,24 +35,23 @@
             <div class="war-banner-container">
                 <!-- Combo Gauge -->
                 <div class="combo-gauge-container">
-                    <div class="combo-label">Imperial Fury</div>
+                    <div class="combo-label">Combat Momentum</div>
                     <div class="combo-meter">
                         <div id="combo-fill" class="combo-fill"></div>
                     </div>
-                    <div id="combo-text" class="combo-text">COMBO x0</div>
+                    <div id="combo-text" class="combo-text">STRIKE x0</div>
                 </div>
 
                 <button id="click-banner" class="banner-btn" onmousedown="Sovereign.handleInteraction(event)">
-                    <div class="banner-graphic">
-                        <div id="crest-container" class="crest-wrapper">
-                            <i data-lucide="castle" class="banner-icon crest-icon"></i>
-                            <div class="crest-ornament"></div>
+                    <div class="enemy-model-container">
+                        <div id="enemy-sprite" class="enemy-sprite">
+                            <i data-lucide="skull" class="enemy-icon"></i>
+                            <div class="enemy-aura"></div>
                         </div>
-                        <div class="banner-glow"></div>
                     </div>
                     <div class="click-ripple-container"></div>
                 </button>
-                <div class="click-instructions">Strike the Crest to Ascend the Empire</div>
+                <div class="click-instructions">Slay the Nemesis to Fund the Empire</div>
             </div>
 
             <div class="dispatch-footer">

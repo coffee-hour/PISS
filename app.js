@@ -1,6 +1,6 @@
 /**
- * Sovereign: Ascension (v2.3.0)
- * Custom Cursor, Imperial Crest, Multi-tier Upgrades, and Advancements.
+ * Sovereign: Nemesis (v2.4.0)
+ * Obsidian-Amber Sword Cursor, Dynamic Enemy Model, and Hit Mechanics.
  */
 
 const Sovereign = (() => {
@@ -42,16 +42,10 @@ const Sovereign = (() => {
             { id: 'master_smithing', name: "Master Smithing", desc: "+10% Passive Output", baseCost: 1000, multiplier: 1.1, type: 'passive', icon: 'hammer' },
             { id: 'imperial_logistics', name: "Imperial Logistics", desc: "+20% Click Power", baseCost: 5000, multiplier: 1.2, type: 'click', icon: 'package' },
             { id: 'war_economy', name: "War Economy", desc: "Permanent -5% Upgrade Cost", baseCost: 25000, multiplier: 0.95, type: 'cost', icon: 'bar-chart' }
-        ],
-        milestones: [
-            { threshold: 0, icon: 'shield' },
-            { threshold: 5000, icon: 'crown' },
-            { threshold: 50000, icon: 'castle' },
-            { threshold: 500000, icon: 'landmark' }
         ]
     };
 
-    // --- Custom Cursor ---
+    // --- Custom Cursor (Sword) ---
     const initCursor = () => {
         const cursor = document.getElementById('custom-cursor');
         document.addEventListener('mousemove', (e) => {
@@ -77,10 +71,10 @@ const Sovereign = (() => {
         const gain = audioCtx.createGain();
         const filter = audioCtx.createBiquadFilter();
         osc.type = fury ? 'square' : 'sawtooth';
-        osc.frequency.setValueAtTime(fury ? 200 : 150, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(fury ? 220 : 180, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.1);
         filter.type = 'highpass';
-        filter.frequency.setValueAtTime(fury ? 500 : 1000, audioCtx.currentTime);
+        filter.frequency.setValueAtTime(fury ? 400 : 800, audioCtx.currentTime);
         gain.gain.setValueAtTime(fury ? 0.4 : 0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
         osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
@@ -102,7 +96,7 @@ const Sovereign = (() => {
             particles.push({
                 x, y, vx: (Math.random() - 0.5) * (15 + multiplier * 5),
                 vy: (Math.random() - 0.5) * (15 + multiplier * 5) - 5,
-                life: 1.0, color: Math.random() > 0.5 ? '#f59e0b' : '#fbbf24', size: Math.random() * (3 + multiplier) + 1
+                life: 1.0, color: Math.random() > 0.5 ? '#f59e0b' : '#ef4444', size: Math.random() * (3 + multiplier) + 1
             });
         }
     };
@@ -123,7 +117,7 @@ const Sovereign = (() => {
         initParticles();
         render();
         startLoop();
-        updateMilestoneIcon();
+        lucide.createIcons();
     };
 
     const startLoop = () => {
@@ -161,19 +155,29 @@ const Sovereign = (() => {
     const handleInteraction = (e) => {
         const power = calculateClickPower();
         state.treasury += power; state.totalGoldEarned += power;
+        
+        // Enemy Hit Visuals
+        const enemy = document.getElementById('enemy-sprite');
+        enemy.classList.remove('enemy-hit');
+        void enemy.offsetWidth;
+        enemy.classList.add('enemy-hit');
+
         if (!state.furyActive) {
             state.comboValue = Math.min(10, state.comboValue + 0.4);
             if (state.comboValue >= 10) activateFury();
         }
+        
         triggerRecoil(); spawnSparks(e.clientX, e.clientY, state.furyActive ? 5 : 1);
         spawnTextParticle(`+${Math.floor(power)}`, e.clientX, e.clientY);
-        playImpactSound(state.furyActive); updateMilestoneIcon(); renderUI();
+        playImpactSound(state.furyActive); renderUI();
     };
 
     const activateFury = () => {
         state.furyActive = true; state.furyTimer = 5;
-        document.body.classList.add('fury-active'); notify("ASCENSION FURY: 2X CLICK POWER!");
+        document.body.classList.add('fury-active');
+        notify("BATTLE FRENZY: 2X LOOT MULTIPLIER!");
     };
+    
     const deactivateFury = () => {
         state.furyActive = false; state.comboValue = 0;
         document.body.classList.remove('fury-active');
@@ -192,18 +196,6 @@ const Sovereign = (() => {
         container.appendChild(p); setTimeout(() => p.remove(), 800);
     };
 
-    const updateMilestoneIcon = () => {
-        const container = document.getElementById('crest-container');
-        if (!container) return;
-        let activeIcon = config.milestones[0].icon;
-        for (const m of config.milestones) if (state.totalGoldEarned >= m.threshold) activeIcon = m.icon;
-        const currentIcon = container.querySelector('i');
-        if (currentIcon && currentIcon.getAttribute('data-lucide') !== activeIcon) {
-            container.innerHTML = `<i data-lucide="${activeIcon}" class="banner-icon crest-icon"></i><div class="crest-ornament"></div>`;
-            lucide.createIcons();
-        }
-    };
-
     const buyUpgrade = (id) => {
         const u = config.upgrades.find(x => x.id === id);
         const cost = calculateUpgradeCost(u);
@@ -218,7 +210,7 @@ const Sovereign = (() => {
         const cost = calculateAdvancementCost(adv);
         if (state.treasury >= cost) {
             state.treasury -= cost; state.advancements[id]++;
-            notify(`ADVANCEMENT SECURED: ${adv.name}`);
+            notify(`BATTLE ADVANCEMENT: ${adv.name}`);
             render(); playImpactSound();
         }
     };
@@ -270,7 +262,7 @@ const Sovereign = (() => {
         const fillEl = document.getElementById('combo-fill');
         const textEl = document.getElementById('combo-text');
         if (fillEl) fillEl.style.width = `${state.comboValue * 10}%`;
-        if (textEl) textEl.innerText = state.furyActive ? `FURY: ${state.furyTimer.toFixed(1)}s` : `COMBO x${Math.floor(state.comboValue)}`;
+        if (textEl) textEl.innerText = state.furyActive ? `FRENZY: ${state.furyTimer.toFixed(1)}s` : `STRIKE x${Math.floor(state.comboValue)}`;
 
         config.upgrades.forEach(u => {
             const card = document.getElementById(`upgrade-${u.id}`);
@@ -288,9 +280,9 @@ const Sovereign = (() => {
         container.prepend(div); if (container.children.length > 5) container.lastChild.remove();
     };
 
-    const save = () => localStorage.setItem('sov_ascension_v23', JSON.stringify(state));
+    const save = () => localStorage.setItem('sov_nemesis_v24', JSON.stringify(state));
     const load = () => {
-        const s = localStorage.getItem('sov_ascension_v23');
+        const s = localStorage.getItem('sov_nemesis_v24');
         if (s) {
             try { const p = JSON.parse(s); state = { ...state, ...p, lastUpdate: Date.now() }; state.furyActive = false; state.comboValue = 0; } catch(e) {}
         }
