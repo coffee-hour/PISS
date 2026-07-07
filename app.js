@@ -1,6 +1,6 @@
 /**
- * Sovereign: Slaughter (v2.5.2) - EMERGENCY RECOVERY BUILD
- * Restores v2.5.0 content and fixes fatal state loading bug.
+ * Sovereign: Slaughter (v2.5.3)
+ * Grey Sword Cursor with Dynamic Tilt and Tab Clean-up.
  */
 
 const Sovereign = (() => {
@@ -22,8 +22,7 @@ const Sovereign = (() => {
         lastUpdate: Date.now(),
         comboValue: 0,
         furyActive: false,
-        furyTimer: 0,
-        dispatchEvents: []
+        furyTimer: 0
     };
 
     const config = {
@@ -298,15 +297,9 @@ const Sovereign = (() => {
 
     const notify = (msg) => {
         const container = document.getElementById('log-entries');
-        const feed = document.getElementById('dispatch-feed');
-        if (!container || !feed) return;
-        const time = new Date().toLocaleTimeString();
+        if (!container) return;
         const div = document.createElement('div'); div.innerText = `> ${msg}`;
         container.prepend(div); if (container.children.length > 5) container.lastChild.remove();
-        const item = document.createElement('div');
-        item.className = 'dispatch-item';
-        item.innerHTML = `<span class="dispatch-time">${time}</span>${msg}`;
-        feed.prepend(item); if (feed.children.length > 50) feed.lastChild.remove();
     };
 
     const save = () => localStorage.setItem('sov_slaughter_v25', JSON.stringify(state));
@@ -318,10 +311,8 @@ const Sovereign = (() => {
                 state = { ...state, ...p, lastUpdate: Date.now() }; 
                 state.furyActive = false; 
                 state.comboValue = 0; 
-                // Fix potential undefined properties from earlier versions
                 if (!state.advancements) state.advancements = {};
                 if (!state.upgrades) state.upgrades = {};
-                if (!state.dispatchEvents) state.dispatchEvents = [];
             } catch(e) {}
         }
     };
