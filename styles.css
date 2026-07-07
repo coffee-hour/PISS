@@ -13,85 +13,98 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 #game-container { position: relative; width: 100vw; height: 100vh; perspective: 1000px; }
 #blood-canvas { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
 
-/* Top Stat Bar - Restructured v3.2.2 */
+/* Top Stat Bar */
 #top-stat-bar {
     position: absolute; top: 0; left: 0; width: 100%; height: 50px;
     background: var(--glass); border-bottom: 1px solid var(--amber);
     display: flex; align-items: center; justify-content: center;
     padding: 0 40px; z-index: 500; font-family: var(--font-mono); gap: 20px;
 }
-
 .stat-group { display: flex; align-items: center; gap: 10px; }
-.stat-group label { font-size: 0.65rem; color: var(--amber); letter-spacing: 1px; font-weight: 800; }
-.stat-value { font-size: 0.9rem; font-weight: 800; color: #fff; }
+.stat-group label { font-size: 0.6rem; color: var(--amber); letter-spacing: 1px; font-weight: 800; }
+.stat-value { font-size: 0.85rem; font-weight: 800; color: #fff; }
 .stat-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
-
-.mini-bar-container { width: 100px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
+.mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
 .mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
-.condition .mini-bar-fill { box-shadow: 0 0 10px var(--amber-glow); }
 
-/* Arena & Target Display */
-#arena {
-    position: absolute; inset: 0; transform-style: preserve-3d;
-    background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%); z-index: 1;
-}
-
-#environment {
-    position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
-    background-image: linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px);
-    background-size: 100px 100px; transform: rotateX(60deg);
-}
-
-#enemy-target-container {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center;
-}
-
-.enemy-character { position: relative; transition: all 0.4s; }
+/* Multi-layered High-Detail Sprites */
 .enemy-sprite {
-    width: 260px; height: 440px; background: var(--glass); border: 4px solid var(--amber);
-    box-shadow: 0 0 50px var(--amber-glow); display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; width: 280px; height: 460px;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.4s;
+}
+.layer { position: absolute; transition: all 0.3s; }
+
+/* Omni-Man Detailed */
+.omniman .layer-body { 
+    width: 240px; height: 440px; background: #f8fafc; border-radius: 20px 20px 0 0; border: 6px solid #b91c1c; 
+}
+.omniman .layer-armor {
+    width: 240px; height: 150px; background: #b91c1c; top: 0; border-radius: 20px 20px 0 0;
+    clip-path: polygon(0 0, 100% 0, 100% 40%, 80% 100%, 20% 100%, 0% 40%);
+}
+.omniman .layer-feature {
+    width: 130px; height: 40px; background: #1a1a1a; top: 32%;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 60%, 50% 100%, 20% 60%, 0% 100%);
+}
+.omniman .layer-eyes {
+    width: 100px; height: 10px; background: rgba(255,255,255,0.8); top: 25%;
+    box-shadow: 0 0 10px #fff;
 }
 
-/* Floating Target HUD */
-#target-hud {
-    position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
-    text-align: center; z-index: 300; pointer-events: none;
+/* Thragg Detailed */
+.thragg .layer-body {
+    width: 320px; height: 480px; background: #7f1d1d; border: 8px solid #fff; border-radius: 5px;
 }
-.target-label { font-family: var(--font-mono); font-size: 0.8rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 8px; }
-.target-bar-container { width: 350px; height: 8px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
+.thragg .layer-armor {
+    width: 100%; height: 100%; background: rgba(255,255,255,0.1);
+    clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%, 0 40%, 100% 40%, 100% 42%, 0 42%);
+}
+.thragg .layer-feature {
+    width: 90%; height: 80px; background: #fff; top: 10%;
+    clip-path: polygon(0 0, 100% 0, 100% 20%, 0 20%, 0 40%, 100% 40%, 100% 60%, 0 60%);
+}
+
+/* Flaxan Detailed */
+.flaxan .layer-body {
+    width: 220px; height: 400px; background: #c2410c; 
+    clip-path: polygon(50% 0%, 100% 30%, 100% 100%, 0 100%, 0 30%);
+}
+.flaxan .layer-armor {
+    width: 100%; height: 100%; background: rgba(251, 146, 60, 0.3);
+    clip-path: circle(30% at 50% 30%);
+}
+.flaxan .layer-eyes {
+    width: 60%; height: 20px; background: #fb923c; top: 20%;
+    clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+}
+
+/* Sequid Detailed */
+.sequid .layer-body {
+    width: 200px; height: 200px; background: #6d28d9; border-radius: 50%; border: 10px solid #4c1d95;
+}
+.sequid .layer-feature {
+    width: 100%; height: 100%; background: transparent;
+    box-shadow: inset 0 0 40px #a78bfa; border-radius: 50%;
+}
+.sequid .layer-eyes {
+    width: 30px; height: 30px; background: #a78bfa; border-radius: 50%;
+    box-shadow: 40px 0 0 #a78bfa, -40px 0 0 #a78bfa;
+}
+
+/* Arena & Combat */
+#arena { position: absolute; inset: 0; transform-style: preserve-3d; background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%); z-index: 1; }
+#environment { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px); background-size: 100px 100px; transform: rotateX(60deg); }
+#enemy-target-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center; }
+#target-hud { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 300; pointer-events: none; }
+.target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 6px; }
+.target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
 .target-bar-fill { height: 100%; background: var(--crimson); transition: width 0.3s; }
-
-/* Combat Log Overlay */
-#combat-log-overlay {
-    position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-    font-family: var(--font-mono); font-size: 0.75rem; color: var(--amber); text-transform: uppercase;
-    text-shadow: 0 0 10px var(--amber-glow); z-index: 300;
-}
-
-/* Restored First-Person Arms */
-#arms-container {
-    position: absolute; bottom: -80px; width: 100%; height: 400px;
-    display: flex; justify-content: space-between; padding: 0 10%; z-index: 200; pointer-events: none;
-}
-.arm {
-    width: 320px; height: 600px; background: linear-gradient(to top, #000, #1a1a1a 30%, #444 100%);
-    border: 5px solid #000; border-radius: 80px 80px 0 0; transform: translateY(150px);
-    transition: transform 0.1s;
-}
+#arms-container { position: absolute; bottom: -80px; width: 100%; height: 400px; display: flex; justify-content: space-between; padding: 0 10%; z-index: 200; pointer-events: none; }
+.arm { width: 300px; height: 600px; background: linear-gradient(to top, #000, #1a1a1a 30%, #444 100%); border: 5px solid #000; border-radius: 80px 80px 0 0; transform: translateY(150px); transition: transform 0.1s; }
 .arm-left { transform: rotate(15deg) translateY(150px); }
 .arm-right { transform: rotate(-15deg) translateY(150px); }
-
-/* Overlays & Misc */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .hidden { display: none !important; }
-.choice-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px; }
-.choice-card { background: rgba(255,255,255,0.05); border: 1px solid var(--amber); padding: 20px; text-align: center; cursor: pointer; pointer-events: auto; }
-.retry-btn { background: var(--crimson); color: white; border: none; padding: 15px 40px; font-weight: 800; cursor: pointer; pointer-events: auto; }
 #interaction-layer { position: absolute; inset: 0; z-index: 400; }
-
-/* Enemy Specifics (From 3.2.1) */
-.sequid .enemy-sprite { border-radius: 50%; background: #6d28d9; }
-.flaxan .enemy-sprite { clip-path: polygon(50% 0%, 100% 20%, 100% 100%, 0% 100%, 0% 20%); background: #c2410c; }
-.thragg .enemy-sprite { background: #7f1d1d; border-color: #fff; }
-.omniman .enemy-sprite { background: #f8fafc; border-color: #b91c1c; }
+#combat-log-overlay { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); z-index: 300; }

@@ -1,6 +1,6 @@
 /**
- * Sovereign v3.2.2: HUD Restructure & Combo Flow
- * Single-line header HUD, automatic alternating arms, and Rogue-like integrity.
+ * Sovereign v3.2.3: Pokerogue Evolution
+ * Dynamic difficulty scaling, randomized pools, and gore-scaling logic.
  */
 
 const Fighter = (() => {
@@ -18,20 +18,29 @@ const Fighter = (() => {
         currentTarget: null,
         isAttacking: false,
         lastAttackTime: Date.now(),
-        lastArmUsed: 'right' // Tracks for automatic alternating
+        lastArmUsed: 'right'
     };
 
-    const enemyPool = [
-        { id: 'sequid', name: 'SEQUID SWARM', hp: 150, class: 'sequid', attackRate: 4000, power: 8 },
-        { id: 'flaxan', name: 'FLAXAN COMMANDER', hp: 600, class: 'flaxan', attackRate: 3500, power: 15 },
-        { id: 'thragg', name: 'GRAND REGENT THRAGG', hp: 2500, class: 'thragg', attackRate: 3000, power: 25 },
-        { id: 'omniman', name: 'OMNI-MAN', hp: 8000, class: 'omniman', attackRate: 2500, power: 40 }
-    ];
+    // Pokerogue Pool Architecture
+    const enemyPools = {
+        early: [
+            { id: 'sequid', name: 'SEQUID SWARM', hp: 120, class: 'sequid', attackRate: 4500, power: 6 },
+            { id: 'flaxan', name: 'FLAXAN SCOUT', hp: 200, class: 'flaxan', attackRate: 4000, power: 10 }
+        ],
+        mid: [
+            { id: 'flaxan_cmd', name: 'FLAXAN COMMANDER', hp: 800, class: 'flaxan', attackRate: 3500, power: 18 },
+            { id: 'thragg_vanguard', name: 'REGENT VANGUARD', hp: 1500, class: 'thragg', attackRate: 3200, power: 25 }
+        ],
+        boss: [
+            { id: 'thragg', name: 'GRAND REGENT THRAGG', hp: 5000, class: 'thragg', attackRate: 2800, power: 35 },
+            { id: 'omniman', name: 'OMNI-MAN', hp: 12000, class: 'omniman', attackRate: 2200, power: 50 }
+        ]
+    };
 
     const augmentations = [
         { id: 'str', name: 'PURE STRENGTH', desc: '+50% Damage', apply: () => state.player.strength += 0.5 },
         { id: 'hp', name: 'EMPIRE VITALITY', desc: '+50 Max HP', apply: () => { state.player.maxHp += 50; state.player.hp = state.player.maxHp; } },
-        { id: 'spd', name: 'VILTRUMITE SPEED', desc: '-15% Enemy Attack Speed', apply: () => state.player.speed *= 1.15 },
+        { id: 'spd', name: 'VILTRUMITE SPEED', desc: '-15% Attack Delay', apply: () => state.player.speed *= 1.15 },
         { id: 'luck', name: 'COMBAT PRECISION', desc: '+10% Crit Chance', apply: () => state.player.luck += 0.1 }
     ];
 
@@ -45,7 +54,6 @@ const Fighter = (() => {
         setupListeners();
         spawnNewEnemy();
         gameLoop();
-        console.log("Sovereign HUD Refresh v3.2.2 Initialized.");
     };
 
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
@@ -54,7 +62,6 @@ const Fighter = (() => {
         const layer = document.getElementById('interaction-layer');
         layer.addEventListener('mousedown', (e) => {
             if (!state.run.active || state.run.choicesPending) return;
-            // Alternating arm logic
             const side = state.lastArmUsed === 'left' ? 'right' : 'left';
             executePunch(side, e.clientX, e.clientY);
         });
@@ -70,15 +77,21 @@ const Fighter = (() => {
         });
     };
 
+    // Pokerogue Spawn Logic
     const spawnNewEnemy = () => {
-        const base = enemyPool[Math.min(enemyPool.length - 1, Math.floor(state.run.kills / 2))];
-        const scaling = 1 + (state.run.kills * 0.2);
+        let pool;
+        if (state.run.tier <= 3) pool = enemyPools.early;
+        else if (state.run.tier <= 7) pool = enemyPools.mid;
+        else pool = enemyPools.boss;
+
+        const base = pool[Math.floor(Math.random() * pool.length)];
+        const scaling = 1 + (state.run.kills * 0.15);
         
         state.currentTarget = {
             ...base,
             hp: Math.floor(base.hp * scaling),
             maxHp: Math.floor(base.hp * scaling),
-            attackRate: base.attackRate / (state.player.speed)
+            attackRate: base.attackRate / state.player.speed
         };
 
         const char = document.getElementById('enemy-character');
@@ -86,7 +99,7 @@ const Fighter = (() => {
         if (char) { char.className = `enemy-character ${state.currentTarget.class}`; char.style.opacity = '1'; }
         if (nameLabel) nameLabel.innerText = `TARGET: ${state.currentTarget.name}`;
         
-        log(`NEXT TARGET DETECTED: ${state.currentTarget.name}`);
+        log(`WAVE ${state.run.kills + 1}: ${state.currentTarget.name} DETECTED`);
         renderUI();
     };
 
@@ -96,7 +109,7 @@ const Fighter = (() => {
         state.lastArmUsed = side;
 
         const arm = document.querySelector(`.arm-${side}`);
-        arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.1)`;
+        arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.15)`;
         
         setTimeout(() => {
             handleImpact(x, y);
@@ -111,25 +124,30 @@ const Fighter = (() => {
         const enemy = state.currentTarget;
         const enemyEl = document.getElementById('enemy-character');
         
-        triggerShake(20);
-        spawnBlood(x, y);
+        triggerShake(15 + (100 - state.player.hp)/5);
+        
+        // Gore Scaling: More blood at lower HP
+        const hpPercent = enemy.hp / enemy.maxHp;
+        const bloodVolume = 10 + Math.floor((1 - hpPercent) * 30);
+        spawnBlood(x, y, bloodVolume);
+
         if (enemyEl) { enemyEl.classList.remove('hit-active'); void enemyEl.offsetWidth; enemyEl.classList.add('hit-active'); }
 
         let dmg = (10 + Math.floor(state.player.momentum / 5)) * state.player.strength;
-        if (Math.random() < state.player.luck) { dmg *= 3; log("CRITICAL IMPACT!"); }
+        if (Math.random() < state.player.luck) { dmg *= 3; log("CRITICAL BLOW!"); }
         
         enemy.hp -= dmg;
-        state.player.momentum = Math.min(100, state.player.momentum + 5);
+        state.player.momentum = Math.min(100, state.player.momentum + 6);
 
         if (enemy.hp <= 0) defeatEnemy();
         renderUI();
     };
 
-    const spawnBlood = (x, y) => {
-        for (let i = 0; i < 12; i++) {
+    const spawnBlood = (x, y, volume) => {
+        for (let i = 0; i < volume; i++) {
             bloodParticles.push({
-                x, y, vx: (Math.random() - 0.5) * 25, vy: (Math.random() - 0.5) * 25,
-                life: 1.0, size: Math.random() * 6 + 2
+                x, y, vx: (Math.random() - 0.5) * 30, vy: (Math.random() - 0.5) * 30,
+                life: 1.0, size: Math.random() * 8 + 2
             });
         }
     };
@@ -139,7 +157,7 @@ const Fighter = (() => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         bloodParticles = bloodParticles.filter(p => p.life > 0);
         bloodParticles.forEach(p => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.6; p.life -= 0.025;
+            p.x += p.vx; p.y += p.vy; p.vy += 0.7; p.life -= 0.03;
             ctx.fillStyle = `rgba(185, 28, 28, ${p.life})`;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
         });
@@ -150,11 +168,8 @@ const Fighter = (() => {
         state.run.tier = Math.floor(state.run.kills / 2) + 1;
         state.player.momentum = Math.min(100, state.player.momentum + 50);
         
-        if (state.run.kills % 2 === 0) {
-            presentChoices();
-        } else {
-            spawnNewEnemy();
-        }
+        if (state.run.kills % 2 === 0) presentChoices();
+        else spawnNewEnemy();
     };
 
     const presentChoices = () => {
@@ -162,7 +177,6 @@ const Fighter = (() => {
         const overlay = document.getElementById('choice-overlay');
         const list = document.getElementById('choice-list');
         overlay.classList.remove('hidden');
-        
         const shuffled = [...augmentations].sort(() => 0.5 - Math.random()).slice(0, 3);
         list.innerHTML = shuffled.map(a => `
             <div class="choice-card" onclick="Fighter.applyAugment('${a.id}')">
@@ -173,11 +187,9 @@ const Fighter = (() => {
     };
 
     const applyAugment = (id) => {
-        const augment = augmentations.find(a => a.id === id);
-        augment.apply();
+        augmentations.find(a => a.id === id).apply();
         state.run.choicesPending = false;
         document.getElementById('choice-overlay').classList.add('hidden');
-        log(`AUGMENTATION APPLIED: ${augment.name}`);
         spawnNewEnemy();
     };
 
@@ -188,41 +200,23 @@ const Fighter = (() => {
         
         setTimeout(() => {
             if (enemyEl) enemyEl.classList.remove('enemy-attack');
-            state.player.hp -= state.currentTarget.power * (1 + state.run.kills * 0.1);
+            state.player.hp -= state.currentTarget.power * (1 + state.run.kills * 0.12);
             triggerShake(40);
             if (state.player.hp <= 0) die();
             renderUI();
         }, 200);
     };
 
-    const die = () => {
-        state.run.active = false;
-        document.getElementById('death-overlay').classList.remove('hidden');
-        log("CONQUEST TERMINATED.");
-    };
-
+    const die = () => { state.run.active = false; document.getElementById('death-overlay').classList.remove('hidden'); };
     const resetRun = () => { location.reload(); };
 
     const renderUI = () => {
-        const playerHpEl = document.getElementById('player-hp');
-        if (playerHpEl) playerHpEl.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
-        
-        if (state.currentTarget) {
-            const enemyHpEl = document.getElementById('enemy-hp');
-            if (enemyHpEl) enemyHpEl.style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
-        }
-        
-        const defeatedEl = document.getElementById('enemies-defeated');
-        if (defeatedEl) defeatedEl.innerText = state.run.kills;
-        
-        const momentumEl = document.getElementById('momentum-fill');
-        if (momentumEl) momentumEl.style.width = `${state.player.momentum}%`;
-        
-        const tierEl = document.getElementById('run-tier');
-        if (tierEl) tierEl.innerText = state.run.tier;
-        
-        const modEl = document.getElementById('run-modifier');
-        if (modEl) modEl.innerText = `STR +${((state.player.strength - 1) * 100).toFixed(0)}%`;
+        document.getElementById('player-hp').style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
+        if (state.currentTarget) document.getElementById('enemy-hp').style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
+        document.getElementById('enemies-defeated').innerText = state.run.kills;
+        document.getElementById('momentum-fill').style.width = `${state.player.momentum}%`;
+        document.getElementById('run-tier').innerText = state.run.tier;
+        document.getElementById('run-modifier').innerText = `STR +${((state.player.strength - 1) * 100).toFixed(0)}%`;
     };
 
     const triggerShake = (i) => {
@@ -231,19 +225,15 @@ const Fighter = (() => {
         setTimeout(() => c.style.transform = 'translate(0,0)', 50);
     };
 
-    const log = (msg) => { 
-        const logEl = document.getElementById('combat-log-overlay');
-        if (logEl) logEl.innerText = msg;
-    };
+    const log = (msg) => { document.getElementById('combat-log-overlay').innerText = msg; };
 
     const gameLoop = () => {
         updateParticles();
         if (state.run.active && !state.run.choicesPending) {
-            if (!state.isAttacking && state.player.momentum > 0) state.player.momentum -= 0.1;
+            if (!state.isAttacking && state.player.momentum > 0) state.player.momentum -= 0.15;
             const now = Date.now();
             if (state.currentTarget && now - state.lastAttackTime >= state.currentTarget.attackRate) {
-                enemyAttack();
-                state.lastAttackTime = now;
+                enemyAttack(); state.lastAttackTime = now;
             }
         }
         requestAnimationFrame(gameLoop);
