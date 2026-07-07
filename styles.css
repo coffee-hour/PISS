@@ -2,110 +2,95 @@
     --amber: #ff8c00;
     --amber-glow: rgba(255, 140, 0, 0.4);
     --crimson: #b91c1c;
-    --crimson-glow: rgba(185, 28, 28, 0.5);
     --obsidian: #050608;
-    --glass: rgba(10, 12, 16, 0.9);
+    --glass: rgba(10, 12, 16, 0.95);
     --font-mono: 'JetBrains Mono', monospace;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-
-body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
+body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans-serif; color: white; cursor: crosshair; }
 
 #game-container { position: relative; width: 100vw; height: 100vh; perspective: 1000px; }
+#blood-canvas { position: fixed; inset: 0; z-index: 350; pointer-events: none; }
 
 #arena {
     position: absolute; inset: 0; transform-style: preserve-3d;
     background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%);
-    transition: filter 0.1s;
 }
 
 #environment {
     position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
-    background-image: 
-        linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px);
-    background-size: 100px 100px;
-    transform: rotateX(60deg);
+    background-image: linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px);
+    background-size: 100px 100px; transform: rotateX(60deg);
 }
 
-/* Enemy Logic Visuals */
+/* Enhanced Enemy Sprites v3.2.0 */
 #enemy-target-container {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) translateZ(0);
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center;
 }
 
-.enemy-character {
-    position: relative; width: 240px; height: 440px; display: flex; justify-content: center; align-items: center;
-    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
-}
+.enemy-character { position: relative; transition: all 0.5s; }
 
 .enemy-sprite {
-    position: absolute; width: 100%; height: 100%; background: var(--glass);
-    border: 3px solid var(--amber); box-shadow: 0 0 60px var(--amber-glow);
-    z-index: 2; transition: all 0.3s;
+    width: 260px; height: 440px; background: var(--glass); border: 4px solid var(--amber);
+    box-shadow: 0 0 50px var(--amber-glow); position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 
-/* Target Specific Shapes */
-.enemy-character.sequid .enemy-sprite { border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 40px #8b5cf6; }
-.enemy-character.flaxan .enemy-sprite { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); background: #ea580c; }
-.enemy-character.thragg .enemy-sprite { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); background: #b91c1c; border-color: #fff; }
-.enemy-character.omniman .enemy-sprite { clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); background: #f8fafc; border: 4px solid #b91c1c; }
+/* Recognizable Geometry */
+.sequid .enemy-sprite { width: 200px; height: 200px; border-radius: 50%; background: #6d28d9; border-width: 6px; }
+.sequid .enemy-feature { width: 40px; height: 40px; background: #a78bfa; border-radius: 50%; box-shadow: 40px 20px 0 #a78bfa, -40px 20px 0 #a78bfa; }
 
-.enemy-emblem {
-    position: absolute; top: 25%; width: 60px; height: 80px; background: var(--crimson);
-    clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
-    z-index: 3; box-shadow: 0 0 20px var(--crimson-glow);
-    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem;
+.flaxan .enemy-sprite { width: 220px; height: 400px; clip-path: polygon(50% 0%, 100% 20%, 100% 100%, 0% 100%, 0% 20%); background: #c2410c; }
+.flaxan .enemy-feature { width: 100%; height: 4px; background: #fb923c; margin-top: -100px; box-shadow: 0 40px 0 #fb923c, 0 80px 0 #fb923c; }
+
+.thragg .enemy-sprite { width: 320px; height: 480px; background: #7f1d1d; border-color: #fff; border-width: 8px; border-radius: 10px; }
+.thragg .enemy-feature { width: 80%; height: 60px; background: #fff; margin-top: -150px; clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%); }
+
+.omniman .enemy-sprite { width: 240px; height: 440px; background: #f8fafc; border: 6px solid #b91c1c; border-radius: 20px 20px 0 0; }
+.omniman .enemy-feature { 
+    width: 120px; height: 30px; background: #1a1a1a; margin-top: -80px;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 60%, 50% 100%, 20% 60%, 0% 100%); /* Mustache Geometry */
 }
 
-.enemy-aura {
-    position: absolute; inset: -30px; border: 2px solid var(--amber-glow);
-    border-radius: 50%; filter: blur(15px); animation: auraSpin 4s infinite linear;
+/* Combat FX */
+.enemy-attack { animation: attackLunge 0.4s forwards; }
+@keyframes attackLunge { 0% { transform: scale(1); } 50% { transform: scale(1.6) translateZ(100px); filter: brightness(2); } 100% { transform: scale(1); } }
+.hit-active { animation: hitFlash 0.15s forwards; }
+@keyframes hitFlash { 0% { filter: brightness(5) saturate(2); transform: scale(0.9); } 100% { filter: brightness(1); transform: scale(1); } }
+
+/* HUD & Progression */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 100; padding: 30px; display: flex; flex-direction: column; justify-content: space-between; }
+.hud-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.hud-box { background: var(--glass); padding: 15px; border-left: 4px solid var(--amber); }
+.essence-value { font-family: var(--font-mono); font-size: 1.5rem; color: var(--amber); display: flex; align-items: center; gap: 10px; }
+
+.bar-container { height: 8px; width: 300px; background: #000; border: 1px solid rgba(255,255,255,0.1); margin-top: 5px; }
+.bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
+.threat .bar-fill { background: var(--crimson); }
+
+.hud-bottom { display: flex; justify-content: center; }
+.progression-hud { width: 100%; max-width: 800px; display: flex; align-items: center; gap: 20px; background: var(--glass); padding: 15px; border: 1px solid var(--amber); }
+.momentum-gauge-box { flex: 1; height: 20px; background: #000; position: relative; }
+#momentum-fill { height: 100%; background: linear-gradient(90deg, #d97706, #fbbf24); width: 0; }
+
+.shop-trigger { 
+    background: var(--amber); color: #000; border: none; padding: 10px 20px; 
+    font-weight: 800; font-family: var(--font-mono); cursor: pointer; pointer-events: auto;
 }
 
-@keyframes auraSpin {
-    from { transform: rotate(0deg) scale(1); opacity: 0.5; }
-    50% { transform: rotate(180deg) scale(1.3); opacity: 0.8; }
-    to { transform: rotate(360deg) scale(1); opacity: 0.5; }
-}
+/* Overlays */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s; }
+.hidden { opacity: 0; pointer-events: none; }
+.glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; max-width: 600px; width: 90%; }
 
-/* Hit & Damage Effects */
-.hit-active { animation: hitFlash 0.15s ease-out forwards; }
-@keyframes hitFlash {
-    0% { transform: scale(0.9); filter: brightness(3) saturate(2); }
-    100% { transform: scale(1); filter: brightness(1); }
-}
+.shop-list { display: flex; flex-direction: column; gap: 15px; margin: 25px 0; }
+.shop-item { background: rgba(255,255,255,0.05); padding: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.1); }
+.shop-item:hover { border-color: var(--amber); }
+.buy-btn { background: var(--amber); color: #000; border: none; padding: 8px 15px; font-weight: 800; cursor: pointer; }
+.buy-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.enemy-attack { animation: attackLunge 0.4s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards; }
-@keyframes attackLunge {
-    0% { transform: translateZ(0) scale(1); }
-    50% { transform: translateZ(200px) scale(1.5); filter: brightness(2); }
-    100% { transform: translateZ(0) scale(1); }
-}
-
-/* HUD */
-#hud { position: absolute; inset: 0; pointer-events: none; z-index: 100; padding: 40px; display: flex; flex-direction: column; justify-content: space-between; }
-.hud-top { display: flex; justify-content: space-between; }
-.hud-box { width: 350px; }
-.hud-box label { display: block; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 3px; margin-bottom: 8px; color: var(--amber); }
-.bar-container { height: 10px; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); overflow: hidden; position: relative; }
-.bar-fill { height: 100%; width: 100%; background: var(--amber); transition: width 0.3s; box-shadow: 0 0 15px var(--amber-glow); }
-.threat .bar-fill { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
-
-.hud-center { text-align: center; font-family: var(--font-mono); font-size: 0.8rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); }
-
-/* Arms */
-#arms-container { position: absolute; bottom: -80px; width: 100%; height: 400px; display: flex; justify-content: space-between; padding: 0 10%; z-index: 200; pointer-events: none; }
-.arm {
-    width: 280px; height: 550px; background: linear-gradient(to top, #000, #1a1a1a 40%, #444 100%);
-    border: 4px solid #000; border-radius: 60px 60px 0 0; transform: translateY(150px);
-    transition: transform 0.1s; position: relative;
-}
-.arm-left { transform: rotate(12deg) translateY(150px); }
-.arm-right { transform: rotate(-12deg) translateY(150px); }
-
-#interaction-layer { position: absolute; inset: 0; z-index: 300; }
-#fx-flash { position: fixed; inset: 0; background: #fff; z-index: 400; opacity: 0; pointer-events: none; }
-.blood-splat { position: fixed; inset: 0; background: radial-gradient(circle, transparent 40%, rgba(185, 28, 28, 0.4) 100%); z-index: 350; opacity: 0; transition: opacity 0.3s; }
-.damaged .blood-splat { opacity: 1; }
+.death-content { text-align: center; }
+.glitch-text { font-size: 5rem; color: var(--crimson); text-shadow: 3px 3px #fff; margin-bottom: 20px; }
+.retry-btn { background: var(--crimson); color: white; border: none; padding: 15px 40px; font-size: 1.2rem; font-weight: 800; cursor: pointer; pointer-events: auto; }
