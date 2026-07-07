@@ -3,30 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Invincible (v2.6.1)</title>
+    <title>Sovereign: Viltrumite Combat (v2.7.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-clicker">
-    <!-- Grey Sword Cursor -->
+    <!-- Fist Cursor -->
     <div id="custom-cursor">
-        <div class="sword-wrapper">
-            <i data-lucide="sword"></i>
+        <div class="fist-wrapper">
+            <i data-lucide="fist"></i>
         </div>
     </div>
 
-    <!-- Flash Layer for Threat Defeat -->
+    <!-- Flash Layer -->
     <div id="white-flash"></div>
 
     <div id="app" class="shake-layer">
-        <!-- Fury Overlay -->
         <div id="fury-overlay"></div>
 
         <!-- Main Combat Section -->
         <main class="throne-room">
-            <div class="imperial-header">
+            <div class="combat-hud">
                 <div class="treasury-display">
                     <span class="label">Viltrumite Energy</span>
                     <div class="value-container">
@@ -34,6 +33,14 @@
                         <span id="treasury-count">0</span>
                     </div>
                     <span id="passive-rate" class="rate-text">+0/s</span>
+                </div>
+
+                <!-- Xavier's Health (The User) -->
+                <div class="player-hud">
+                    <div class="hud-label">XAVIER CONDITION</div>
+                    <div class="health-bar-container player-health">
+                        <div id="player-health-fill" class="health-fill"></div>
+                    </div>
                 </div>
             </div>
 
@@ -44,15 +51,15 @@
                         <div class="viltrumite-v">V</div>
                         <div id="boss-name" class="boss-name">SEQUID SWARM</div>
                     </div>
-                    <div class="boss-health-container">
-                        <div id="boss-health-fill" class="boss-health-fill"></div>
+                    <div class="health-bar-container threat-health">
+                        <div id="boss-health-fill" class="health-fill"></div>
                     </div>
                 </div>
 
                 <button id="click-banner" class="banner-btn" onmousedown="Sovereign.handleInteraction(event)">
                     <div class="enemy-model-container">
                         <div id="enemy-sprite" class="enemy-sprite">
-                            <i data-lucide="skull" class="enemy-icon"></i>
+                            <div id="enemy-visual" class="enemy-visual-geometric"></div>
                             <div class="enemy-aura"></div>
                         </div>
                     </div>
@@ -66,8 +73,6 @@
                     </div>
                     <div id="combo-text" class="combo-text">STRIKE x0</div>
                 </div>
-
-                <div class="click-instructions">Slay the Viltrumite Threat to Fuel the Empire</div>
             </div>
 
             <div class="dispatch-footer glass-panel">
@@ -79,7 +84,7 @@
         <aside class="sidebar-terminal glass-panel">
             <nav class="terminal-nav">
                 <button class="tab-btn active" onclick="Sovereign.switchTab('garrison')">Garrison</button>
-                <button class="tab-btn" onclick="Sovereign.switchTab('advancements')">Advancements</button>
+                <button class="tab-btn" onclick="Sovereign.switchTab('attributes')">Attributes</button>
             </nav>
 
             <div id="shop-garrison" class="shop-panel active">
@@ -90,16 +95,15 @@
                 <div class="upgrade-list" id="upgrade-container"></div>
             </div>
 
-            <div id="shop-advancements" class="shop-panel">
+            <div id="shop-attributes" class="shop-panel">
                 <div class="shop-header">
-                    <h2><i data-lucide="trending-up"></i> Advancements</h2>
-                    <p>Permanent Logistical Mastery.</p>
+                    <h2><i data-lucide="activity"></i> Viltrumite Attributes</h2>
+                    <p>Core Viltrumite Potential.</p>
                 </div>
                 <div class="upgrade-list" id="advancement-container"></div>
             </div>
         </aside>
 
-        <!-- Dynamic Particle Canvas -->
         <canvas id="particle-canvas"></canvas>
         <div id="text-particle-container"></div>
     </div>
