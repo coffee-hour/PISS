@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Progression (v3.2.0)</title>
+    <title>Sovereign: Rogue-like (v3.2.1)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -27,19 +27,24 @@
             </div>
         </div>
 
+        <!-- Arms/Fists: Restored & Brought to Front -->
+        <div id="arms-container">
+            <div class="arm arm-left"></div>
+            <div class="arm arm-right"></div>
+        </div>
+
         <div id="hud">
             <div class="hud-top">
                 <div class="hud-box condition">
-                    <label>CONDITION</label>
+                    <label>RUN CONDITION</label>
                     <div class="bar-container">
                         <div id="player-hp" class="bar-fill"></div>
                     </div>
                 </div>
-                <div class="hud-box essence-display">
-                    <label>VILTRUMITE ESSENCE</label>
-                    <div class="essence-value">
-                        <i data-lucide="zap"></i>
-                        <span id="essence-count">0</span>
+                <div class="hud-box run-stats">
+                    <label>CONQUEST RUN</label>
+                    <div class="run-value">
+                        <span id="enemies-defeated">0</span> KILLS
                     </div>
                 </div>
                 <div class="hud-box threat">
@@ -51,44 +56,36 @@
             </div>
 
             <div class="hud-center">
-                <div id="combat-log">COMMENCING SIMULATION...</div>
+                <div id="combat-log">NEW RUN INITIALIZED...</div>
             </div>
 
             <div class="hud-bottom">
                 <div class="progression-hud">
-                    <div class="stat-pill">LEVEL <span id="level-num">1</span></div>
+                    <div class="stat-pill">MODIFIER: <span id="run-modifier">STRENGTH +0</span></div>
                     <div class="momentum-gauge-box">
                         <div id="momentum-fill"></div>
                     </div>
-                    <button id="shop-btn" class="shop-trigger">
-                        <i data-lucide="shopping-cart"></i> ABILITY SHOP
-                    </button>
+                    <div class="stat-pill">TIER <span id="run-tier">1</span></div>
                 </div>
             </div>
-        </div>
-
-        <div id="arms-container">
-            <div class="arm arm-left"></div>
-            <div class="arm arm-right"></div>
         </div>
 
         <div id="interaction-layer"></div>
 
         <!-- Overlays -->
-        <div id="shop-overlay" class="overlay hidden">
-            <div class="shop-content glass-panel">
-                <h2>VILTRUMITE REINFORCEMENT</h2>
-                <p>Spend Essence to augment your potential.</p>
-                <div id="shop-list" class="shop-list"></div>
-                <button class="close-btn" onclick="Fighter.toggleShop()">RETURN TO ARENA</button>
+        <div id="choice-overlay" class="overlay hidden">
+            <div class="choice-content glass-panel">
+                <h2>VICTORY SECURED</h2>
+                <p>Choose an augmentation for this run.</p>
+                <div id="choice-list" class="choice-list"></div>
             </div>
         </div>
 
         <div id="death-overlay" class="overlay hidden">
             <div class="death-content">
-                <h1 class="glitch-text">CONDITION LOST</h1>
-                <p>YOU ARE NOT INVINCIBLE... YET.</p>
-                <button class="retry-btn" onclick="location.reload()">RE-INITIALIZE</button>
+                <h1 class="glitch-text">RUN TERMINATED</h1>
+                <p>THE EMPIRE FALLS WITH YOU.</p>
+                <button class="retry-btn" onclick="Fighter.resetRun()">START NEW CONQUEST</button>
             </div>
         </div>
     </div>

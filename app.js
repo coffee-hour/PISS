@@ -1,32 +1,37 @@
 /**
- * Sovereign v3.2.0: Progression
- * Blood Particles, Shop System, Leveling Loop, and Recognizable Sprites.
+ * Sovereign v3.2.1: Rogue-like / Arms Fix
+ * Restored arm rendering, implemented permanent death, and run-based augmentation choices.
  */
 
 const Fighter = (() => {
     let state = {
         player: { 
-            hp: 100, maxHp: 100, momentum: 0, essence: 0,
-            strength: 1, speed: 1, crit: 0.1
+            hp: 100, maxHp: 100, momentum: 0, 
+            strength: 1, speed: 1, luck: 0.1
         },
-        enemies: [
-            { id: 'sequid', name: 'SEQUID SWARM', hp: 200, maxHp: 200, class: 'sequid', attackRate: 4000, power: 5, reward: 50 },
-            { id: 'flaxan', name: 'FLAXAN COMMANDER', hp: 800, maxHp: 800, class: 'flaxan', attackRate: 3500, power: 12, reward: 150 },
-            { id: 'thragg', name: 'GRAND REGENT THRAGG', hp: 3000, maxHp: 3000, class: 'thragg', attackRate: 3000, power: 25, reward: 500 },
-            { id: 'omniman', name: 'OMNI-MAN', hp: 10000, maxHp: 10000, class: 'omniman', attackRate: 2500, power: 45, reward: 2000 }
-        ],
-        level: 1,
-        currentTargetIdx: 0,
+        run: {
+            kills: 0,
+            tier: 1,
+            active: true,
+            choicesPending: false
+        },
+        currentTarget: null,
         isAttacking: false,
-        gameActive: true,
-        lastAttackTime: Date.now(),
-        shopOpen: false
+        lastAttackTime: Date.now()
     };
 
-    const shopItems = [
-        { id: 'str', name: "Omni-Strength", desc: "x1.5 Punch Damage", cost: 100, icon: 'dumbbell' },
-        { id: 'spd', name: "Viltrumite Speed", desc: "-10% Enemy Attack Window", cost: 250, icon: 'zap' },
-        { id: 'hp', name: "Imperial Fortitude", desc: "+50 Max HP", cost: 150, icon: 'heart' }
+    const enemyPool = [
+        { id: 'sequid', name: 'SEQUID SWARM', hp: 150, class: 'sequid', attackRate: 4000, power: 8 },
+        { id: 'flaxan', name: 'FLAXAN COMMANDER', hp: 600, class: 'flaxan', attackRate: 3500, power: 15 },
+        { id: 'thragg', name: 'GRAND REGENT THRAGG', hp: 2500, class: 'thragg', attackRate: 3000, power: 25 },
+        { id: 'omniman', name: 'OMNI-MAN', hp: 8000, class: 'omniman', attackRate: 2500, power: 40 }
+    ];
+
+    const augmentations = [
+        { id: 'str', name: 'PURE STRENGTH', desc: '+50% Damage', apply: () => state.player.strength += 0.5 },
+        { id: 'hp', name: 'EMPIRE VITALITY', desc: '+50 Max HP', apply: () => { state.player.maxHp += 50; state.player.hp = state.player.maxHp; } },
+        { id: 'spd', name: 'VILTRUMITE SPEED', desc: '-15% Enemy Attack Speed', apply: () => state.player.speed *= 1.15 },
+        { id: 'luck', name: 'COMBAT PRECISION', desc: '+10% Crit Chance', apply: () => state.player.luck += 0.1 }
     ];
 
     let bloodParticles = [];
@@ -37,10 +42,9 @@ const Fighter = (() => {
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         setupListeners();
-        renderTarget();
-        renderShop();
+        spawnNewEnemy();
         gameLoop();
-        lucide.createIcons();
+        console.log("Sovereign Rogue-like v3.2.1 Initialized.");
     };
 
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
@@ -48,18 +52,40 @@ const Fighter = (() => {
     const setupListeners = () => {
         const layer = document.getElementById('interaction-layer');
         layer.addEventListener('mousedown', (e) => {
-            if (!state.gameActive || state.shopOpen) return;
+            if (!state.run.active || state.run.choicesPending) return;
             const side = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
             executePunch(side, e.clientX, e.clientY);
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (state.shopOpen) return;
-            const x = (e.clientX / window.innerWidth - 0.5) * 10;
-            const y = (e.clientY / window.innerHeight - 0.5) * 10;
+            if (state.run.choicesPending) return;
+            const x = (e.clientX / window.innerWidth - 0.5) * 8;
+            const y = (e.clientY / window.innerHeight - 0.5) * 8;
             const arena = document.getElementById('arena');
+            const arms = document.getElementById('arms-container');
             if (arena) arena.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
+            if (arms) arms.style.transform = `translateX(${x * 2}px) translateY(${y * 2}px)`;
         });
+    };
+
+    const spawnNewEnemy = () => {
+        const base = enemyPool[Math.min(enemyPool.length - 1, Math.floor(state.run.kills / 2))];
+        const scaling = 1 + (state.run.kills * 0.2);
+        
+        state.currentTarget = {
+            ...base,
+            hp: Math.floor(base.hp * scaling),
+            maxHp: Math.floor(base.hp * scaling),
+            attackRate: base.attackRate / (state.player.speed)
+        };
+
+        const char = document.getElementById('enemy-character');
+        const nameLabel = document.getElementById('enemy-name');
+        if (char) { char.className = `enemy-character ${state.currentTarget.class}`; char.style.opacity = '1'; }
+        if (nameLabel) nameLabel.innerText = `TARGET: ${state.currentTarget.name}`;
+        
+        log(`NEXT TARGET DETECTED: ${state.currentTarget.name}`);
+        renderUI();
     };
 
     const executePunch = (side, x, y) => {
@@ -67,29 +93,27 @@ const Fighter = (() => {
         state.isAttacking = true;
 
         const arm = document.querySelector(`.arm-${side}`);
-        arm.style.transform = `translateY(-300px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.2)`;
+        arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.1)`;
         
         setTimeout(() => {
             handleImpact(x, y);
             setTimeout(() => {
-                arm.style.transform = `translateY(150px) rotate(${side === 'left' ? 12 : -12}deg)`;
+                arm.style.transform = `translateY(150px) rotate(${side === 'left' ? 15 : -15}deg)`;
                 state.isAttacking = false;
-            }, 50);
-        }, 100);
+            }, 60);
+        }, 80);
     };
 
     const handleImpact = (x, y) => {
-        const enemy = state.enemies[state.currentTargetIdx];
+        const enemy = state.currentTarget;
         const enemyEl = document.getElementById('enemy-character');
         
-        // FX
         triggerShake(20);
         spawnBlood(x, y);
         if (enemyEl) { enemyEl.classList.remove('hit-active'); void enemyEl.offsetWidth; enemyEl.classList.add('hit-active'); }
 
-        // Damage
         let dmg = (10 + Math.floor(state.player.momentum / 5)) * state.player.strength;
-        if (Math.random() < state.player.crit) dmg *= 3;
+        if (Math.random() < state.player.luck) { dmg *= 3; log("CRITICAL IMPACT!"); }
         
         enemy.hp -= dmg;
         state.player.momentum = Math.min(100, state.player.momentum + 5);
@@ -99,13 +123,10 @@ const Fighter = (() => {
     };
 
     const spawnBlood = (x, y) => {
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 12; i++) {
             bloodParticles.push({
-                x, y,
-                vx: (Math.random() - 0.5) * 20,
-                vy: (Math.random() - 0.5) * 20,
-                life: 1.0,
-                size: Math.random() * 8 + 2
+                x, y, vx: (Math.random() - 0.5) * 25, vy: (Math.random() - 0.5) * 25,
+                life: 1.0, size: Math.random() * 6 + 2
             });
         }
     };
@@ -115,101 +136,80 @@ const Fighter = (() => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         bloodParticles = bloodParticles.filter(p => p.life > 0);
         bloodParticles.forEach(p => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= 0.02;
+            p.x += p.vx; p.y += p.vy; p.vy += 0.6; p.life -= 0.025;
             ctx.fillStyle = `rgba(185, 28, 28, ${p.life})`;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
         });
     };
 
     const defeatEnemy = () => {
-        const enemy = state.enemies[state.currentTargetIdx];
-        state.player.essence += enemy.reward;
-        log(`TARGET EXTERMINATED: +${enemy.reward} ESSENCE`);
+        state.run.kills++;
+        state.run.tier = Math.floor(state.run.kills / 2) + 1;
+        state.player.momentum = Math.min(100, state.player.momentum + 50);
         
-        state.currentTargetIdx = (state.currentTargetIdx + 1) % state.enemies.length;
-        state.level++;
+        if (state.run.kills % 2 === 0) {
+            presentChoices();
+        } else {
+            spawnNewEnemy();
+        }
+    };
+
+    const presentChoices = () => {
+        state.run.choicesPending = true;
+        const overlay = document.getElementById('choice-overlay');
+        const list = document.getElementById('choice-list');
+        overlay.classList.remove('hidden');
         
-        const character = document.getElementById('enemy-character');
-        if (character) character.style.opacity = '0';
-        
-        setTimeout(() => {
-            const next = state.enemies[state.currentTargetIdx];
-            next.hp = next.maxHp * (1 + (state.level * 0.1)); // Dynamic scaling
-            renderTarget();
-        }, 1000);
+        // Pick 3 random augments
+        const shuffled = [...augmentations].sort(() => 0.5 - Math.random()).slice(0, 3);
+        list.innerHTML = shuffled.map(a => `
+            <div class="choice-card" onclick="Fighter.applyAugment('${a.id}')">
+                <b>${a.name}</b>
+                <p>${a.desc}</p>
+            </div>
+        `).join('');
+    };
+
+    const applyAugment = (id) => {
+        const augment = augmentations.find(a => a.id === id);
+        augment.apply();
+        state.run.choicesPending = false;
+        document.getElementById('choice-overlay').classList.add('hidden');
+        log(`AUGMENTATION APPLIED: ${augment.name}`);
+        spawnNewEnemy();
     };
 
     const enemyAttack = () => {
-        if (!state.gameActive || state.shopOpen) return;
+        if (!state.run.active || state.run.choicesPending) return;
         const enemyEl = document.getElementById('enemy-character');
         if (enemyEl) enemyEl.classList.add('enemy-attack');
         
         setTimeout(() => {
             if (enemyEl) enemyEl.classList.remove('enemy-attack');
-            const enemy = state.enemies[state.currentTargetIdx];
-            state.player.hp -= enemy.power;
+            state.player.hp -= state.currentTarget.power * (1 + state.run.kills * 0.1);
             triggerShake(40);
-            if (state.player.hp <= 0) showDeath();
+            if (state.player.hp <= 0) die();
             renderUI();
         }, 200);
     };
 
-    const renderTarget = () => {
-        const enemy = state.enemies[state.currentTargetIdx];
-        const character = document.getElementById('enemy-character');
-        const nameLabel = document.getElementById('enemy-name');
-        if (character) { character.className = `enemy-character ${enemy.class}`; character.style.opacity = '1'; }
-        if (nameLabel) nameLabel.innerText = `TARGET: ${enemy.name}`;
-        renderUI();
+    const die = () => {
+        state.run.active = false;
+        document.getElementById('death-overlay').classList.remove('hidden');
+        log("CONQUEST TERMINATED.");
     };
+
+    const resetRun = () => { location.reload(); };
 
     const renderUI = () => {
         document.getElementById('player-hp').style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
-        const enemy = state.enemies[state.currentTargetIdx];
-        document.getElementById('enemy-hp').style.width = `${Math.max(0, (enemy.hp / enemy.maxHp) * 100)}%`;
-        document.getElementById('essence-count').innerText = Math.floor(state.player.essence);
-        document.getElementById('momentum-fill').style.width = `${state.player.momentum}%`;
-        document.getElementById('level-num').innerText = state.level;
-    };
-
-    const toggleShop = () => {
-        state.shopOpen = !state.shopOpen;
-        document.getElementById('shop-overlay').classList.toggle('hidden', !state.shopOpen);
-        if (state.shopOpen) renderShop();
-    };
-
-    const renderShop = () => {
-        const list = document.getElementById('shop-list');
-        if (!list) return;
-        list.innerHTML = shopItems.map(item => `
-            <div class="shop-item">
-                <div class="item-info">
-                    <strong>${item.name}</strong><br><small>${item.desc}</small>
-                </div>
-                <button class="buy-btn" ${state.player.essence < item.cost ? 'disabled' : ''} onclick="Fighter.buyAbility('${item.id}')">
-                    ${item.cost} ESSENCE
-                </button>
-            </div>
-        `).join('');
-    };
-
-    const buyAbility = (id) => {
-        const item = shopItems.find(x => x.id === id);
-        if (state.player.essence >= item.cost) {
-            state.player.essence -= item.cost;
-            if (id === 'str') state.player.strength += 0.5;
-            if (id === 'spd') state.enemies.forEach(e => e.attackRate *= 0.95);
-            if (id === 'hp') { state.player.maxHp += 50; state.player.hp += 50; }
-            item.cost = Math.floor(item.cost * 1.5);
-            renderShop();
-            renderUI();
-            log(`ABILITY ACQUIRED: ${item.name}`);
+        if (state.currentTarget) {
+            document.getElementById('enemy-hp').style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
         }
-    };
-
-    const showDeath = () => {
-        state.gameActive = false;
-        document.getElementById('death-overlay').classList.remove('hidden');
+        document.getElementById('enemies-defeated').innerText = state.run.kills;
+        document.getElementById('momentum-fill').style.width = `${state.player.momentum}%`;
+        document.getElementById('run-tier').innerText = state.run.tier;
+        document.getElementById('run-modifier').innerText = `STRENGTH +${((state.player.strength - 1) * 100).toFixed(0)}%`;
     };
 
     const triggerShake = (i) => {
@@ -222,11 +222,10 @@ const Fighter = (() => {
 
     const gameLoop = () => {
         updateParticles();
-        if (state.gameActive && !state.shopOpen) {
+        if (state.run.active && !state.run.choicesPending) {
             if (!state.isAttacking && state.player.momentum > 0) state.player.momentum -= 0.1;
             const now = Date.now();
-            const enemy = state.enemies[state.currentTargetIdx];
-            if (now - state.lastAttackTime >= enemy.attackRate) {
+            if (state.currentTarget && now - state.lastAttackTime >= state.currentTarget.attackRate) {
                 enemyAttack();
                 state.lastAttackTime = now;
             }
@@ -234,7 +233,7 @@ const Fighter = (() => {
         requestAnimationFrame(gameLoop);
     };
 
-    return { init, toggleShop, buyAbility };
+    return { init, applyAugment, resetRun };
 })();
 
 window.onload = Fighter.init;
