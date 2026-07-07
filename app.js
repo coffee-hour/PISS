@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign AAA (v4.6.8)
- * Features: Full-Screen Map (M-Key), Forced Player Blue-Hands, 
- * Canonical City Layout, Arena Lock, Daylight Standard.
+ * Sovereign AAA (v4.6.9)
+ * Features: Reduced Fist Scale, Alpha Artifact Fix, AI Flight Restriction,
+ * Full-Screen Map (M), Canonical City, Arena Lock.
  */
 
 const Fighter = (() => {
@@ -23,12 +23,12 @@ const Fighter = (() => {
     };
 
     const roster = [
-        { id: 'sequid', name: 'SEQUID', color: 0xff4081, hp: 120, weight: 1, unique: false, power: 5 },
-        { id: 'flaxan', name: 'FLAXAN SOLDIER', color: 0xf57c00, hp: 150, weight: 1, unique: false, power: 8 },
-        { id: 'atomeve', name: 'ATOM EVE', color: 0xe91e63, hp: 600, weight: 3, unique: true, power: 15 },
-        { id: 'robot', name: 'ROBOT', color: 0x388e3c, hp: 800, weight: 3, unique: true, power: 18 },
-        { id: 'omniman', name: 'OMNI-MAN', color: 0x455a64, hp: 20000, weight: 10, unique: true, boss: true, power: 50 },
-        { id: 'thragg', name: 'GRAND REGENT THRAGG', color: 0xd32f2f, hp: 25000, weight: 10, unique: true, boss: true, power: 60 }
+        { id: 'sequid', name: 'SEQUID', color: 0xff4081, hp: 120, weight: 1, unique: false, power: 5, flies: false },
+        { id: 'flaxan', name: 'FLAXAN SOLDIER', color: 0xf57c00, hp: 150, weight: 1, unique: false, power: 8, flies: false },
+        { id: 'atomeve', name: 'ATOM EVE', color: 0xe91e63, hp: 600, weight: 3, unique: true, power: 15, flies: true },
+        { id: 'robot', name: 'ROBOT', color: 0x388e3c, hp: 800, weight: 3, unique: true, power: 18, flies: false },
+        { id: 'omniman', name: 'OMNI-MAN', color: 0x455a64, hp: 20000, weight: 10, unique: true, boss: true, power: 55, flies: true },
+        { id: 'thragg', name: 'GRAND REGENT THRAGG', color: 0xd32f2f, hp: 25000, weight: 10, unique: true, boss: true, power: 65, flies: true }
     ];
 
     let enemies = [];
@@ -40,12 +40,12 @@ const Fighter = (() => {
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xddeeff);
-        scene.fog = new THREE.Fog(0xddeeff, 100, 650);
+        scene.fog = new THREE.Fog(0xddeeff, 120, 700);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         camera.position.set(0, state.player.height, 0);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.shadowMap.enabled = true;
@@ -54,17 +54,16 @@ const Fighter = (() => {
         raycaster = new THREE.Raycaster();
         collisionRaycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xfffaf0, 1.5);
-        sunLight.position.set(300, 500, 300);
+        sunLight = new THREE.DirectionalLight(0xfffaf0, 1.6);
+        sunLight.position.set(300, 600, 300);
         sunLight.castShadow = true;
         scene.add(sunLight);
 
         createInvincibleCity();
         setupControls();
-        
         spawnWorldSectors();
         forceBossSpawn(roster[4], OMNI_ARENA_CENTER.clone()); 
         forceBossSpawn(roster[5], new THREE.Vector3(450, 0, 450));
@@ -73,26 +72,25 @@ const Fighter = (() => {
     };
 
     const createInvincibleCity = () => {
-        const floorGeo = new THREE.PlaneGeometry(4000, 4000);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+        const floorGeo = new THREE.PlaneGeometry(5000, 5000);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x999999 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
         const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
-        const buildingMat = new THREE.MeshStandardMaterial({ color: 0xfafafa });
+        const buildingMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         
-        // Canonical Districts
         const cityMap = [
-            { x: 50, z: 50, w: 20, h: 80, d: 20 },
-            { x: -50, z: 50, w: 20, h: 60, d: 20 },
-            { x: 50, z: -50, w: 20, h: 70, d: 20 },
-            { x: -50, z: -50, w: 20, h: 90, d: 20 },
-            { x: 150, z: 0, w: 40, h: 30, d: 100 },
-            { x: -150, z: 0, w: 40, h: 30, d: 100 },
-            { x: 0, z: 200, w: 140, h: 50, d: 30 },
-            { x: 0, z: -200, w: 140, h: 45, d: 30 },
+            { x: 50, z: 50, w: 25, h: 90, d: 25 },
+            { x: -50, z: 50, w: 25, h: 70, d: 25 },
+            { x: 50, z: -50, w: 25, h: 80, d: 25 },
+            { x: -50, z: -50, w: 25, h: 100, d: 25 },
+            { x: 200, z: 0, w: 50, h: 35, d: 120 },
+            { x: -200, z: 0, w: 50, h: 35, d: 120 },
+            { x: 0, z: 250, w: 160, h: 60, d: 40 },
+            { x: 0, z: -250, w: 160, h: 55, d: 40 },
         ];
 
         cityMap.forEach(data => {
@@ -103,17 +101,16 @@ const Fighter = (() => {
             scene.add(b); buildings.push(b);
         });
 
-        // Fixed Noise Map
-        let seed = 777;
+        let seed = 999;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-        for (let i = 0; i < 450; i++) {
-            const h = 25 + random() * 55;
-            const w = 12 + random() * 18;
-            const d = 12 + random() * 18;
-            const x = (random() - 0.5) * 1600;
-            const z = (random() - 0.5) * 1600;
-            if (new THREE.Vector3(x, 0, z).distanceTo(OMNI_ARENA_CENTER) < OMNI_ARENA_RADIUS + 40) continue;
-            if (Math.abs(x) < 50 && Math.abs(z) < 50) continue;
+        for (let i = 0; i < 480; i++) {
+            const h = 30 + random() * 60;
+            const w = 15 + random() * 20;
+            const d = 15 + random() * 20;
+            const x = (random() - 0.5) * 1800;
+            const z = (random() - 0.5) * 1800;
+            if (new THREE.Vector3(x, 0, z).distanceTo(OMNI_ARENA_CENTER) < OMNI_ARENA_RADIUS + 50) continue;
+            if (Math.abs(x) < 60 && Math.abs(z) < 60) continue;
             const b = new THREE.Mesh(buildingGeo, buildingMat);
             b.scale.set(w, h, d);
             b.position.set(x, h/2, z);
@@ -155,7 +152,7 @@ const Fighter = (() => {
         if (overlay) {
             overlay.classList.toggle('hidden');
             if (state.mapOpen) document.exitPointerLock();
-            else document.body.requestPointerLock();
+            else if (state.isLocked) document.body.requestPointerLock();
         }
     };
 
@@ -166,13 +163,13 @@ const Fighter = (() => {
         const color = '#' + data.color.toString(16).padStart(6, '0');
         const cx = 128;
         ctx.strokeStyle = '#000'; ctx.lineWidth = 18;
-        drawBase(ctx, cx, false);
+        drawBase(ctx, cx);
         ctx.strokeStyle = color; ctx.lineWidth = 12;
-        drawBase(ctx, cx, false); 
+        drawBase(ctx, cx); 
         return new THREE.CanvasTexture(canvas);
     };
 
-    const drawBase = (ctx, cx, isPlayer) => {
+    const drawBase = (ctx, cx) => {
         ctx.beginPath(); ctx.arc(cx, 80, 40, 0, Math.PI*2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 320); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx-80, 260); ctx.stroke();
@@ -185,15 +182,15 @@ const Fighter = (() => {
         const texture = createNPCStickman(data);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(3.4, 6.8, 1);
+        sprite.scale.set(3.5, 7, 1);
         sprite.position.copy(pos);
-        sprite.position.y = 3.4;
+        sprite.position.y = 3.5;
         scene.add(sprite);
         if (data.boss) {
-            const iconGeo = new THREE.OctahedronGeometry(1.8, 0);
+            const iconGeo = new THREE.OctahedronGeometry(2, 0);
             const iconMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00 });
             const icon = new THREE.Mesh(iconGeo, iconMat);
-            icon.position.set(0, 6, 0);
+            icon.position.set(0, 6.5, 0);
             sprite.add(icon);
             sprite.userData.icon = icon;
         }
@@ -201,7 +198,7 @@ const Fighter = (() => {
     };
 
     const forceBossSpawn = (data, pos) => {
-        const ringGeo = new THREE.RingGeometry(35, 37, 32);
+        const ringGeo = new THREE.RingGeometry(38, 40, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xb71c1c, side: THREE.DoubleSide });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
@@ -211,13 +208,13 @@ const Fighter = (() => {
     };
 
     const spawnWorldSectors = () => {
-        let seed = 888;
+        let seed = 111;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-        for(let i = 0; i < 65; i++) {
+        for(let i = 0; i < 70; i++) {
             const angle = random() * Math.PI * 2;
-            const r = 180 + random() * 450;
+            const r = 200 + random() * 500;
             const pos = new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r);
-            if (pos.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS + 50) {
+            if (pos.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS + 60) {
                 spawnEnemy(roster[i % 2], pos);
             }
         }
@@ -232,7 +229,7 @@ const Fighter = (() => {
         if (intersects.length > 0) {
             const hit = enemies.find(e => e.sprite === intersects[0].object);
             if (hit && camera.position.distanceTo(hit.sprite.position) <= state.player.punchRange) {
-                hit.data.hp -= 120 * state.player.strength;
+                hit.data.hp -= 150 * state.player.strength;
                 spawnBlood(intersects[0].point);
                 updateTargetHUD(hit.data);
                 if (hit.data.hp <= 0) {
@@ -247,7 +244,7 @@ const Fighter = (() => {
     const animateFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if(fist) {
-            fist.style.transform = `translateY(-200px) scale(1.4) rotate(${side === 'left' ? 25 : -25}deg)`;
+            fist.style.transform = `translateY(-220px) scale(1.4) rotate(${side === 'left' ? 26 : -26}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
         }
     };
@@ -255,19 +252,19 @@ const Fighter = (() => {
     const gainXP = (amt) => {
         state.player.xp += amt;
         state.run.kills++;
-        if(state.player.xp >= state.run.tier * 500) {
+        if(state.player.xp >= state.run.tier * 600) {
             state.run.tier++;
             state.player.points++;
         }
     };
 
     const spawnBlood = (pos) => {
-        const geo = new THREE.SphereGeometry(0.35, 4, 4);
+        const geo = new THREE.SphereGeometry(0.4, 4, 4);
         const mat = new THREE.MeshBasicMaterial({ color: 0xb71c1c });
-        for (let i = 0; i < 40; i++) {
+        for (let i = 0; i < 45; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
-            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*1.3, (Math.random()-0.5)*1.3, (Math.random()-0.5)*1.3), life: 1.0 };
+            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*1.4, (Math.random()-0.5)*1.4, (Math.random()-0.5)*1.4), life: 1.0 };
             scene.add(p); bloodParticles.push(p);
         }
     };
@@ -283,7 +280,7 @@ const Fighter = (() => {
         let superSpeed = state.keys[' '];
         if (moving) {
             state.timeDilation = superSpeed ? 0.12 : 1.0; 
-            const speed = (superSpeed ? 2.4 : 0.7);
+            const speed = (superSpeed ? 2.6 : 0.75);
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
             if (state.keys.s) moveDir.z += 1;
@@ -291,8 +288,8 @@ const Fighter = (() => {
             if (state.keys.d) moveDir.x += 1;
             moveDir.normalize().applyQuaternion(camera.quaternion);
             camera.position.add(moveDir.multiplyScalar(speed));
-            if (state.player.isFlying) camera.position.y = Math.min(150, camera.position.y + 0.75);
-            else camera.position.y = Math.max(state.player.height, camera.position.y - 0.85);
+            if (state.player.isFlying) camera.position.y = Math.min(180, camera.position.y + 0.85);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 0.95);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
@@ -300,20 +297,33 @@ const Fighter = (() => {
         const dt = state.timeDilation;
         enemies.forEach(enemy => {
             const dist = camera.position.distanceTo(enemy.sprite.position);
+            
+            // v4.6.9 AI FLIGHT LOGIC
+            if (enemy.data.flies) {
+                // Viltrumite/Eve logic: Match player height if tracking
+                if (dist < 300) {
+                    const targetY = Math.max(3.5, camera.position.y + (Math.sin(Date.now() * 0.002) * 2));
+                    enemy.sprite.position.y += (targetY - enemy.sprite.position.y) * 0.05 * dt;
+                }
+            } else {
+                // Grounded: Lock to floor
+                enemy.sprite.position.y = 3.5;
+            }
+
             if (enemy.data.id === 'omniman') {
                 if (enemy.sprite.position.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS) {
-                    enemy.sprite.position.add(OMNI_ARENA_CENTER.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.3 * dt));
+                    enemy.sprite.position.add(OMNI_ARENA_CENTER.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.35 * dt));
                 }
             }
             if (enemy.sprite.userData.icon) {
                 enemy.sprite.userData.icon.rotation.y += 0.05 * dt;
-                enemy.sprite.userData.icon.position.y = 6.5 + Math.sin(Date.now() * 0.005) * 0.5;
+                enemy.sprite.userData.icon.position.y = 7.0 + Math.sin(Date.now() * 0.005) * 0.5;
             }
-            if (dist < 250 && dist > 7) {
-                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.16 * dt));
+            if (dist < 300 && dist > 7.5) {
+                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.18 * dt));
             }
-            if (dist < 9 && state.run.active) {
-                enemy.attackTimer += (0.022 * dt);
+            if (dist < 9.5 && state.run.active) {
+                enemy.attackTimer += (0.024 * dt);
                 if (enemy.attackTimer >= 1.0) {
                     state.player.hp -= enemy.data.power; enemy.attackTimer = 0;
                     if (state.player.hp <= 0) die();
@@ -341,7 +351,7 @@ const Fighter = (() => {
             const dz = (e.sprite.position.z - camera.position.z) * 0.3;
             if(Math.abs(dx) < 100 && Math.abs(dz) < 100) {
                 ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0');
-                ctx.beginPath(); ctx.arc(cx + dx, cy + dz, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx + dx, dz + cy, 4, 0, Math.PI*2); ctx.fill();
             }
         });
     };
@@ -350,26 +360,12 @@ const Fighter = (() => {
         const canvas = document.getElementById('map-canvas'); if(!canvas) return;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0,0,800,800);
-        ctx.fillStyle = 'rgba(10, 10, 20, 0.95)'; ctx.fillRect(0,0,800,800);
-        const center = 400, scale = 0.4;
-        
-        // Buildings
-        ctx.fillStyle = '#333';
-        buildings.forEach(b => {
-            ctx.fillRect(center + b.position.x*scale, center + b.position.z*scale, 4, 4);
-        });
-        // Omni Plaza
-        ctx.strokeStyle = '#b71c1c'; ctx.beginPath();
-        ctx.arc(center + OMNI_ARENA_CENTER.x*scale, center + OMNI_ARENA_CENTER.z*scale, OMNI_ARENA_RADIUS*scale, 0, Math.PI*2);
-        ctx.stroke();
-        // Enemies
-        enemies.forEach(e => {
-            ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0');
-            ctx.beginPath(); ctx.arc(center + e.sprite.position.x*scale, center + e.sprite.position.z*scale, 3, 0, Math.PI*2); ctx.fill();
-        });
-        // Player
-        ctx.fillStyle = '#1e88e5'; ctx.beginPath();
-        ctx.arc(center + camera.position.x*scale, center + camera.position.z*scale, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(10, 10, 20, 0.98)'; ctx.fillRect(0,0,800,800);
+        const center = 400, scale = 0.35;
+        buildings.forEach(b => { ctx.fillStyle = '#444'; ctx.fillRect(center + b.position.x*scale, center + b.position.z*scale, 5, 5); });
+        ctx.strokeStyle = '#b71c1c'; ctx.beginPath(); ctx.arc(center + OMNI_ARENA_CENTER.x*scale, center + OMNI_ARENA_CENTER.z*scale, OMNI_ARENA_RADIUS*scale, 0, Math.PI*2); ctx.stroke();
+        enemies.forEach(e => { ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0'); ctx.beginPath(); ctx.arc(center + e.sprite.position.x*scale, center + e.sprite.position.z*scale, 3, 0, Math.PI*2); ctx.fill(); });
+        ctx.fillStyle = '#1e88e5'; ctx.beginPath(); ctx.arc(center + camera.position.x*scale, center + camera.position.z*scale, 6, 0, Math.PI*2); ctx.fill();
     };
 
     const updateUI = () => {
@@ -378,7 +374,7 @@ const Fighter = (() => {
         const kills = document.getElementById('enemies-defeated');
         const tier = document.getElementById('run-tier');
         if (php) php.style.width = `${Math.max(0, state.player.hp)}%`;
-        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 500)) * 100}%`;
+        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 600)) * 100}%`;
         if (kills) kills.innerText = state.run.kills;
         if (tier) tier.innerText = state.run.tier;
     };
