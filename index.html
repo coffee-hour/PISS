@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PISS - Party Interactive Showdown System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center p-6">
+
+    <div class="w-full max-w-4xl bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-2xl space-y-6">
+        
+        <div class="flex justify-between items-center border-b border-gray-800 pb-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-amber-500 tracking-wider">PISS</h1>
+                <p class="text-xs text-gray-400 font-mono">Party Interactive Showdown System</p>
+            </div>
+            
+            <div id="dm-badge-toggle" class="flex items-center gap-3 bg-gray-950 px-4 py-2 rounded-lg text-sm border border-gray-800 cursor-pointer select-none transition-colors">
+                <span id="badge-status" class="text-gray-500 font-mono">NO DM BADGE</span>
+                <button onclick="toggleDMAction()" class="bg-amber-600 hover:bg-amber-500 text-white px-2 py-0.5 rounded text-xs font-bold transition">Toggle Badge</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="bg-gray-950 p-4 rounded-lg border border-gray-800 space-y-3">
+                <h2 class="text-lg font-bold text-gray-200 tracking-wide">Player Profile</h2>
+                <div class="space-y-1 text-sm font-mono">
+                    <p>Level: <span id="player-level" class="font-bold text-amber-400">1</span></p>
+                    <p>XP: <span id="player-xp" class="font-bold text-blue-400">0</span> / 100</p>
+                </div>
+                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                    <div id="xp-bar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+                <button onclick="gainXP(25)" class="w-full bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs py-2 rounded font-medium border border-gray-700 transition">
+                    Simulate Action (+25 XP)
+                </button>
+            </div>
+
+            <div class="bg-gray-950 p-4 rounded-lg border border-gray-800 space-y-3 md:col-span-2">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-200 tracking-wide">Active Move Set (<span id="move-count">0</span>/4)</h2>
+                </div>
+                
+                <div id="moves-container" class="grid grid-cols-2 gap-2">
+                    </div>
+                
+                <div class="flex gap-2 pt-2">
+                    <input id="new-move-input" type="text" placeholder="Train custom action..." class="flex-1 bg-gray-950 border border-gray-800 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-amber-500 text-gray-200">
+                    <button onclick="addMove()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-1.5 rounded text-sm font-semibold transition">
+                        Equip
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-950 p-4 rounded-lg border border-gray-800 flex flex-col h-72">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 font-mono">Global Party Encounter Feed</h2>
+            <div id="action-log" class="flex-1 overflow-y-auto space-y-1.5 p-3 bg-gray-900 rounded border border-gray-800 text-xs font-mono text-gray-400">
+                <div class="text-amber-500/90">[SYSTEM]: Global Party Room Active. Listening for incoming actions.</div>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <label class="block text-xs font-mono uppercase tracking-wider text-gray-400">Transmit Group Updates to AI Engine (Requires DM Badge Permission)</label>
+            <div class="flex gap-2">
+                <input id="ai-input" type="text" placeholder="Describe the party's action or scenario update..." class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-amber-500 text-gray-100">
+                <button onclick="sendToAIWorker()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-bold text-sm tracking-wide transition shadow-lg shrink-0">
+                    Sync to Worker
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION VARIABLE BLANKS
+        const GROQ_API_KEY = ""; // Insert your placeholder API Key string token here if managing client side
+        const CLOUDFLARE_WORKER_URL = "https://your-piss-backend-worker.workers.dev/api/party";
+
+        // GLOBAL APPLICATION STATE
+        let gameState = {
+            level: 1,
+            xp: 0,
+            hasDMCard: false,
+            moves: ["Basic Strike", "Counter Block"] // Starter loadout
+        };
+
+        // RENDER PIPELINES
+        function renderMoves() {
+            const container = document.getElementById('moves-container');
+            const countElem = document.getElementById('move-count');
+            container.innerHTML = '';
+            
+            gameState.moves.forEach((move, index) => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-gray-900 border border-gray-800 px-3 py-2 rounded-md">
+                        <span class="text-sm font-mono text-gray-300">${move}</span>
+                        <button onclick="deleteMove(${index})" class="text-red-400 hover:text-red-300 text-xs font-bold transition">✕</button>
+                    </div>
+                `;
+            });
+            countElem.innerText = gameState.moves.length;
+        }
+
+        function renderStats() {
+            document.getElementById('player-level').innerText = gameState.level;
+            document.getElementById('player-xp').innerText = gameState.xp;
+            const xpPercentage = Math.min((gameState.xp / 100) * 100, 100);
+            document.getElementById('xp-bar').style.width = `${xpPercentage}%`;
+        }
+
+        // GAMEPLAY MECHANICS
+        function toggleDMAction() {
+            gameState.hasDMCard = !gameState.hasDMCard;
+            const status = document.getElementById('badge-status');
+            const element = document.getElementById('dm-badge-toggle');
+            
+            if (gameState.hasDMCard) {
+                status.innerText = "DM BADGE ACTIVE";
+                status.className = "text-amber-400 font-bold font-mono";
+                element.className = "flex items-center gap-3 bg-gray-950 px-4 py-2 rounded-lg text-sm border border-amber-500 cursor-pointer select-none transition-colors";
+                logAction("[SYSTEM]: DM credentials established. AI prompt pipelines unlocked.");
+            } else {
+                status.innerText = "NO DM BADGE";
+                status.className = "text-gray-500 font-mono";
+                element.className = "flex items-center gap-3 bg-gray-950 px-4 py-2 rounded-lg text-sm border border-gray-800 cursor-pointer select-none transition-colors";
+                logAction("[SYSTEM]: DM credentials dropped.");
+            }
+        }
+
+        function addMove() {
+            const input = document.getElementById('new-move-input');
+            const moveName = input.value.trim();
+            
+            if (!moveName) return;
+            
+            // Critical Move Limitation Rule Enforcement (Max 4 moves)
+            if (gameState.moves.length >= 4) {
+                logAction("[REJECTED]: Move configurations saturated. Maximum limit of 4 components reached.");
+                return;
+            }
+            
+            gameState.moves.push(moveName);
+            input.value = '';
+            renderMoves();
+            logAction(`[MOVE EQUIPPED]: Added Action "${moveName}" to your available kit.`);
+        }
+
+        function deleteMove(index) {
+            const removed = gameState.moves.splice(index, 1);
+            renderMoves();
+            logAction(`[MOVE FORGOTTEN]: Discarded Action "${removed[0]}".`);
+        }
+
+        function gainXP(amount) {
+            gameState.xp += amount;
+            logAction(`[ACTION]: Engagement registered. +${amount} XP gained.`);
+            
+            // Progression Level-Up Trigger Hook
+            if (gameState.xp >= 100) {
+                gameState.level += 1;
+                gameState.xp = gameState.xp - 100;
+                logAction(`[LEVEL UP]: Character advanced to Rank ${gameState.level}! Pool limitations refreshed.`);
+            }
+            renderStats();
+        }
+
+        function logAction(message) {
+            const log = document.getElementById('action-log');
+            log.innerHTML += `<div>${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // CLOUDFLARE BACKEND CONNECTION PIPELINE
+        async function sendToAIWorker() {
+            const inputElement = document.getElementById('ai-input');
+            const text = inputElement.value.trim();
+            if (!text) return;
+
+            // RESTRICTION CHECK: Only evaluate and transmit group actions if DM Badge is equipped
+            if (!gameState.hasDMCard) {
+                logAction("[ACCESS DENIED]: Transmitting group activity reports to the Groq processing node requires an active DM Badge.");
+                return;
+            }
+
+            logAction(`[DM TRANSIT]: ${text}`);
+            inputElement.value = '';
+
+            try {
+                // Post request targeting the Cloudflare Worker orchestration layer
+                const response = await fetch(CLOUDFLARE_WORKER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${GROQ_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        message: text,
+                        hasDMCard: gameState.hasDMCard,
+                        playerContext: {
+                            level: gameState.level,
+                            currentMoves: gameState.moves
+                        },
+                        // Tells the worker which session profile context/history database to read from
+                        partySessionId: "PISS_GLOBAL_PARTY_LOBBY_ALPHA" 
+                    })
+                });
+
+                if (!response.ok) throw new Error("Worker endpoint status response anomaly.");
+
+                const data = await response.json();
+                logAction(`[GROQ AI RESPONSE]: ${data.reply}`);
+            } catch (err) {
+                // Mock execution fallback for debugging before your Worker endpoint is completely live
+                console.warn("Cloudflare worker fallback routing triggered. Simulation layer active.", err);
+                setTimeout(() => {
+                    logAction(`[GROQ AI GM (Worker Simulation Loop)]: Data received successfully. Message referenced against central historical store index. Verified current move pool status: (${gameState.moves.length}/4) active items.`);
+                }, 750);
+            }
+        }
+
+        // INITIAL LOAD INITIALIZATION
+        renderMoves();
+        renderStats();
+    </script>
+</body>
+</html>
