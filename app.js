@@ -1,13 +1,13 @@
 /**
- * Sovereign: Slaughter (v2.5.0)
- * Oversized Strike Cursor, Content Expansion, and Imperial Dispatch.
+ * Sovereign: Slaughter (v2.5.2) - EMERGENCY RECOVERY BUILD
+ * Restores v2.5.0 content and fixes fatal state loading bug.
  */
 
 const Sovereign = (() => {
     // --- Imperial State ---
     let state = {
-        treasury: 0,
-        upgrades: {}, // Initialized in loop
+        treasury: 100,
+        upgrades: {},
         advancements: {
             master_smithing: 0,
             imperial_logistics: 0,
@@ -66,54 +66,57 @@ const Sovereign = (() => {
         ]
     };
 
-    // --- Custom Cursor ---
     const initCursor = () => {
         const cursor = document.getElementById('custom-cursor');
+        if (!cursor) return;
         const wrapper = cursor.querySelector('.sword-wrapper');
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = `${e.clientX}px`;
             cursor.style.top = `${e.clientY}px`;
         });
         document.addEventListener('mousedown', () => {
-            wrapper.classList.add('sword-strike');
-            setTimeout(() => wrapper.classList.remove('sword-strike'), 100);
+            if (wrapper) {
+                wrapper.classList.add('sword-strike');
+                setTimeout(() => wrapper.classList.remove('sword-strike'), 100);
+            }
         });
     };
 
-    // --- Tab Switching ---
     const switchTab = (tabId) => {
         document.querySelectorAll('.shop-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(`shop-${tabId}`).classList.add('active');
-        const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+        const panel = document.getElementById(`shop-${tabId}`);
+        if (panel) panel.classList.add('active');
+        const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
         if (activeBtn) activeBtn.classList.add('active');
     };
 
-    // --- Audio ---
     let audioCtx = null;
     const playImpactSound = (fury = false) => {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = fury ? 'square' : 'sawtooth';
-        osc.frequency.setValueAtTime(fury ? 240 : 180, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = fury ? 'square' : 'sawtooth';
+            osc.frequency.setValueAtTime(fury ? 240 : 180, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
     };
 
-    // --- Particles ---
     let canvas, ctx, particles = [];
     const initParticles = () => {
         canvas = document.getElementById('particle-canvas');
+        if (!canvas) return;
         ctx = canvas.getContext('2d');
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         requestAnimationFrame(updateParticles);
     };
-    const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
     const spawnSparks = (x, y, multiplier = 1) => {
         for (let i = 0; i < 10 * multiplier; i++) {
             particles.push({
@@ -124,6 +127,7 @@ const Sovereign = (() => {
         }
     };
     const updateParticles = () => {
+        if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.45; p.life -= 0.02;
@@ -133,10 +137,9 @@ const Sovereign = (() => {
         ctx.globalAlpha = 1.0; requestAnimationFrame(updateParticles);
     };
 
-    // --- Logic ---
     const init = () => {
         load();
-        config.upgrades.forEach(u => if (state.upgrades[u.id] === undefined) state.upgrades[u.id] = 0);
+        config.upgrades.forEach(u => { if (state.upgrades[u.id] === undefined) state.upgrades[u.id] = 0; });
         initCursor();
         initParticles();
         render();
@@ -165,16 +168,16 @@ const Sovereign = (() => {
 
     const calculatePassiveRate = () => {
         let base = config.upgrades.reduce((acc, u) => acc + (state.upgrades[u.id] * u.passive), 0);
-        const sm = Math.pow(config.advancements[0].multiplier, state.advancements.master_smithing);
-        const st = Math.pow(config.advancements[4].multiplier, state.advancements.strategic_mastery);
-        const ic = Math.pow(config.advancements[5].multiplier, state.advancements.imperial_command);
+        const sm = Math.pow(config.advancements[0].multiplier, state.advancements.master_smithing || 0);
+        const st = Math.pow(config.advancements[4].multiplier, state.advancements.strategic_mastery || 0);
+        const ic = Math.pow(config.advancements[5].multiplier, state.advancements.imperial_command || 0);
         return base * sm * st * ic;
     };
 
     const calculateClickPower = () => {
         let base = 1 + config.upgrades.reduce((acc, u) => acc + (state.upgrades[u.id] * u.click), 0);
-        const il = Math.pow(config.advancements[1].multiplier, state.advancements.imperial_logistics);
-        const tc = Math.pow(config.advancements[7].multiplier, state.advancements.total_conquest);
+        const il = Math.pow(config.advancements[1].multiplier, state.advancements.imperial_logistics || 0);
+        const tc = Math.pow(config.advancements[7].multiplier, state.advancements.total_conquest || 0);
         const finalBase = base * il * tc;
         return state.furyActive ? finalBase * 2 : finalBase;
     };
@@ -183,9 +186,11 @@ const Sovereign = (() => {
         const power = calculateClickPower();
         state.treasury += power; state.totalGoldEarned += power;
         const enemy = document.getElementById('enemy-sprite');
-        enemy.classList.remove('enemy-hit'); void enemy.offsetWidth; enemy.classList.add('enemy-hit');
+        if (enemy) {
+            enemy.classList.remove('enemy-hit'); void enemy.offsetWidth; enemy.classList.add('enemy-hit');
+        }
         if (!state.furyActive) {
-            const bt = Math.pow(config.advancements[3].multiplier, state.advancements.bloodthirst);
+            const bt = Math.pow(config.advancements[3].multiplier, state.advancements.bloodthirst || 0);
             state.comboValue = Math.min(10, state.comboValue + 0.4 * bt);
             if (state.comboValue >= 10) activateFury();
         }
@@ -196,7 +201,7 @@ const Sovereign = (() => {
 
     const activateFury = () => {
         state.furyActive = true;
-        const dw = state.advancements.divine_wrath * config.advancements[6].multiplier;
+        const dw = (state.advancements.divine_wrath || 0) * config.advancements[6].multiplier;
         state.furyTimer = 5 + dw;
         document.body.classList.add('fury-active');
         notify("THE GREAT SLAUGHTER BEGINS!");
@@ -209,11 +214,12 @@ const Sovereign = (() => {
 
     const triggerRecoil = () => {
         const app = document.getElementById('app');
-        app.classList.remove('recoil'); void app.offsetWidth; app.classList.add('recoil');
+        if (app) { app.classList.remove('recoil'); void app.offsetWidth; app.classList.add('recoil'); }
     };
 
     const spawnTextParticle = (text, x, y) => {
         const container = document.getElementById('text-particle-container');
+        if (!container) return;
         const p = document.createElement('div');
         p.className = 'text-particle'; p.innerText = text; p.style.left = `${x}px`; p.style.top = `${y}px`;
         container.appendChild(p); setTimeout(() => p.remove(), 800);
@@ -239,12 +245,12 @@ const Sovereign = (() => {
     };
 
     const calculateUpgradeCost = (u) => {
-        const base = u.baseCost * Math.pow(1.15, state.upgrades[u.id]);
-        const costMult = Math.pow(config.advancements[2].multiplier, state.advancements.war_economy);
+        const base = u.baseCost * Math.pow(1.15, state.upgrades[u.id] || 0);
+        const costMult = Math.pow(config.advancements[2].multiplier, state.advancements.war_economy || 0);
         return Math.floor(base * costMult);
     };
 
-    const calculateAdvancementCost = (adv) => Math.floor(adv.baseCost * Math.pow(8, state.advancements[adv.id]));
+    const calculateAdvancementCost = (adv) => Math.floor(adv.baseCost * Math.pow(8, state.advancements[adv.id] || 0));
 
     const render = () => {
         const gContainer = document.getElementById('upgrade-container');
@@ -257,7 +263,7 @@ const Sovereign = (() => {
             card.className = `upgrade-card ${state.treasury < cost ? 'disabled' : ''}`;
             card.id = `upgrade-${u.id}`;
             card.onclick = () => buyUpgrade(u.id);
-            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${u.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Gold</div></div><div class="upgrade-count">${state.upgrades[u.id]}</div>`;
+            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${u.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Gold</div></div><div class="upgrade-count">${state.upgrades[u.id] || 0}</div>`;
             gContainer.appendChild(card);
         });
         aContainer.innerHTML = '';
@@ -266,7 +272,7 @@ const Sovereign = (() => {
             const card = document.createElement('div');
             card.className = `upgrade-card ${state.treasury < cost ? 'disabled' : ''}`;
             card.onclick = () => buyAdvancement(adv.id);
-            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${adv.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${adv.name}</div><div class="upgrade-desc">${adv.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Gold</div></div><div class="upgrade-count">${state.advancements[adv.id]}</div>`;
+            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${adv.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${adv.name}</div><div class="upgrade-desc">${adv.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Gold</div></div><div class="upgrade-count">${state.advancements[adv.id] || 0}</div>`;
             aContainer.appendChild(card);
         });
         lucide.createIcons();
@@ -307,7 +313,16 @@ const Sovereign = (() => {
     const load = () => {
         const s = localStorage.getItem('sov_slaughter_v25');
         if (s) {
-            try { const p = JSON.parse(s); state = { ...state, ...p, lastUpdate: Date.now() }; state.furyActive = false; state.comboValue = 0; } catch(e) {}
+            try { 
+                const p = JSON.parse(s); 
+                state = { ...state, ...p, lastUpdate: Date.now() }; 
+                state.furyActive = false; 
+                state.comboValue = 0; 
+                // Fix potential undefined properties from earlier versions
+                if (!state.advancements) state.advancements = {};
+                if (!state.upgrades) state.upgrades = {};
+                if (!state.dispatchEvents) state.dispatchEvents = [];
+            } catch(e) {}
         }
     };
     return { init, handleInteraction, switchTab };
