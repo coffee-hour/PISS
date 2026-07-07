@@ -3,229 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Imperium Simulator</title>
+    <title>Sovereign: Imperial Society Simulator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="dark-mode">
+<body class="obsidian-theme">
     <div id="app">
-        <!-- Sidebar Navigation -->
+        <!-- Persistent Sidebar -->
         <aside class="sidebar no-select">
             <div class="sidebar-header">
                 <div class="brand-logo">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 5V11C4 16.19 7.41 21.05 12 22C16.59 21.05 20 16.19 20 11V5L12 2Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <i data-lucide="crown"></i>
                 </div>
                 <h1 class="brand-name">SOVEREIGN</h1>
             </div>
             <nav class="sidebar-nav">
-                <button class="nav-btn active" data-tab="civ">
-                    <span class="nav-icon ic-civ"></span>
-                    Civ Center
+                <button class="nav-btn active" data-tab="senate">
+                    <i data-lucide="building-2"></i>
+                    Imperial Senate
                 </button>
-                <button class="nav-btn" data-tab="military">
-                    <span class="nav-icon ic-mil"></span>
-                    Barracks
+                <button class="nav-btn" data-tab="garrison">
+                    <i data-lucide="shield-half"></i>
+                    Garrison
                 </button>
                 <button class="nav-btn" data-tab="market">
-                    <span class="nav-icon ic-mkt"></span>
+                    <i data-lucide="arrow-left-right"></i>
                     Marketplace
                 </button>
-                <button class="nav-btn" data-tab="commanders">
-                    <span class="nav-icon ic-cmd"></span>
-                    Commanders
+                <button class="nav-btn" data-tab="council">
+                    <i data-lucide="users"></i>
+                    Grand Council
                 </button>
-                <button class="nav-btn" data-tab="campaign">
-                    <span class="nav-icon ic-cmp"></span>
-                    Campaign
+                <button class="nav-btn" data-tab="expansion">
+                    <i data-lucide="map"></i>
+                    Imperial Expansion
                 </button>
                 <button class="nav-btn" data-tab="tech">
-                    <span class="nav-icon ic-tch"></span>
+                    <i data-lucide="scroll-text"></i>
                     Tech Tree
                 </button>
-                <button class="nav-btn" data-tab="prestige">
-                    <span class="nav-icon ic-dyn"></span>
-                    Dynasty
+                <button class="nav-btn" data-tab="dynasty">
+                    <i data-lucide="history"></i>
+                    Dynastic Legacy
                 </button>
             </nav>
             <div class="sidebar-footer">
-                <div class="era-indicator">
-                    <span class="label">Era</span>
+                <div class="status-card">
+                    <span class="label">Imperial Era</span>
                     <span id="current-era" class="value">Age of Discovery</span>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Workspace -->
-        <main class="workspace">
-            <!-- Global Resource Header -->
-            <header class="resource-header no-select">
-                <div class="resource-pill" id="res-food">
-                    <div class="res-icon food-icon"></div>
-                    <div class="res-content">
-                        <span class="res-label">Food</span>
-                        <span class="res-value">0</span>
-                        <div class="diag-bar"><div class="diag-fill"></div></div>
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Resource Bar -->
+            <header class="resource-bar no-select">
+                <div class="res-node" id="res-food" title="Agrarian Output">
+                    <i data-lucide="wheat" class="res-icon"></i>
+                    <div class="res-meta">
+                        <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="manual-btn" onclick="Sovereign.manualGather('food')">Gather</button>
+                    <button class="labor-btn" onclick="Sovereign.manualGather('food')">Levy</button>
                 </div>
-                <div class="resource-pill" id="res-wood">
-                    <div class="res-icon wood-icon"></div>
-                    <div class="res-content">
-                        <span class="res-label">Wood</span>
-                        <span class="res-value">0</span>
-                        <div class="diag-bar"><div class="diag-fill"></div></div>
+                <div class="res-node" id="res-wood" title="Construction Reserves">
+                    <i data-lucide="axe" class="res-icon"></i>
+                    <div class="res-meta">
+                        <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="manual-btn" onclick="Sovereign.manualGather('wood')">Gather</button>
+                    <button class="labor-btn" onclick="Sovereign.manualGather('wood')">Levy</button>
                 </div>
-                <div class="resource-pill" id="res-ore">
-                    <div class="res-icon ore-icon"></div>
-                    <div class="res-content">
-                        <span class="res-label">Ore</span>
-                        <span class="res-value">0</span>
-                        <div class="diag-bar"><div class="diag-fill"></div></div>
+                <div class="res-node" id="res-ore" title="Metallurgical Mining">
+                    <i data-lucide="pickaxe" class="res-icon"></i>
+                    <div class="res-meta">
+                        <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="manual-btn" onclick="Sovereign.manualGather('ore')">Gather</button>
+                    <button class="labor-btn" onclick="Sovereign.manualGather('ore')">Levy</button>
                 </div>
-                <div class="resource-pill" id="res-gold">
-                    <div class="res-icon gold-icon"></div>
-                    <div class="res-content">
-                        <span class="res-label">Gold</span>
-                        <span class="res-value">0</span>
-                        <div class="diag-bar"><div class="diag-fill"></div></div>
+                <div class="res-node" id="res-gold" title="Treasury Reserves">
+                    <i data-lucide="coins" class="res-icon"></i>
+                    <div class="res-meta">
+                        <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
+                    </div>
+                </div>
+                <div class="res-node population" id="res-pop" title="Imperial Population">
+                    <i data-lucide="users-2" class="res-icon"></i>
+                    <div class="res-meta">
+                        <span class="res-val">0</span>
+                        <span class="res-label">Population</span>
                     </div>
                 </div>
             </header>
 
-            <!-- Tab Content Sections -->
-            <div class="scroll-container">
-                <section id="tab-civ" class="tab-content active">
-                    <div class="terminal-header">
-                        <div class="status-indicator"></div>
-                        <span>Administrative Hub Protocol</span>
+            <!-- Tab Content (One visible at a time) -->
+            <div class="tab-viewport">
+                <section id="tab-senate" class="tab-panel active">
+                    <div class="panel-header">
+                        <h2>Imperial Senate</h2>
+                        <p>Manage the infrastructure and workforce of the society.</p>
                     </div>
-                    <div class="civ-layout">
-                        <div class="optimization-bar hub-card">
-                            <div class="hub-header">
-                                <h3>Labor Optimization</h3>
-                                <span class="card-badge" id="click-lvl">Lvl 1</span>
+                    <div class="hub-container">
+                        <div class="upgrade-card primary-border">
+                            <div class="card-header">
+                                <h3>Infrastructure Optimization</h3>
+                                <span class="badge" id="click-lvl">Lvl 1</span>
                             </div>
-                            <div class="crank-dial-container">
-                                <div class="crank-dial" id="crank-dial"></div>
-                                <div class="dial-stats">
-                                    <p>Gather Multiplier: <span id="click-power">1</span>x</p>
-                                    <button class="terminal-btn" id="upgrade-click-btn">Upgrade Hub (100 Gold)</button>
-                                </div>
+                            <div class="card-body">
+                                <p>Enhance the efficiency of manual labor levies. Current Power: +<span id="click-power">1</span></p>
+                                <button class="action-btn glow" id="upgrade-click-btn">Upgrade Infrastructure</button>
                             </div>
                         </div>
-                        <div class="hub-grid" id="civ-buildings"></div>
+                        <div class="card-grid" id="senate-buildings"></div>
                     </div>
                 </section>
 
-                <section id="tab-military" class="tab-content">
-                    <div class="terminal-header">
-                        <div class="status-indicator alert"></div>
-                        <span>Tactical Squad Roster</span>
+                <section id="tab-garrison" class="tab-panel">
+                    <div class="panel-header">
+                        <h2>Imperial Garrison</h2>
+                        <p>Train specialized military forces to secure and expand the empire.</p>
                     </div>
-                    <div class="barracks-grid" id="military-units"></div>
+                    <div class="card-grid" id="garrison-units"></div>
                 </section>
 
-                <section id="tab-market" class="tab-content">
-                    <div class="terminal-header">
-                        <div class="status-indicator market"></div>
-                        <span>Imperial Trade Terminal</span>
+                <section id="tab-market" class="tab-panel">
+                    <div class="panel-header">
+                        <h2>Marketplace</h2>
+                        <p>Trade surplus agrarian and construction resources for treasury gold.</p>
                     </div>
-                    <div class="market-terminal" id="market-grid">
-                        <!-- Trades injected here -->
-                    </div>
+                    <div class="market-list" id="market-list"></div>
                 </section>
 
-                <section id="tab-commanders" class="tab-content">
-                    <div class="terminal-header">
-                        <div class="status-indicator"></div>
-                        <span>War Room Assignment</span>
+                <section id="tab-council" class="tab-panel">
+                    <div class="panel-header">
+                        <h2>Grand Council</h2>
+                        <p>Assign ministers to specialize in regional administration.</p>
                     </div>
-                    <div class="commander-terminal">
-                        <div class="commander-dossier-list" id="commander-list"></div>
-                    </div>
+                    <div class="card-grid" id="council-ministers"></div>
                 </section>
 
-                <section id="tab-campaign" class="tab-content">
-                    <div class="terminal-header">
-                        <div class="status-indicator combat"></div>
-                        <span>Planetary Campaign Schematic</span>
+                <section id="tab-expansion" class="tab-panel">
+                    <div class="panel-header">
+                        <h2>Imperial Expansion</h2>
+                        <p>Conquer outlying sectors to establish permanent tributes.</p>
                     </div>
-                    <div class="campaign-layout">
-                        <div class="campaign-radar-view">
-                            <div class="radar-grid" id="campaign-map"></div>
-                        </div>
-                        <div class="campaign-log console-panel" id="campaign-log">
-                            <div class="log-header">Combat Simulation Feed</div>
-                            <div class="log-entries" id="log-entries"></div>
+                    <div class="expansion-layout">
+                        <div class="sector-map" id="expansion-map"></div>
+                        <div class="combat-console">
+                            <div class="console-header">Strategic Dispatch Log</div>
+                            <div class="console-body" id="log-entries"></div>
                         </div>
                     </div>
                 </section>
 
-                <section id="tab-tech" class="tab-content">
-                    <div class="terminal-header">
-                        <div class="status-indicator tech"></div>
-                        <span>Logistical Research Schematic</span>
+                <section id="tab-tech" class="tab-panel">
+                    <div class="panel-header">
+                        <h2>Tech Tree</h2>
+                        <p>Research breakthroughs to advance the society's capabilities.</p>
                     </div>
-                    <div class="tech-tree-wrapper">
-                        <div class="tech-tree-container" id="tech-tree-view">
-                            <!-- Tech Tree Nodes & Lines -->
-                        </div>
-                    </div>
+                    <div class="tech-tree-view" id="tech-tree"></div>
                 </section>
 
-                <section id="tab-prestige" class="tab-content">
-                    <div class="terminal-header">
-                        <div class="status-indicator legacy"></div>
-                        <span>Dynastic Succession Protocol</span>
+                <section id="tab-dynasty" class="tab-panel">
+                    <div class="panel-header">
+                        <h2>Dynastic Legacy</h2>
+                        <p>Restart the cycle for permanent imperial legacy modifiers.</p>
                     </div>
-                    <div class="prestige-terminal">
-                        <div class="legacy-dossier prestige-card">
-                            <h3>Phoenix Legacy Registry</h3>
-                            <div class="legacy-stats">
-                                <div class="legacy-stat">
-                                    <label>Total Legacy Points</label>
-                                    <span id="legacy-points">0</span>
-                                </div>
-                                <div class="legacy-stat">
-                                    <label>Production Multiplier</label>
-                                    <span id="prod-mult">1.0x</span>
-                                </div>
-                                <div class="legacy-stat">
-                                    <label>Combat Strength Bonus</label>
-                                    <span id="combat-bonus">0%</span>
-                                </div>
+                    <div class="legacy-card">
+                        <div class="legacy-stats">
+                            <div class="stat">
+                                <label>Legacy Points</label>
+                                <span id="legacy-points">0</span>
                             </div>
-                            <button class="terminal-btn reset-btn" id="prestige-btn">Authorize Succession</button>
+                            <div class="stat">
+                                <label>Prod Multiplier</label>
+                                <span id="prod-mult">1.0x</span>
+                            </div>
+                            <div class="stat">
+                                <label>Combat Bonus</label>
+                                <span id="combat-bonus">0%</span>
+                            </div>
                         </div>
+                        <button class="action-btn glow warning" id="prestige-btn">Authorize Dynastic Succession</button>
                     </div>
                 </section>
             </div>
         </main>
 
-        <!-- Event Modal -->
+        <!-- Modals -->
         <div id="event-overlay" class="modal-overlay">
-            <div class="modal-content action-card terminal-modal">
-                <div class="modal-header terminal-header">
-                    <h2 id="event-title">Frontier Event</h2>
-                </div>
-                <div class="modal-body">
-                    <p id="event-desc" class="terminal-text">A random event has occurred on your borders.</p>
-                    <div id="event-options" class="options-container"></div>
-                </div>
+            <div class="modal-box">
+                <h2 id="event-title">Imperial Decree</h2>
+                <p id="event-desc"></p>
+                <div id="event-options" class="options-stack"></div>
             </div>
         </div>
     </div>
-    <div id="toast-container"></div>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
 </body>
 </html>
