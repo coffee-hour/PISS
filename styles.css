@@ -1,19 +1,18 @@
 :root {
     --amber: #ff8c00;
     --amber-glow: rgba(255, 140, 0, 0.4);
-    --crimson: #b91c1c;
+    --crimson: #b71c1c;
     --obsidian: #050608;
     --slate: #0a0e17;
-    --glass: rgba(10, 14, 23, 0.98);
+    --glass: rgba(255, 255, 255, 0.95);
     --font-mono: 'JetBrains Mono', monospace;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
+body { background-color: #ddeeff; font-family: 'Plus Jakarta Sans', sans-serif; color: #333; }
 
 canvas { display: block; width: 100vw; height: 100vh; }
 
-/* v4.4.0 REPAIRED HUD CLAMP */
 #ui-overlay { 
     position: absolute; 
     top: 0; left: 0; width: 100%; height: 100%;
@@ -24,21 +23,23 @@ canvas { display: block; width: 100vw; height: 100vh; }
 
 #top-stat-bar {
     position: absolute; top: 0; left: 0; width: 100%; height: 60px;
-    background: var(--glass); border-bottom: 1px solid var(--amber);
+    background: var(--glass); border-bottom: 2px solid var(--amber);
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 30px; font-family: var(--font-mono); pointer-events: auto;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .stat-group { display: flex; align-items: center; gap: 10px; }
-.stat-label { font-size: 0.6rem; color: var(--amber); font-weight: 800; }
-.bar-container { width: 120px; height: 8px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
+.stat-label { font-size: 0.6rem; color: #555; font-weight: 800; }
+.bar-container { width: 120px; height: 10px; background: #eee; border: 1px solid #ccc; }
 .bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
 
 #minimap {
     position: absolute; top: 80px; right: 20px;
     width: 200px; height: 200px;
     border: 2px solid var(--amber);
-    background: rgba(5, 6, 8, 0.98);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 #fists {
@@ -46,9 +47,9 @@ canvas { display: block; width: 100vw; height: 100vh; }
     display: flex; justify-content: space-between; padding: 0 10%;
 }
 .fist {
-    width: 300px; height: 100%;
-    background: linear-gradient(to top, #050608, #1a1a1a);
-    border: 6px solid #000; border-radius: 60px 60px 0 0;
+    width: 320px; height: 100%;
+    background: linear-gradient(to top, #333, #666);
+    border: 8px solid #222; border-radius: 80px 80px 0 0;
     transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -56,27 +57,28 @@ canvas { display: block; width: 100vw; height: 100vh; }
     position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
     text-align: center;
 }
-.target-label { font-size: 0.8rem; color: var(--crimson); letter-spacing: 3px; font-weight: 800; }
+.target-label { font-size: 0.9rem; color: var(--crimson); letter-spacing: 4px; font-weight: 900; text-shadow: 1px 1px 0 #fff; }
 
 #skill-hub {
     position: absolute; left: 20px; top: 80px;
-    background: var(--glass); border: 1px solid var(--amber);
+    background: var(--glass); border: 2px solid var(--amber);
     padding: 20px; pointer-events: auto; width: 220px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 .skill-btn {
-    background: var(--slate); border: 1px solid var(--amber);
-    color: var(--amber); width: 100%; padding: 10px; margin-top: 10px;
-    cursor: pointer; font-family: var(--font-mono); font-size: 0.7rem;
+    background: #fff; border: 2px solid var(--amber);
+    color: #333; width: 100%; padding: 12px; margin-top: 10px;
+    cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 800;
 }
-.skill-btn:hover { background: var(--amber); color: #000; }
+.skill-btn:hover { background: var(--amber); color: #fff; }
 
 #crosshair {
     position: absolute; top: 50%; left: 50%;
-    width: 14px; height: 14px;
+    width: 18px; height: 18px;
     border: 2px solid var(--amber); border-radius: 50%;
-    transform: translate(-50%, -50%); opacity: 0.7;
+    transform: translate(-50%, -50%); opacity: 0.9;
 }
 
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+.overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
 .hidden { display: none !important; }
-.glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; width: 450px; text-align: center; }
+.glass-panel { background: #fff; border: 4px solid var(--amber); padding: 40px; width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
