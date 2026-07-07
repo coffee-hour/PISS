@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign 3D Expanded (v4.2.1)
- * Features: Height Correction, Boss Sector Refactor, HUD Polish, NPC Detail.
+ * Sovereign 3D Expanded (v4.3.0)
+ * Features: Roster Identity Polish (Geometric Identifiers), Height Correction, Boss Sectors.
  */
 
 const Fighter = (() => {
@@ -24,6 +24,7 @@ const Fighter = (() => {
         { id: 'flaxan', name: 'FLAXAN SOLDIER', color: 0xe65100, hp: 150, weight: 1, unique: false },
         { id: 'atomeve', name: 'ATOM EVE', color: 0xf06292, hp: 450, weight: 2, unique: true },
         { id: 'robot', name: 'ROBOT', color: 0x43a047, hp: 700, weight: 3, unique: true },
+        { id: 'duplikate', name: 'DUPLI-KATE', color: 0x1e88e5, hp: 200, weight: 2, unique: true },
         { id: 'omniman', name: 'OMNI-MAN', color: 0xf8fafc, hp: 20000, weight: 10, unique: true, boss: true },
         { id: 'thragg', name: 'GRAND REGENT THRAGG', color: 0xb91c1c, hp: 25000, weight: 10, unique: true, boss: true }
     ];
@@ -37,7 +38,7 @@ const Fighter = (() => {
         scene.fog = new THREE.FogExp2(0x050608, 0.03);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.y = state.player.height; // EYE LEVEL HEIGHT
+        camera.position.y = state.player.height;
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -46,7 +47,7 @@ const Fighter = (() => {
         raycaster = new THREE.Raycaster();
 
         const grid = new THREE.GridHelper(500, 100, 0xff8c00, 0x111111);
-        grid.position.y = 0; // Grid on ground
+        grid.position.y = 0;
         scene.add(grid);
 
         setupControls();
@@ -86,71 +87,115 @@ const Fighter = (() => {
         });
     };
 
-    const createStickmanTexture = (colorHex, isBoss) => {
+    // v4.3.0 Enhanced Billboard Generator
+    const createStickmanTexture = (data) => {
         const canvas = document.createElement('canvas');
-        canvas.width = 128; canvas.height = 256;
+        canvas.width = 256; canvas.height = 512;
         const ctx = canvas.getContext('2d');
-        const color = '#' + colorHex.toString(16).padStart(6, '0');
+        const color = '#' + data.color.toString(16).padStart(6, '0');
         
         ctx.strokeStyle = color;
-        ctx.lineWidth = 10;
+        ctx.lineWidth = 12;
         
+        // Base Alignment
+        const cx = 128;
+        
+        // 1. UNIQUE IDENTIFIERS
+        if (data.id === 'thragg') {
+            // Flared Pauldrons
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.moveTo(cx - 50, 120); ctx.lineTo(cx - 100, 80); ctx.lineTo(cx - 40, 90); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(cx + 50, 120); ctx.lineTo(cx + 100, 80); ctx.lineTo(cx + 40, 90); ctx.fill();
+        }
+
+        if (data.id === 'omniman') {
+            // Cape Silhouette
+            ctx.fillStyle = '#b91c1c'; // Red Cape
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath(); ctx.moveTo(cx - 40, 100); ctx.lineTo(cx - 90, 400); ctx.lineTo(cx + 90, 400); ctx.lineTo(cx + 40, 100); ctx.fill();
+            ctx.globalAlpha = 1.0;
+            // Chest Plating Lines
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.moveTo(cx - 20, 110); ctx.lineTo(cx + 20, 110); ctx.stroke();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 12;
+        }
+
+        if (data.id === 'atomeve') {
+            // Energy Particles
+            ctx.fillStyle = color;
+            for(let i=0; i<8; i++) {
+                ctx.beginPath(); ctx.arc(cx + (Math.random()-0.5)*180, 200 + (Math.random()-0.5)*300, 8, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        if (data.id === 'robot') {
+            // Mechanical Antennae
+            ctx.beginPath(); ctx.moveTo(cx - 20, 40); ctx.lineTo(cx - 40, 10); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + 20, 40); ctx.lineTo(cx + 40, 10); ctx.stroke();
+            // Panel Detail
+            ctx.strokeRect(cx - 15, 120, 30, 40);
+        }
+
+        if (data.id === 'duplikate') {
+            // Shadow Silhouettes
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath(); ctx.arc(cx - 40, 80, 20, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx - 40, 100); ctx.lineTo(cx - 40, 250); ctx.stroke();
+            ctx.strokeStyle = color;
+        }
+
+        // 2. BASE STICKMAN
         // Head
-        ctx.beginPath(); ctx.arc(64, 40, 22, 0, Math.PI*2); ctx.stroke();
-        
-        // NPC Detail: Chest Piece / Core
+        ctx.beginPath(); ctx.arc(cx, 80, 40, 0, Math.PI*2); ctx.stroke();
+        // Chest Core
         ctx.fillStyle = color;
-        ctx.globalAlpha = 0.5;
-        ctx.beginPath(); ctx.arc(64, 85, 12, 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha = 1.0;
-        
+        ctx.beginPath(); ctx.arc(cx, 160, 20, 0, Math.PI*2); ctx.fill();
         // Body
-        ctx.beginPath(); ctx.moveTo(64, 62); ctx.lineTo(64, 160); ctx.stroke();
-        
+        ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 320); ctx.stroke();
         // Arms
-        ctx.beginPath(); ctx.moveTo(64, 85); ctx.lineTo(30, 130); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(64, 85); ctx.lineTo(98, 130); ctx.stroke();
-        
+        ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx - 80, 250); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx + 80, 250); ctx.stroke();
         // Legs
-        ctx.beginPath(); ctx.moveTo(64, 160); ctx.lineTo(40, 240); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(64, 160); ctx.lineTo(88, 240); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx - 60, 480); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx + 60, 480); ctx.stroke();
 
         return new THREE.CanvasTexture(canvas);
     };
 
     const spawnEnemy = (data, pos) => {
-        const texture = createStickmanTexture(data.color, data.boss);
+        const texture = createStickmanTexture(data);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(material);
         sprite.scale.set(2, 4, 1);
         sprite.position.copy(pos);
-        sprite.position.y += 2; // Sit on ground
+        sprite.position.y += 2;
         scene.add(sprite);
         enemies.push({ sprite, data: { ...data, hp: data.hp, maxHp: data.hp } });
     };
 
     const spawnWorldSectors = () => {
-        // Sector 1: The Outskirts (Flaxans/Sequids)
+        // Sector 1: The Outskirts
         for(let i = 0; i < 30; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const r = 20 + Math.random() * 40;
+            const r = 30 + Math.random() * 50;
             const pos = new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r);
             spawnEnemy(roster[i % 2], pos);
         }
 
         // Sector 2: The Guardian Rift
-        spawnEnemy(roster[2], new THREE.Vector3(50, 0, 50)); // Eve
-        spawnEnemy(roster[3], new THREE.Vector3(-50, 0, 50)); // Robot
-        spawnEnemy(roster[4], new THREE.Vector3(0, 0, 80)); // Dupli-Kate
+        spawnEnemy(roster[2], new THREE.Vector3(60, 0, 60)); // Eve
+        spawnEnemy(roster[3], new THREE.Vector3(-60, 0, 60)); // Robot
+        spawnEnemy(roster[4], new THREE.Vector3(0, 0, 100)); // Dupli-Kate
 
-        // Sector 3: BOSS ARENAS (Isolated)
-        spawnBoss(roster[4], new THREE.Vector3(0, 0, 200)); // Omni-Man Sector
-        spawnBoss(roster[5], new THREE.Vector3(200, 0, 200)); // Thragg Sector
+        // Sector 3: Boss Arenas
+        spawnBoss(roster[5], new THREE.Vector3(0, 0, 250)); // Omni-Man
+        spawnBoss(roster[6], new THREE.Vector3(250, 0, 250)); // Thragg
     };
 
     const spawnBoss = (data, pos) => {
-        // Create an isolated area ring for bosses
-        const ringGeo = new THREE.RingGeometry(15, 16, 32);
+        const ringGeo = new THREE.RingGeometry(18, 20, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c, side: THREE.DoubleSide });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
@@ -172,7 +217,7 @@ const Fighter = (() => {
             const dist = camera.position.distanceTo(hit.sprite.position);
             
             if (hit && dist <= state.player.punchRange) {
-                hit.data.hp -= 30 * state.player.strength;
+                hit.data.hp -= 35 * state.player.strength;
                 spawnBlood(intersects[0].point);
                 updateTargetHUD(hit.data);
                 if (hit.data.hp <= 0) {
@@ -187,7 +232,7 @@ const Fighter = (() => {
     const animateFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if(fist) {
-            fist.style.transform = 'translateY(-120px) scale(1.1) rotate(' + (side === 'left' ? 10 : -10) + 'deg)';
+            fist.style.transform = `translateY(-120px) scale(1.15) rotate(${side === 'left' ? 12 : -12}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
         }
     };
@@ -208,7 +253,7 @@ const Fighter = (() => {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
             p.userData = {
-                vel: new THREE.Vector3((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5),
+                vel: new THREE.Vector3((Math.random()-0.5)*0.6, (Math.random()-0.5)*0.6, (Math.random()-0.5)*0.6),
                 life: 1.0
             };
             scene.add(p);
@@ -224,7 +269,7 @@ const Fighter = (() => {
 
         if (moving) {
             state.timeDilation = superSpeed ? 0.15 : 1.0; 
-            const speed = (superSpeed ? 1.0 : 0.25);
+            const speed = (superSpeed ? 1.2 : 0.3);
             
             if (state.keys.w) camera.translateZ(-speed);
             if (state.keys.s) camera.translateZ(speed);
@@ -232,9 +277,9 @@ const Fighter = (() => {
             if (state.keys.d) camera.translateX(speed);
             
             if (state.player.isFlying) {
-                camera.position.y = Math.min(25, camera.position.y + 0.2);
+                camera.position.y = Math.min(30, camera.position.y + 0.25);
             } else {
-                camera.position.y = Math.max(state.player.height, camera.position.y - 0.4);
+                camera.position.y = Math.max(state.player.height, camera.position.y - 0.45);
             }
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
@@ -262,14 +307,14 @@ const Fighter = (() => {
         const canvas = document.getElementById('minimap');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(10, 14, 23, 0.9)';
+        ctx.fillStyle = 'rgba(10, 14, 23, 0.95)';
         ctx.fillRect(0, 0, 200, 200);
         
         const centerX = 100;
         const centerY = 100;
 
         ctx.fillStyle = '#ff8c00';
-        ctx.beginPath(); ctx.arc(centerX, centerY, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(centerX, centerY, 5, 0, Math.PI*2); ctx.fill();
 
         enemies.forEach(e => {
             const dx = (e.sprite.position.x - camera.position.x) * 1.5;
@@ -305,7 +350,7 @@ const Fighter = (() => {
     const upgrade = (type) => {
         if(state.player.points <= 0) return;
         if(type === 'range') state.player.punchRange += 2;
-        if(type === 'speed') state.player.strength += 0.2;
+        if(type === 'speed') state.player.strength += 0.25;
         state.player.points--;
         updateUI();
     };
