@@ -1,9 +1,9 @@
 :root {
     --bg-main: #050608;
-    --bg-panel: #0a0c10;
-    --bg-card: #0f1218;
+    --bg-panel: rgba(10, 12, 16, 0.85);
+    --bg-card: rgba(15, 18, 24, 0.6);
     --border: #1e242e;
-    --primary: #f59e0b; /* Amber */
+    --primary: #f59e0b;
     --primary-glow: rgba(245, 158, 11, 0.25);
     --primary-bright: #fbbf24;
     --text: #f8fafc;
@@ -12,6 +12,7 @@
     --danger: #ef4444;
     --font-mono: 'JetBrains Mono', monospace;
     --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --glass: blur(12px);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; cursor: none !important; }
@@ -26,20 +27,38 @@ body {
 
 #app { display: flex; height: 100vh; width: 100vw; position: relative; }
 
-/* Custom Sword Cursor */
+/* Oversized Sword Cursor */
 #custom-cursor {
     position: fixed;
     pointer-events: none;
     z-index: 9999;
-    transform: translate(-50%, -50%) rotate(-45deg);
+    transform: translate(-50%, -50%);
     color: var(--primary);
-    filter: drop-shadow(0 0 5px var(--primary-glow));
-    transition: transform 0.05s linear;
+    filter: drop-shadow(0 0 8px var(--primary-glow));
+    transition: left 0.05s linear, top 0.05s linear;
+}
+
+.sword-wrapper {
+    transform: rotate(-45deg);
+    transition: transform 0.1s cubic-bezier(0.2, 0, 0.2, 1.5);
 }
 
 #custom-cursor .lucide {
-    width: 28px;
-    height: 28px;
+    width: 64px; /* 200% increase */
+    height: 64px;
+}
+
+/* Strike Animation */
+.sword-strike {
+    transform: rotate(45deg) scale(1.2) !important;
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+    background: var(--bg-panel);
+    backdrop-filter: var(--glass);
+    -webkit-backdrop-filter: var(--glass);
+    border: 1px solid var(--border);
 }
 
 /* Fury Mode Effects */
@@ -63,7 +82,7 @@ body.fury-active #fury-overlay {
     100% { opacity: 0.8; }
 }
 
-/* Throne Room (Center) */
+/* Throne Room */
 .throne-room {
     flex: 1;
     display: flex;
@@ -81,11 +100,11 @@ body.fury-active #fury-overlay {
 .value-container { display: flex; align-items: center; gap: 16px; font-family: var(--font-mono); font-size: 4rem; font-weight: 800; color: var(--primary); text-shadow: 0 0 40px var(--primary-glow); }
 .rate-text { font-family: var(--font-mono); font-size: 1.1rem; color: var(--success); font-weight: 700; letter-spacing: 1px; }
 
-/* Nemesis Enemy Model */
+/* Enemy Model */
 .enemy-model-container {
     position: relative;
-    width: 280px;
-    height: 280px;
+    width: 320px;
+    height: 320px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -93,24 +112,23 @@ body.fury-active #fury-overlay {
 
 .enemy-sprite {
     position: relative;
-    width: 200px;
-    height: 200px;
-    background: rgba(10, 12, 16, 0.8);
+    width: 220px;
+    height: 220px;
+    background: rgba(10, 12, 16, 0.9);
     border: 2px solid var(--border);
     border-radius: 20% 50% 20% 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(239, 68, 68, 0.1);
-    transition: transform 0.1s, border-color 0.2s, background 0.1s;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8);
+    transition: transform 0.1s, border-color 0.2s;
     animation: enemyFloat 4s infinite ease-in-out;
 }
 
 .enemy-icon {
-    width: 100px;
-    height: 100px;
+    width: 110px;
+    height: 110px;
     color: var(--text-dim);
-    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
     transition: color 0.1s;
 }
 
@@ -122,47 +140,39 @@ body.fury-active #fury-overlay {
     animation: auraPulse 2s infinite ease-in-out;
 }
 
-/* Hit Animation */
 .enemy-hit {
     animation: hitEffect 0.15s ease-out;
     border-color: var(--danger) !important;
-    background: rgba(239, 68, 68, 0.2) !important;
-}
-
-.enemy-hit .enemy-icon {
-    color: var(--danger) !important;
-    transform: scale(1.1);
+    background: rgba(239, 68, 68, 0.25) !important;
 }
 
 @keyframes hitEffect {
     0% { transform: scale(1) skewX(0deg); }
-    50% { transform: scale(0.9) skewX(10deg); filter: brightness(2); }
+    50% { transform: scale(0.85) skewX(15deg); filter: brightness(2.5); }
     100% { transform: scale(1) skewX(0deg); }
 }
 
 @keyframes enemyFloat {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-15px) rotate(2deg); }
+    50% { transform: translateY(-20px) rotate(3deg); }
 }
 
 @keyframes auraPulse {
     0% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.1); opacity: 0.2; }
+    50% { transform: scale(1.15); opacity: 0.2; }
     100% { transform: scale(1); opacity: 0.5; }
 }
 
-/* Sidebar Terminal */
+/* Sidebar */
 .sidebar-terminal {
-    width: 440px;
-    background: var(--bg-panel);
-    border-left: 1px solid var(--border);
+    width: 460px;
     display: flex;
     flex-direction: column;
 }
 
 .terminal-nav { display: flex; background: #000; border-bottom: 1px solid var(--border); }
 .tab-btn {
-    flex: 1; padding: 16px; background: none; border: none; color: var(--text-dim);
+    flex: 1; padding: 18px; background: none; border: none; color: var(--text-dim);
     font-family: var(--font-mono); font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
     cursor: none; transition: var(--transition);
 }
@@ -182,8 +192,8 @@ body.fury-active #fury-overlay {
     display: flex; align-items: center; gap: 20px; transition: var(--transition);
     user-select: none; border-radius: 4px;
 }
-.upgrade-card:hover:not(.disabled) { border-color: var(--primary); transform: translateX(-4px); background: #1a202c; }
-.upgrade-card.disabled { opacity: 0.3; filter: grayscale(1); border-style: dashed; }
+.upgrade-card:hover:not(.disabled) { border-color: var(--primary); transform: translateX(-4px); background: rgba(26, 32, 44, 0.6); }
+.upgrade-card.disabled { opacity: 0.25; filter: grayscale(1); }
 
 .upgrade-icon { width: 56px; height: 56px; background: #050608; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--primary); flex-shrink: 0; }
 
@@ -192,39 +202,33 @@ body.fury-active #fury-overlay {
 .upgrade-desc { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .upgrade-cost { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; color: var(--primary-bright); background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 2px; display: inline-block; }
 
-.upgrade-count { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 800; color: var(--text-dim); opacity: 0.2; flex-shrink: 0; }
+/* Dispatch Feed */
+.dispatch-feed { flex: 1; overflow-y: auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 10px; font-family: var(--font-mono); font-size: 0.75rem; }
+.dispatch-item { padding: 12px; background: rgba(0,0,0,0.3); border-left: 2px solid var(--primary); }
+.dispatch-time { color: var(--text-dim); margin-bottom: 4px; display: block; font-size: 0.65rem; }
+
+/* Footer Log */
+.dispatch-footer { width: 100%; max-width: 800px; margin-bottom: 20px; border-radius: 8px; }
+.log-container { height: 100px; padding: 15px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--success); overflow: hidden; }
 
 /* Combo Meter */
-.combo-gauge-container { width: 200px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.combo-gauge-container { width: 220px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .combo-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 800; color: var(--text-dim); }
-.combo-meter { width: 100%; height: 6px; background: #000; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
-.combo-fill { height: 100%; width: 0%; background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); transition: width 0.1s ease-out; }
-.combo-text { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 800; color: var(--primary); }
+.combo-meter { width: 100%; height: 8px; background: #000; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.combo-fill { height: 100%; width: 0%; background: var(--primary); box-shadow: 0 0 15px var(--primary-glow); transition: width 0.1s ease-out; }
+.combo-text { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 800; color: var(--primary); }
 
-/* Interaction Button */
 .banner-btn { background: none; border: none; outline: none; }
-.banner-btn:active .enemy-sprite { transform: scale(0.95); }
-
-/* Scrollbars */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-.shake-layer { transition: transform 0.05s; }
-.recoil { animation: heavyRecoil 0.15s cubic-bezier(.36,.07,.19,.97) both; }
-@keyframes heavyRecoil {
-    0% { transform: translate(0, 0); }
-    25% { transform: translate(-4px, 4px) rotate(-0.5deg); }
-    50% { transform: translate(4px, -4px) rotate(0.5deg); }
-    75% { transform: translate(-2px, 2px); }
-    100% { transform: translate(0, 0); }
-}
 
 #particle-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 999; }
 #text-particle-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000; }
 .text-particle { 
     position: absolute; color: var(--primary-bright); font-family: var(--font-mono); 
     font-weight: 800; pointer-events: none; text-shadow: 0 0 10px var(--primary-glow); 
-    animation: floatUpFade 0.8s forwards ease-out; font-size: 1.4rem; 
+    animation: floatUpFade 0.8s forwards ease-out; font-size: 1.6rem; 
 }
-@keyframes floatUpFade { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-120px); opacity: 0; } }
+
+@keyframes floatUpFade { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-140px); opacity: 0; } }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Nemesis (v2.4.0)</title>
+    <title>Sovereign: Slaughter (v2.5.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-clicker">
-    <!-- Custom Sword Cursor -->
+    <!-- Oversized Sword Cursor -->
     <div id="custom-cursor">
-        <i data-lucide="sword"></i>
+        <div class="sword-wrapper">
+            <i data-lucide="sword"></i>
+        </div>
     </div>
 
     <div id="app" class="shake-layer">
@@ -49,21 +51,21 @@
                             <div class="enemy-aura"></div>
                         </div>
                     </div>
-                    <div class="click-ripple-container"></div>
                 </button>
                 <div class="click-instructions">Slay the Nemesis to Fund the Empire</div>
             </div>
 
-            <div class="dispatch-footer">
+            <div class="dispatch-footer glass-panel">
                 <div class="log-container" id="log-entries"></div>
             </div>
         </main>
 
         <!-- Sidebar Section -->
-        <aside class="sidebar-terminal">
+        <aside class="sidebar-terminal glass-panel">
             <nav class="terminal-nav">
                 <button class="tab-btn active" onclick="Sovereign.switchTab('garrison')">Garrison</button>
                 <button class="tab-btn" onclick="Sovereign.switchTab('advancements')">Advancements</button>
+                <button class="tab-btn" onclick="Sovereign.switchTab('dispatch')">Dispatch</button>
             </nav>
 
             <div id="shop-garrison" class="shop-panel active">
@@ -80,6 +82,16 @@
                     <p>Permanent logistical multipliers.</p>
                 </div>
                 <div class="upgrade-list" id="advancement-container"></div>
+            </div>
+
+            <div id="shop-dispatch" class="shop-panel">
+                <div class="shop-header">
+                    <h2><i data-lucide="history"></i> Imperial Dispatch</h2>
+                    <p>Chronicles of the Great Slaughter.</p>
+                </div>
+                <div class="dispatch-feed" id="dispatch-feed">
+                    <!-- Events populated here -->
+                </div>
             </div>
         </aside>
 
