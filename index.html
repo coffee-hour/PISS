@@ -21,27 +21,31 @@
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-btn active" data-tab="civ">
-                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10l9-7 9 7v11H3V10z"/><path d="M9 21V12h6v9"/></svg></span>
+                    <span class="nav-icon">🏛️</span>
                     Civ Center
                 </button>
                 <button class="nav-btn" data-tab="military">
-                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v9c0 5 9 8 9 8s9-3 9-8V7l-9-5z"/><path d="M12 22V12"/></svg></span>
+                    <span class="nav-icon">⚔️</span>
                     Barracks
                 </button>
+                <button class="nav-btn" data-tab="market">
+                    <span class="nav-icon">⚖️</span>
+                    Marketplace
+                </button>
                 <button class="nav-btn" data-tab="commanders">
-                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                    <span class="nav-icon">👤</span>
                     Commanders
                 </button>
                 <button class="nav-btn" data-tab="campaign">
-                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg></span>
+                    <span class="nav-icon">🗺️</span>
                     Campaign
                 </button>
                 <button class="nav-btn" data-tab="tech">
-                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"/></svg></span>
+                    <span class="nav-icon">📜</span>
                     Tech Tree
                 </button>
                 <button class="nav-btn" data-tab="prestige">
-                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
+                    <span class="nav-icon">✨</span>
                     Dynasty
                 </button>
             </nav>
@@ -64,6 +68,7 @@
                         <span class="res-value">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
+                    <button class="manual-btn" onclick="Sovereign.manualGather('food')">Gather</button>
                 </div>
                 <div class="resource-pill" id="res-wood">
                     <div class="res-icon wood-icon"></div>
@@ -72,6 +77,7 @@
                         <span class="res-value">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
+                    <button class="manual-btn" onclick="Sovereign.manualGather('wood')">Gather</button>
                 </div>
                 <div class="resource-pill" id="res-ore">
                     <div class="res-icon ore-icon"></div>
@@ -80,6 +86,7 @@
                         <span class="res-value">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
+                    <button class="manual-btn" onclick="Sovereign.manualGather('ore')">Gather</button>
                 </div>
                 <div class="resource-pill" id="res-gold">
                     <div class="res-icon gold-icon"></div>
@@ -95,7 +102,17 @@
             <section id="tab-civ" class="tab-content active">
                 <div class="section-title">
                     <h2>Civ Center</h2>
-                    <p>Manage your infrastructure and resources.</p>
+                    <p>Manage infrastructure and manual labor optimization.</p>
+                </div>
+                <div class="optimization-bar action-card">
+                    <div class="card-header">
+                        <h3>Manual Labor Optimization</h3>
+                        <span class="card-badge" id="click-lvl">Lvl 1</span>
+                    </div>
+                    <div class="card-body">
+                        <p>Increase resources gathered per click. Current: +<span id="click-power">1</span></p>
+                        <button class="primary-btn" id="upgrade-click-btn">Upgrade (100 Gold)</button>
+                    </div>
                 </div>
                 <div class="action-grid" id="civ-buildings"></div>
             </section>
@@ -103,15 +120,25 @@
             <section id="tab-military" class="tab-content">
                 <div class="section-title">
                     <h2>Imperial Barracks</h2>
-                    <p>Mobilize your forces. Each unit requires continuous upkeep.</p>
+                    <p>Train and maintain your specialized units.</p>
                 </div>
                 <div class="action-grid" id="military-units"></div>
+            </section>
+
+            <section id="tab-market" class="tab-content">
+                <div class="section-title">
+                    <h2>Imperial Marketplace</h2>
+                    <p>Barter excess resources for gold or purchase materials.</p>
+                </div>
+                <div class="market-grid" id="market-grid">
+                    <!-- Trades injected here -->
+                </div>
             </section>
 
             <section id="tab-commanders" class="tab-content">
                 <div class="section-title">
                     <h2>Tactical Commanders</h2>
-                    <p>Recruit elite leaders to oversee your empire and military.</p>
+                    <p>Recruit elite leaders for passive empire boosts.</p>
                 </div>
                 <div class="action-grid" id="commander-list"></div>
             </section>
@@ -119,7 +146,7 @@
             <section id="tab-campaign" class="tab-content">
                 <div class="section-title">
                     <h2>Global Campaign</h2>
-                    <p>Conquer regions to gain permanent production tributes.</p>
+                    <p>Conquer regions to secure permanent resource tributes.</p>
                 </div>
                 <div class="campaign-layout">
                     <div class="campaign-map" id="campaign-map"></div>
@@ -133,7 +160,7 @@
             <section id="tab-tech" class="tab-content">
                 <div class="section-title">
                     <h2>Technological Research</h2>
-                    <p>Innovate to unlock higher tier units and tax automation.</p>
+                    <p>Unlock advanced logistical and military tiers.</p>
                 </div>
                 <div class="action-grid" id="tech-list"></div>
             </section>
@@ -141,21 +168,34 @@
             <section id="tab-prestige" class="tab-content">
                 <div class="section-title">
                     <h2>Dynasty Rise</h2>
-                    <p>Sacrifice your current empire to forge a permanent legacy.</p>
+                    <p>Restart for permanent production and combat legacy points.</p>
                 </div>
                 <div class="prestige-card">
                     <div class="prestige-info">
-                        <h3>Phoenix Modifiers</h3>
+                        <h3>Phoenix Legacy</h3>
                         <p>Total Legacy Points: <span id="legacy-points">0</span></p>
                         <ul class="modifier-list">
-                            <li>Production Multiplier: <span id="prod-mult">1.0x</span></li>
-                            <li>Combat Strength Bonus: <span id="combat-bonus">0%</span></li>
+                            <li>Production: <span id="prod-mult">1.0x</span></li>
+                            <li>Combat Strength: <span id="combat-bonus">0%</span></li>
                         </ul>
                     </div>
                     <button class="primary-btn reset-btn" id="prestige-btn">Reset for Legacy</button>
                 </div>
             </section>
         </main>
+
+        <!-- Event Modal -->
+        <div id="event-overlay" class="modal-overlay">
+            <div class="modal-content action-card">
+                <div class="modal-header">
+                    <h2 id="event-title">Frontier Event</h2>
+                </div>
+                <div class="modal-body">
+                    <p id="event-desc">A random event has occurred on your borders.</p>
+                    <div id="event-options" class="options-container"></div>
+                </div>
+            </div>
+        </div>
     </div>
     <div id="toast-container"></div>
     <script src="app.js"></script>
