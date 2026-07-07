@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign 3D Expanded (v4.3.0)
- * Features: Roster Identity Polish (Geometric Identifiers), Height Correction, Boss Sectors.
+ * Sovereign 3D Expanded (v4.4.0)
+ * Features: Aggressive AI, Boss Persistence Fix, HUD Overflow Repair, Roster Identity.
  */
 
 const Fighter = (() => {
@@ -20,13 +20,13 @@ const Fighter = (() => {
     };
 
     const roster = [
-        { id: 'sequid', name: 'SEQUID', color: 0xff80ab, hp: 120, weight: 1, unique: false },
-        { id: 'flaxan', name: 'FLAXAN SOLDIER', color: 0xe65100, hp: 150, weight: 1, unique: false },
-        { id: 'atomeve', name: 'ATOM EVE', color: 0xf06292, hp: 450, weight: 2, unique: true },
-        { id: 'robot', name: 'ROBOT', color: 0x43a047, hp: 700, weight: 3, unique: true },
-        { id: 'duplikate', name: 'DUPLI-KATE', color: 0x1e88e5, hp: 200, weight: 2, unique: true },
-        { id: 'omniman', name: 'OMNI-MAN', color: 0xf8fafc, hp: 20000, weight: 10, unique: true, boss: true },
-        { id: 'thragg', name: 'GRAND REGENT THRAGG', color: 0xb91c1c, hp: 25000, weight: 10, unique: true, boss: true }
+        { id: 'sequid', name: 'SEQUID', color: 0xff80ab, hp: 120, weight: 1, unique: false, power: 5 },
+        { id: 'flaxan', name: 'FLAXAN SOLDIER', color: 0xe65100, hp: 150, weight: 1, unique: false, power: 8 },
+        { id: 'atomeve', name: 'ATOM EVE', color: 0xf06292, hp: 600, weight: 3, unique: true, power: 15 },
+        { id: 'robot', name: 'ROBOT', color: 0x43a047, hp: 800, weight: 3, unique: true, power: 18 },
+        { id: 'duplikate', name: 'DUPLI-KATE', color: 0x1e88e5, hp: 300, weight: 2, unique: true, power: 10 },
+        { id: 'omniman', name: 'OMNI-MAN', color: 0xf8fafc, hp: 20000, weight: 10, unique: true, boss: true, power: 45 },
+        { id: 'thragg', name: 'GRAND REGENT THRAGG', color: 0xb91c1c, hp: 25000, weight: 10, unique: true, boss: true, power: 50 }
     ];
 
     let enemies = [];
@@ -87,77 +87,45 @@ const Fighter = (() => {
         });
     };
 
-    // v4.3.0 Enhanced Billboard Generator
     const createStickmanTexture = (data) => {
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 512;
         const ctx = canvas.getContext('2d');
         const color = '#' + data.color.toString(16).padStart(6, '0');
-        
         ctx.strokeStyle = color;
         ctx.lineWidth = 12;
-        
-        // Base Alignment
         const cx = 128;
         
-        // 1. UNIQUE IDENTIFIERS
         if (data.id === 'thragg') {
-            // Flared Pauldrons
             ctx.fillStyle = color;
             ctx.beginPath(); ctx.moveTo(cx - 50, 120); ctx.lineTo(cx - 100, 80); ctx.lineTo(cx - 40, 90); ctx.fill();
             ctx.beginPath(); ctx.moveTo(cx + 50, 120); ctx.lineTo(cx + 100, 80); ctx.lineTo(cx + 40, 90); ctx.fill();
         }
-
         if (data.id === 'omniman') {
-            // Cape Silhouette
-            ctx.fillStyle = '#b91c1c'; // Red Cape
-            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = '#b91c1c'; ctx.globalAlpha = 0.6;
             ctx.beginPath(); ctx.moveTo(cx - 40, 100); ctx.lineTo(cx - 90, 400); ctx.lineTo(cx + 90, 400); ctx.lineTo(cx + 40, 100); ctx.fill();
             ctx.globalAlpha = 1.0;
-            // Chest Plating Lines
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 6;
             ctx.beginPath(); ctx.moveTo(cx - 20, 110); ctx.lineTo(cx + 20, 110); ctx.stroke();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 12;
+            ctx.strokeStyle = color; ctx.lineWidth = 12;
         }
-
         if (data.id === 'atomeve') {
-            // Energy Particles
             ctx.fillStyle = color;
-            for(let i=0; i<8; i++) {
-                ctx.beginPath(); ctx.arc(cx + (Math.random()-0.5)*180, 200 + (Math.random()-0.5)*300, 8, 0, Math.PI*2); ctx.fill();
+            for(let i=0; i<6; i++) {
+                ctx.beginPath(); ctx.arc(cx + (Math.random()-0.5)*160, 200 + (Math.random()-0.5)*250, 8, 0, Math.PI*2); ctx.fill();
             }
         }
-
         if (data.id === 'robot') {
-            // Mechanical Antennae
             ctx.beginPath(); ctx.moveTo(cx - 20, 40); ctx.lineTo(cx - 40, 10); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(cx + 20, 40); ctx.lineTo(cx + 40, 10); ctx.stroke();
-            // Panel Detail
             ctx.strokeRect(cx - 15, 120, 30, 40);
         }
 
-        if (data.id === 'duplikate') {
-            // Shadow Silhouettes
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-            ctx.beginPath(); ctx.arc(cx - 40, 80, 20, 0, Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(cx - 40, 100); ctx.lineTo(cx - 40, 250); ctx.stroke();
-            ctx.strokeStyle = color;
-        }
-
-        // 2. BASE STICKMAN
-        // Head
         ctx.beginPath(); ctx.arc(cx, 80, 40, 0, Math.PI*2); ctx.stroke();
-        // Chest Core
-        ctx.fillStyle = color;
-        ctx.beginPath(); ctx.arc(cx, 160, 20, 0, Math.PI*2); ctx.fill();
-        // Body
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(cx, 160, 20, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 320); ctx.stroke();
-        // Arms
         ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx - 80, 250); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx + 80, 250); ctx.stroke();
-        // Legs
         ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx - 60, 480); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx + 60, 480); ctx.stroke();
 
@@ -172,29 +140,33 @@ const Fighter = (() => {
         sprite.position.copy(pos);
         sprite.position.y += 2;
         scene.add(sprite);
-        enemies.push({ sprite, data: { ...data, hp: data.hp, maxHp: data.hp } });
+        enemies.push({ 
+            sprite, 
+            data: { ...data, hp: data.hp, maxHp: data.hp },
+            attackTimer: 0
+        });
     };
 
     const spawnWorldSectors = () => {
-        // Sector 1: The Outskirts
-        for(let i = 0; i < 30; i++) {
+        // Clear old registry
+        enemies = [];
+        // Outskirts (Persistent trash mobs)
+        for(let i = 0; i < 40; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const r = 30 + Math.random() * 50;
-            const pos = new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r);
-            spawnEnemy(roster[i % 2], pos);
+            const r = 40 + Math.random() * 60;
+            spawnEnemy(roster[i % 2], new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r));
         }
+        // Guardian Rift (Persistent Mid-tier)
+        spawnEnemy(roster[2], new THREE.Vector3(70, 0, 70));
+        spawnEnemy(roster[3], new THREE.Vector3(-70, 0, 70));
+        spawnEnemy(roster[4], new THREE.Vector3(0, 0, 110));
 
-        // Sector 2: The Guardian Rift
-        spawnEnemy(roster[2], new THREE.Vector3(60, 0, 60)); // Eve
-        spawnEnemy(roster[3], new THREE.Vector3(-60, 0, 60)); // Robot
-        spawnEnemy(roster[4], new THREE.Vector3(0, 0, 100)); // Dupli-Kate
-
-        // Sector 3: Boss Arenas
-        spawnBoss(roster[5], new THREE.Vector3(0, 0, 250)); // Omni-Man
-        spawnBoss(roster[6], new THREE.Vector3(250, 0, 250)); // Thragg
+        // FORCED BOSS PERSISTENCE
+        forceBossSpawn(roster[5], new THREE.Vector3(0, 0, 250)); // Omni-Man
+        forceBossSpawn(roster[6], new THREE.Vector3(250, 0, 250)); // Thragg
     };
 
-    const spawnBoss = (data, pos) => {
+    const forceBossSpawn = (data, pos) => {
         const ringGeo = new THREE.RingGeometry(18, 20, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c, side: THREE.DoubleSide });
         const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -208,16 +180,13 @@ const Fighter = (() => {
         state.timeDilation = 1.0;
         state.lastArmUsed = state.lastArmUsed === 'left' ? 'right' : 'left';
         animateFist(state.lastArmUsed);
-
         raycaster.setFromCamera({ x: 0, y: 0 }, camera);
         const intersects = raycaster.intersectObjects(enemies.map(e => e.sprite));
-
         if (intersects.length > 0) {
             const hit = enemies.find(e => e.sprite === intersects[0].object);
             const dist = camera.position.distanceTo(hit.sprite.position);
-            
             if (hit && dist <= state.player.punchRange) {
-                hit.data.hp -= 35 * state.player.strength;
+                hit.data.hp -= 40 * state.player.strength;
                 spawnBlood(intersects[0].point);
                 updateTargetHUD(hit.data);
                 if (hit.data.hp <= 0) {
@@ -232,7 +201,7 @@ const Fighter = (() => {
     const animateFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if(fist) {
-            fist.style.transform = `translateY(-120px) scale(1.15) rotate(${side === 'left' ? 12 : -12}deg)`;
+            fist.style.transform = `translateY(-130px) scale(1.2) rotate(${side === 'left' ? 15 : -15}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
         }
     };
@@ -240,7 +209,7 @@ const Fighter = (() => {
     const gainXP = (amt) => {
         state.player.xp += amt;
         state.run.kills++;
-        if(state.player.xp >= state.run.tier * 250) {
+        if(state.player.xp >= state.run.tier * 300) {
             state.run.tier++;
             state.player.points++;
         }
@@ -263,30 +232,42 @@ const Fighter = (() => {
 
     const animate = () => {
         requestAnimationFrame(animate);
-        
         let moving = state.keys.w || state.keys.a || state.keys.s || state.keys.d;
         let superSpeed = state.keys[' '];
-
         if (moving) {
             state.timeDilation = superSpeed ? 0.15 : 1.0; 
-            const speed = (superSpeed ? 1.2 : 0.3);
-            
+            const speed = (superSpeed ? 1.4 : 0.35);
             if (state.keys.w) camera.translateZ(-speed);
             if (state.keys.s) camera.translateZ(speed);
             if (state.keys.a) camera.translateX(-speed);
             if (state.keys.d) camera.translateX(speed);
-            
-            if (state.player.isFlying) {
-                camera.position.y = Math.min(30, camera.position.y + 0.25);
-            } else {
-                camera.position.y = Math.max(state.player.height, camera.position.y - 0.45);
-            }
+            if (state.player.isFlying) camera.position.y = Math.min(30, camera.position.y + 0.3);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 0.5);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
 
         const dt = state.timeDilation;
         
+        // AGGRESSIVE AI & TIME-TETHERED ACTIONS
+        enemies.forEach(enemy => {
+            const dist = camera.position.distanceTo(enemy.sprite.position);
+            // Proximity Tracking (AI Moves closer if in range)
+            if (dist < 40 && dist > 4) {
+                const dir = camera.position.clone().sub(enemy.sprite.position).normalize();
+                enemy.sprite.position.add(dir.multiplyScalar(0.05 * dt));
+            }
+            // Aggressive Strike
+            if (dist < 6 && state.run.active) {
+                enemy.attackTimer += (0.01 * dt);
+                if (enemy.attackTimer >= 1.0) {
+                    state.player.hp -= enemy.data.power;
+                    enemy.attackTimer = 0;
+                    if (state.player.hp <= 0) die();
+                }
+            }
+        });
+
         bloodParticles.forEach((p, i) => {
             p.position.add(p.userData.vel.clone().multiplyScalar(dt));
             p.userData.vel.y -= 0.015 * dt;
@@ -307,15 +288,11 @@ const Fighter = (() => {
         const canvas = document.getElementById('minimap');
         if(!canvas) return;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(10, 14, 23, 0.95)';
+        ctx.fillStyle = 'rgba(5, 6, 8, 0.98)';
         ctx.fillRect(0, 0, 200, 200);
-        
-        const centerX = 100;
-        const centerY = 100;
-
+        const centerX = 100, centerY = 100;
         ctx.fillStyle = '#ff8c00';
         ctx.beginPath(); ctx.arc(centerX, centerY, 5, 0, Math.PI*2); ctx.fill();
-
         enemies.forEach(e => {
             const dx = (e.sprite.position.x - camera.position.x) * 1.5;
             const dz = (e.sprite.position.z - camera.position.z) * 1.5;
@@ -332,9 +309,8 @@ const Fighter = (() => {
         const kills = document.getElementById('enemies-defeated');
         const tier = document.getElementById('run-tier');
         const pts = document.getElementById('skill-points');
-
-        if (php) php.style.width = `${state.player.hp}%`;
-        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 250)) * 100}%`;
+        if (php) php.style.width = `${Math.max(0, state.player.hp)}%`;
+        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 300)) * 100}%`;
         if (kills) kills.innerText = state.run.kills;
         if (tier) tier.innerText = state.run.tier;
         if (pts) pts.innerText = state.player.points;
@@ -347,10 +323,15 @@ const Fighter = (() => {
         if (hp) hp.style.width = `${(data.hp / data.maxHp) * 100}%`;
     };
 
+    const die = () => {
+        state.run.active = false;
+        document.getElementById('death-overlay').classList.remove('hidden');
+    };
+
     const upgrade = (type) => {
         if(state.player.points <= 0) return;
         if(type === 'range') state.player.punchRange += 2;
-        if(type === 'speed') state.player.strength += 0.25;
+        if(type === 'speed') state.player.strength += 0.3;
         state.player.points--;
         updateUI();
     };
