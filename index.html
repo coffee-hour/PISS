@@ -3,99 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Idle War</title>
+    <title>Sovereign: Imperial Clicker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="sovereign-idle">
+<body class="sovereign-clicker">
     <div id="app">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <i data-lucide="shield" class="icon-combat"></i>
-                <h1 class="brand-title">SOVEREIGN</h1>
+        <!-- Main Clicker Section -->
+        <main class="throne-room">
+            <div class="imperial-header">
+                <div class="treasury-display">
+                    <span class="label">Imperial Treasury</span>
+                    <div class="value-container">
+                        <i data-lucide="gem" class="icon-gold"></i>
+                        <span id="treasury-count">0</span>
+                    </div>
+                    <span id="passive-rate" class="rate-text">+0/s</span>
+                </div>
             </div>
-            <nav class="sidebar-nav">
-                <button class="nav-btn active" data-tab="war-table">
-                    <i data-lucide="map" class="icon-grain"></i>
-                    War Table
+
+            <div class="war-banner-container">
+                <button id="click-banner" class="banner-btn" onclick="Sovereign.manualClick(event)">
+                    <div class="banner-graphic">
+                        <i data-lucide="shield" class="banner-icon"></i>
+                    </div>
+                    <div class="click-ripple-container"></div>
                 </button>
-                <button class="nav-btn" data-tab="garrison">
-                    <i data-lucide="users" class="icon-subjects"></i>
-                    Garrison
-                </button>
-                <button class="nav-btn" data-tab="arsenal">
-                    <i data-lucide="zap" class="icon-gold"></i>
-                    Arsenal
-                </button>
-            </nav>
-        </aside>
+                <div class="click-instructions">Strike the Banner to Fund the Empire</div>
+            </div>
 
-        <main class="realm-view">
-            <header class="resource-ledger">
-                <div class="ledger-item" id="res-food">
-                    <i data-lucide="wheat" class="icon-grain"></i>
-                    <div class="ledger-meta">
-                        <span class="res-val">0</span>
-                        <span class="res-rate" id="rate-food">+0/s</span>
-                    </div>
-                </div>
-                <div class="ledger-item" id="res-wood">
-                    <i data-lucide="hammer" class="icon-wood"></i>
-                    <div class="ledger-meta">
-                        <span class="res-val">0</span>
-                        <span class="res-rate" id="rate-wood">+0/s</span>
-                    </div>
-                </div>
-                <div class="ledger-item" id="res-ore">
-                    <i data-lucide="anvil" class="icon-iron"></i>
-                    <div class="ledger-meta">
-                        <span class="res-val">0</span>
-                        <span class="res-rate" id="rate-ore">+0/s</span>
-                    </div>
-                </div>
-                <div class="ledger-item" id="res-gold">
-                    <i data-lucide="gem" class="icon-gold"></i>
-                    <div class="ledger-meta">
-                        <span class="res-val">0</span>
-                        <span class="res-rate" id="rate-gold">+0/s</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="parchment-viewport">
-                <section id="tab-war-table" class="tab-panel active">
-                    <div class="panel-intro">
-                        <h2>War Table</h2>
-                        <p>Territorial expansion is automated. Once readiness hits 100%, legions will annex the sector.</p>
-                    </div>
-                    <div class="war-layout">
-                        <div class="expansion-grid" id="expansion-map"></div>
-                        <div class="dispatch-log console-panel iron-banded">
-                            <div class="log-header">Imperial Dispatch</div>
-                            <div class="log-entries" id="log-entries"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="tab-garrison" class="tab-panel">
-                    <div class="panel-intro">
-                        <h2>Imperial Garrison</h2>
-                        <p>Mobilize units to increase your total military power.</p>
-                    </div>
-                    <div class="chamber-grid" id="garrison-units"></div>
-                </section>
-
-                <section id="tab-arsenal" class="tab-panel">
-                    <div class="panel-intro">
-                        <h2>Weaponry Arsenal</h2>
-                        <p>Upgrade your army's tech tier to apply massive global power multipliers.</p>
-                    </div>
-                    <div class="chamber-grid" id="arsenal-upgrades"></div>
-                </section>
+            <div class="dispatch-footer">
+                <div class="log-container" id="log-entries"></div>
             </div>
         </main>
+
+        <!-- Sidebar Upgrade Shop -->
+        <aside class="military-shop">
+            <div class="shop-header">
+                <h2><i data-lucide="swords"></i> Imperial Garrison</h2>
+                <p>Expend Treasury to bolster your forces.</p>
+            </div>
+            
+            <div class="upgrade-list" id="upgrade-container">
+                <!-- Upgrades populated by JS -->
+            </div>
+        </aside>
+
+        <!-- Floating Particles -->
+        <div id="particle-container"></div>
     </div>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
