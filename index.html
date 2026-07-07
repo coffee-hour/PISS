@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-statecraft">
-    <div id="app">
+    <div id="app" class="shake-layer">
         <!-- The Great Hall (Sidebar) -->
         <aside class="sidebar no-select">
             <div class="sidebar-header">
@@ -23,6 +23,10 @@
                 <button class="nav-btn active" data-tab="senate">
                     <i data-lucide="castle"></i>
                     Throne Room
+                </button>
+                <button class="nav-btn" data-tab="pantheon">
+                    <i data-lucide="sparkles"></i>
+                    Grand Pantheon
                 </button>
                 <button class="nav-btn" data-tab="garrison">
                     <i data-lucide="shield"></i>
@@ -68,7 +72,7 @@
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="command-btn" onclick="Sovereign.manualGather('food')">Levy</button>
+                    <button class="command-btn" onclick="Sovereign.manualGather('food', event)">Levy</button>
                 </div>
                 <div class="ledger-item" id="res-wood">
                     <i data-lucide="hammer" class="ledger-icon"></i>
@@ -77,7 +81,7 @@
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="command-btn" onclick="Sovereign.manualGather('wood')">Levy</button>
+                    <button class="command-btn" onclick="Sovereign.manualGather('wood', event)">Levy</button>
                 </div>
                 <div class="ledger-item" id="res-ore">
                     <i data-lucide="anvil" class="ledger-icon"></i>
@@ -86,7 +90,7 @@
                         <span class="res-val">0</span>
                         <span class="res-rate">+0/s</span>
                     </div>
-                    <button class="command-btn" onclick="Sovereign.manualGather('ore')">Levy</button>
+                    <button class="command-btn" onclick="Sovereign.manualGather('ore', event)">Levy</button>
                 </div>
                 <div class="ledger-item" id="res-gold">
                     <i data-lucide="gem" class="ledger-icon"></i>
@@ -103,17 +107,32 @@
                         <span class="res-val">0</span>
                     </div>
                 </div>
+                <div class="ledger-item faith" id="res-faith">
+                    <i data-lucide="flame" class="ledger-icon"></i>
+                    <div class="ledger-meta">
+                        <span class="res-label">Faith</span>
+                        <span class="res-val">0</span>
+                        <span class="res-rate">+0/s</span>
+                    </div>
+                </div>
             </header>
 
             <!-- Tab Viewport -->
-            <div class="parchment-viewport">
+            <div class="parchment-viewport" id="viewport">
                 <section id="tab-senate" class="tab-panel active">
                     <div class="panel-intro">
-                        <h2>Throne Room</h2>
+                        <h2 class="candle-title">Throne Room</h2>
                         <p>Command the subjects and infrastructure of your sovereign realm.</p>
                     </div>
                     <div class="hall-layout">
-                        <div class="decree-card iron-banded">
+                        <!-- Custom Statue Display -->
+                        <div class="statue-pedestal no-select">
+                            <div class="statue-spotlight"></div>
+                            <div id="active-statue" class="pixel-monument"></div>
+                            <div class="pedestal-base">The Eternal Idol</div>
+                        </div>
+
+                        <div class="decree-card iron-banded clickable-card" onclick="Sovereign.triggerCardEffect(this)">
                             <div class="card-header">
                                 <h3>Workforce Decrees</h3>
                                 <span class="seal" id="click-lvl">Decree I</span>
@@ -127,9 +146,72 @@
                     </div>
                 </section>
 
+                <section id="tab-pantheon" class="tab-panel">
+                    <div class="panel-intro">
+                        <h2 class="candle-title">Grand Pantheon</h2>
+                        <p>Establish the state religion and carve monuments to the gods.</p>
+                    </div>
+                    
+                    <div class="pantheon-layout">
+                        <!-- Religion Selection -->
+                        <div class="chamber-card iron-banded">
+                            <div class="card-header"><h3>Select State Faith</h3></div>
+                            <div class="card-body">
+                                <div class="religion-options" id="religion-list">
+                                    <!-- Populated via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pixel Statue Creator -->
+                        <div class="monument-workshop iron-banded">
+                            <div class="workshop-header">
+                                <h3>The Carving Table (64x64)</h3>
+                                <div class="workshop-tools">
+                                    <button class="tool-btn" id="tool-undo" title="Undo"><i data-lucide="rotate-ccw"></i></button>
+                                    <button class="tool-btn" id="tool-clear" title="Clear"><i data-lucide="trash-2"></i></button>
+                                    <button class="tool-btn active" id="tool-grid" title="Toggle Grid"><i data-lucide="grid-3x3"></i></button>
+                                </div>
+                            </div>
+                            
+                            <div class="canvas-container">
+                                <canvas id="statue-canvas" width="64" height="64"></canvas>
+                                <div id="canvas-grid" class="grid-overlay"></div>
+                            </div>
+
+                            <div class="workshop-controls">
+                                <div class="palette-group">
+                                    <div class="palette-color active" style="background: #f5f5f0" data-color="#f5f5f0" title="Marble"></div>
+                                    <div class="palette-color" style="background: #d4af37" data-color="#d4af37" title="Gold"></div>
+                                    <div class="palette-color" style="background: #1c1917" data-color="#1c1917" title="Basalt"></div>
+                                    <div class="palette-color" style="background: #3b82f6" data-color="#3b82f6" title="Iron Blue"></div>
+                                    <div class="palette-color" style="background: #b91c1c" data-color="#b91c1c" title="Blood Ruby"></div>
+                                    <div class="palette-color" style="background: #6b7280" data-color="#6b7280" title="Slate Grey"></div>
+                                    <div class="palette-color eraser" data-color="transparent" title="Eraser"><i data-lucide="eraser"></i></div>
+                                </div>
+                                <div class="brush-group">
+                                    <button class="brush-btn active" data-size="1">1x1</button>
+                                    <button class="brush-btn" data-size="2">2x2</button>
+                                    <button class="brush-btn" data-size="4">4x4</button>
+                                </div>
+                                <button class="action-btn candle-glow" id="carve-btn">Carve Monument</button>
+                            </div>
+                            
+                            <div class="blueprint-selector">
+                                <p>Historical Templates</p>
+                                <div class="blueprints">
+                                    <button class="bp-btn" data-bp="crown"><i data-lucide="crown"></i></button>
+                                    <button class="bp-btn" data-bp="sword"><i data-lucide="swords"></i></button>
+                                    <button class="bp-btn" data-bp="pillar"><i data-lucide="columns"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <section id="tab-garrison" class="tab-panel">
                     <div class="panel-intro">
-                        <h2>Imperial Garrison</h2>
+                        <h2 class="candle-title">Imperial Garrison</h2>
                         <p>Recruit and discipline your forces for territorial expansion.</p>
                     </div>
                     <div class="chamber-grid" id="garrison-units"></div>
@@ -137,7 +219,7 @@
 
                 <section id="tab-market" class="tab-panel">
                     <div class="panel-intro">
-                        <h2>Merchant Ledger</h2>
+                        <h2 class="candle-title">Merchant Ledger</h2>
                         <p>Exchange surplus goods via merchant caravans for treasury gold.</p>
                     </div>
                     <div class="caravan-list" id="market-list"></div>
@@ -145,7 +227,7 @@
 
                 <section id="tab-council" class="tab-panel">
                     <div class="panel-intro">
-                        <h2>Grand Council</h2>
+                        <h2 class="candle-title">Grand Council</h2>
                         <p>Appoint ministers to oversee specialized regional administration.</p>
                     </div>
                     <div class="chamber-grid" id="council-ministers"></div>
@@ -153,7 +235,7 @@
 
                 <section id="tab-expansion" class="tab-panel">
                     <div class="panel-intro">
-                        <h2>War Table</h2>
+                        <h2 class="candle-title">War Table</h2>
                         <p>Command your legions to annex outlying territories.</p>
                     </div>
                     <div class="war-layout">
@@ -167,7 +249,7 @@
 
                 <section id="tab-tech" class="tab-panel">
                     <div class="panel-intro">
-                        <h2>Imperial Archive</h2>
+                        <h2 class="candle-title">Imperial Archive</h2>
                         <p>Decipher ancient scripts to unlock sovereign breakthroughs.</p>
                     </div>
                     <div class="archive-grid" id="tech-tree"></div>
@@ -175,7 +257,7 @@
 
                 <section id="tab-dynasty" class="tab-panel">
                     <div class="panel-intro">
-                        <h2>Dynastic Legacy</h2>
+                        <h2 class="candle-title">Dynastic Legacy</h2>
                         <p>Seal your current reign to establish an eternal legacy.</p>
                     </div>
                     <div class="dynastic-hall">
@@ -201,6 +283,9 @@
                 </section>
             </div>
         </main>
+
+        <!-- Floating Particles Layer -->
+        <div id="particle-container"></div>
 
         <!-- Decrees & Events -->
         <div id="event-overlay" class="modal-overlay">
