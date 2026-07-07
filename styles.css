@@ -2,8 +2,9 @@
     --amber: #ff8c00;
     --amber-glow: rgba(255, 140, 0, 0.4);
     --crimson: #b91c1c;
+    --crimson-glow: rgba(185, 28, 28, 0.5);
     --obsidian: #050608;
-    --glass: rgba(10, 12, 16, 0.8);
+    --glass: rgba(10, 12, 16, 0.9);
     --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -28,6 +29,7 @@ body {
     inset: 0;
     transform-style: preserve-3d;
     background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%);
+    transition: filter 0.1s;
 }
 
 #environment {
@@ -44,7 +46,7 @@ body {
     z-index: 1;
 }
 
-/* Enemy Layer */
+/* Enemy Layer - Enhanced v3.0.1 */
 #enemy-target-container {
     position: absolute;
     top: 50%;
@@ -58,13 +60,75 @@ body {
     align-items: center;
 }
 
+.enemy-character {
+    position: relative;
+    width: 240px;
+    height: 440px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 .enemy-sprite {
-    width: 200px;
-    height: 400px;
+    position: absolute;
+    width: 100%;
+    height: 100%;
     background: var(--glass);
-    border: 2px solid var(--amber);
-    box-shadow: 0 0 50px var(--amber-glow);
-    border-radius: 20px;
+    border: 3px solid var(--amber);
+    box-shadow: 0 0 60px var(--amber-glow);
+    /* Multi-layered geometric body */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 50%, 80% 90%, 50% 100%, 20% 90%, 0% 50%, 10% 20%);
+    z-index: 2;
+    animation: enemyPulse 2s infinite alternate ease-in-out;
+}
+
+.enemy-emblem {
+    position: absolute;
+    top: 25%;
+    width: 60px;
+    height: 80px;
+    background: var(--crimson);
+    clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
+    z-index: 3;
+    box-shadow: 0 0 20px var(--crimson-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.enemy-aura {
+    position: absolute;
+    inset: -20px;
+    border: 2px solid var(--amber-glow);
+    border-radius: 50%;
+    filter: blur(10px);
+    animation: auraSpin 4s infinite linear;
+}
+
+@keyframes enemyPulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    100% { transform: scale(1.05); filter: brightness(1.3); }
+}
+
+@keyframes auraSpin {
+    from { transform: rotate(0deg) scale(1); opacity: 0.5; }
+    50% { transform: rotate(180deg) scale(1.2); opacity: 0.8; }
+    to { transform: rotate(360deg) scale(1); opacity: 0.5; }
+}
+
+/* Hit Reaction */
+.hit-active {
+    animation: hitFlash 0.15s ease-out forwards;
+}
+
+@keyframes hitFlash {
+    0% { transform: scale(0.9) translate(0,0); filter: brightness(3) saturate(2); }
+    50% { transform: scale(0.85) translate(20px, -10px); }
+    100% { transform: scale(1) translate(0,0); filter: brightness(1); }
 }
 
 /* First-Person HUD */
@@ -102,21 +166,26 @@ body {
     background: rgba(0,0,0,0.8);
     border: 1px solid rgba(255,255,255,0.1);
     overflow: hidden;
+    position: relative;
 }
 
 .bar-fill {
     height: 100%;
     width: 100%;
     background: var(--amber);
-    transition: width 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+    box-shadow: 0 0 15px var(--amber-glow);
 }
 
-.threat .bar-fill { background: var(--crimson); }
+.threat .bar-fill { 
+    background: linear-gradient(90deg, #7f1d1d, #ef4444); 
+    box-shadow: 0 0 15px var(--crimson-glow);
+}
 
 /* Arms & Fists */
 #arms-container {
     position: absolute;
-    bottom: -50px;
+    bottom: -80px;
     width: 100%;
     height: 400px;
     display: flex;
@@ -127,21 +196,44 @@ body {
 }
 
 .arm {
-    width: 250px;
-    height: 500px;
-    background: linear-gradient(to top, #1a1a1a, #333);
+    width: 280px;
+    height: 550px;
+    background: linear-gradient(to top, #000, #1a1a1a 40%, #444 100%);
     border: 4px solid #000;
-    border-radius: 50px 50px 0 0;
-    transform: translateY(100px);
-    transition: transform 0.1s;
+    border-radius: 60px 60px 0 0;
+    transform: translateY(150px);
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
 }
 
-.arm-left { transform: rotate(15deg) translateY(100px); }
-.arm-right { transform: rotate(-15deg) translateY(100px); }
+.arm::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 100px;
+    background: rgba(255, 140, 0, 0.1);
+    filter: blur(10px);
+    border-radius: 40px;
+}
+
+.arm-left { transform: rotate(12deg) translateY(150px); }
+.arm-right { transform: rotate(-12deg) translateY(150px); }
 
 /* Input Layer */
 #interaction-layer {
     position: absolute;
     inset: 0;
     z-index: 300;
+}
+
+/* Screen Flash Layer */
+#fx-flash {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 400;
+    opacity: 0;
+    pointer-events: none;
 }

@@ -3,33 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: First-Person Fighter (v3.0.0)</title>
+    <title>Sovereign: Viltrumite Carnage (v3.0.1)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- The Arena Viewport -->
+    <div id="fx-flash"></div>
     <div id="game-container">
-        <!-- World Layer -->
         <div id="arena">
-            <!-- Perspective-warped background -->
             <div id="environment" class="skyline"></div>
             
-            <!-- Enemy Rendering Layer -->
             <div id="enemy-target-container">
-                <div id="enemy-character" class="fighter-idle">
+                <div id="enemy-character" class="enemy-character">
                     <div class="enemy-sprite"></div>
+                    <div class="enemy-emblem">V</div>
                     <div class="enemy-aura"></div>
                 </div>
             </div>
 
-            <!-- Viewport Effects (Blood, Cracks, Flashes) -->
             <div id="fx-layer"></div>
         </div>
 
-        <!-- First-Person HUD -->
         <div id="hud">
             <div class="hud-top">
                 <div class="hud-box condition">
@@ -39,7 +35,7 @@
                     </div>
                 </div>
                 <div class="hud-box threat">
-                    <label id="enemy-name">TARGET: ???</label>
+                    <label id="enemy-name">TARGET: OMNI-MAN</label>
                     <div class="bar-container">
                         <div id="enemy-hp" class="bar-fill"></div>
                     </div>
@@ -47,20 +43,20 @@
             </div>
 
             <div class="hud-bottom">
-                <div class="momentum-gauge">
-                    <div id="momentum-fill"></div>
-                    <div id="momentum-text">MOMENTUM x0</div>
+                <div class="momentum-gauge-box">
+                    <div class="momentum-label" id="momentum-text">MOMENTUM x0</div>
+                    <div class="momentum-meter">
+                        <div id="momentum-fill"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- First-Person Arms/Fists -->
         <div id="arms-container">
             <div class="arm arm-left"></div>
             <div class="arm arm-right"></div>
         </div>
 
-        <!-- Interaction Layer -->
         <div id="interaction-layer"></div>
     </div>
 

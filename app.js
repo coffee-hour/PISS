@@ -1,19 +1,20 @@
 /**
- * Sovereign v3.0.0: First-Person Fighter Engine
- * Core mechanics: Raycasting interaction, First-Person Punch Logic, Perspective Shifts.
+ * Sovereign v3.0.1: Viltrumite Carnage
+ * Enhanced Enemy Visuals, Hit Stutter, and Impact FX.
  */
 
 const Fighter = (() => {
     let state = {
         player: { hp: 100, maxHp: 100, momentum: 0 },
         target: { name: 'OMNI-MAN', hp: 1000, maxHp: 1000 },
-        isAttacking: false
+        isAttacking: false,
+        combo: 0
     };
 
     const init = () => {
         setupListeners();
         gameLoop();
-        console.log("Sovereign FP Engine v3.0 Initialized.");
+        console.log("Sovereign Carnage v3.0.1 Initialized.");
     };
 
     const setupListeners = () => {
@@ -24,12 +25,19 @@ const Fighter = (() => {
             executePunch(side);
         });
 
-        // Mouse move for subtle perspective sway
         document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth - 0.5) * 20;
-            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            const x = (e.clientX / window.innerWidth - 0.5) * 15;
+            const y = (e.clientY / window.innerHeight - 0.5) * 15;
             const arena = document.getElementById('arena');
+            const character = document.getElementById('enemy-character');
+            
+            // Perspective sway
             arena.style.transform = `rotateY(${x}deg) rotateX(${-y}deg)`;
+            
+            // Subtle parallax for enemy
+            if (character) {
+                character.style.transform = `translateX(${-x * 2}px) translateY(${y * 2}px)`;
+            }
         });
     };
 
@@ -38,42 +46,71 @@ const Fighter = (() => {
         state.isAttacking = true;
 
         const arm = document.querySelector(`.arm-${side}`);
-        const impactY = side === 'left' ? -200 : -200;
-        const rotate = side === 'left' ? 25 : -25;
+        const impactY = -280;
+        const rotate = side === 'left' ? 30 : -30;
 
-        // Animate Arm
-        arm.style.transform = `translateY(${impactY}px) rotate(${rotate}deg)`;
+        // Animate Arm Punch
+        arm.style.transform = `translateY(${impactY}px) rotate(${rotate}deg) scale(1.1)`;
         
-        // Impact Logic
+        // Impact Logic with stutter
         setTimeout(() => {
             handleImpact();
-            arm.style.transform = `translateY(100px) rotate(${side === 'left' ? 15 : -15}deg)`;
-            state.isAttacking = false;
+            setTimeout(() => {
+                arm.style.transform = `translateY(150px) rotate(${side === 'left' ? 12 : -12}deg)`;
+                state.isAttacking = false;
+            }, 50);
         }, 100);
     };
 
     const handleImpact = () => {
-        // Screen Shake
         const container = document.getElementById('game-container');
-        container.style.transform = `translate(${(Math.random()-0.5)*20}px, ${(Math.random()-0.5)*20}px)`;
+        const enemy = document.getElementById('enemy-character');
+        const flash = document.getElementById('fx-flash');
+
+        // Visual Impact: Screen Shake
+        const shake = 25;
+        container.style.transform = `translate(${(Math.random()-0.5)*shake}px, ${(Math.random()-0.5)*shake}px)`;
         setTimeout(() => container.style.transform = 'translate(0,0)', 50);
 
-        // Update State
-        state.target.hp -= 10;
-        state.player.momentum = Math.min(100, state.player.momentum + 5);
+        // Visual Impact: Enemy Hit Reaction
+        if (enemy) {
+            enemy.classList.remove('hit-active');
+            void enemy.offsetWidth; // Trigger reflow
+            enemy.classList.add('hit-active');
+        }
+
+        // Visual Impact: White Flash (Critical Feel)
+        if (state.player.momentum >= 80) {
+            flash.style.opacity = '0.3';
+            setTimeout(() => flash.style.opacity = '0', 50);
+        }
+
+        // State Update
+        const damage = 10 + Math.floor(state.player.momentum / 10);
+        state.target.hp -= damage;
+        state.player.momentum = Math.min(100, state.player.momentum + 4);
+        
         renderUI();
     };
 
     const renderUI = () => {
-        document.getElementById('player-hp').style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
-        document.getElementById('enemy-hp').style.width = `${(state.target.hp / state.target.maxHp) * 100}%`;
-        document.getElementById('momentum-fill').style.width = `${state.player.momentum}%`;
-        document.getElementById('momentum-text').innerText = `MOMENTUM x${Math.floor(state.player.momentum / 10)}`;
-        document.getElementById('enemy-name').innerText = `TARGET: ${state.target.name}`;
+        const playerHpFill = document.getElementById('player-hp');
+        const enemyHpFill = document.getElementById('enemy-hp');
+        const momentumFill = document.getElementById('momentum-fill');
+        const momentumText = document.getElementById('momentum-text');
+
+        if (playerHpFill) playerHpFill.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
+        if (enemyHpFill) enemyHpFill.style.width = `${(state.target.hp / state.target.maxHp) * 100}%`;
+        if (momentumFill) momentumFill.style.width = `${state.player.momentum}%`;
+        if (momentumText) momentumText.innerText = `MOMENTUM x${Math.floor(state.player.momentum / 10)}`;
     };
 
     const gameLoop = () => {
-        // Future logic for enemy AI attacks and recovery
+        // Natural momentum decay
+        if (!state.isAttacking && state.player.momentum > 0) {
+            state.player.momentum -= 0.05;
+            renderUI();
+        }
         requestAnimationFrame(gameLoop);
     };
 
