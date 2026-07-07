@@ -1,5 +1,5 @@
 /**
- * Sovereign: Statecraft - Sovereign Engine (V3.1 Stabilization & Fixes)
+ * Sovereign: Statecraft - Sovereign Engine (AAA V4 - Forensic Fix)
  */
 
 const Sovereign = (() => {
@@ -9,7 +9,6 @@ const Sovereign = (() => {
         buildings: { farm: 0, lumber: 0, mine: 0, forge: 0, market: 0 },
         units: { guard: 0, ranger: 0, knight: 0, ram: 0 },
         clickLvl: 1,
-        ministers: [],
         faithId: 'none',
         statueImg: null,
         era: 0,
@@ -26,9 +25,9 @@ const Sovereign = (() => {
 
     const religions = {
         none: { name: "No Faith", effect: "A secular state.", mult: {} },
-        steel: { name: "The Steel Monolith", effect: "+25% Iron & Metallurgy", mult: { prod_ore: 0.25 }, icon: 'anvil' },
-        solar: { name: "Solar Path", effect: "+20% Agrarian Output", mult: { prod_food: 0.20 }, icon: 'sun' },
-        hearth: { name: "Cult of the Hearth", effect: "+15% Population Growth", mult: { prod_gold: 0.15 }, icon: 'home' }
+        steel: { name: "The Steel Monolith", effect: "+25% Iron & Metallurgy", mult: { prod_ore: 0.25 } },
+        solar: { name: "Solar Path", effect: "+20% Agrarian Output", mult: { prod_food: 0.20 } },
+        hearth: { name: "Cult of the Hearth", effect: "+15% Population Growth", mult: { prod_gold: 0.15 } }
     };
 
     const config = {
@@ -68,12 +67,6 @@ const Sovereign = (() => {
                 lucide.createIcons();
             });
         });
-        const upBtn = document.getElementById('upgrade-click-btn');
-        if (upBtn) upBtn.onclick = upgradeDecree;
-        const presBtn = document.getElementById('prestige-btn');
-        if (presBtn) presBtn.onclick = concludeReign;
-        const carveBtn = document.getElementById('carve-btn');
-        if (carveBtn) carveBtn.onclick = carveStatue;
     };
 
     const startLoop = () => {
@@ -87,13 +80,9 @@ const Sovereign = (() => {
     };
 
     const update = (delta) => {
-        const rel = religions[state.faithId] || religions.none;
-        const getMult = (key) => 1 + (rel.mult[key] || 0);
-
-        for (let id in state.buildings) {
-            const b = config.buildings[id];
-            const m = getMult(`prod_${b.res}`);
-            state.resources[b.res] += b.prod * state.buildings[id] * delta * state.modifiers.production * m;
+        const gen = calculateGeneration();
+        for (let res in state.resources) {
+            state.resources[res] += gen[res] * delta;
         }
         
         if (state.statueImg) {
@@ -101,68 +90,97 @@ const Sovereign = (() => {
             state.modifiers.production = 1.0 + (state.resources.faith * 0.0001);
         }
 
-        renderLedgerOnly();
-        renderPrices(); // Ensure prices and per-sec rates update every tick
+        renderLedgerOnly(gen);
+        renderPrices();
     };
 
-    // --- Pricing & Gen Rates ---
-    const getBuildingCost = (id) => {
-        const b = config.buildings[id];
-        const count = state.buildings[id];
-        const cost = {};
-        for (let r in b.baseCost) cost[r] = Math.floor(b.baseCost[r] * Math.pow(1.35, count));
-        return cost;
+    const calculateGeneration = () => {
+        const rel = religions[state.faithId] || religions.none;
+        const getMult = (res) => 1 + (rel.mult[`prod_${res}`] || 0);
+
+        const gen = { food: 0, wood: 0, ore: 0, gold: 0, faith: 0 };
+        for (let id in state.buildings) {
+            const b = config.buildings[id];
+            gen[b.res] += b.prod * state.buildings[id] * state.modifiers.production * getMult(b.res);
+        }
+        state.regions.filter(r => r.captured).forEach(r => {
+            for (let res in r.tribute) gen[res] += r.tribute[res] * state.modifiers.production;
+        });
+        for (let id in state.units) {
+            const u = config.units[id];
+            for (let res in u.upkeep) gen[res] -= u.upkeep[res] * state.units[id];
+        }
+        if (state.statueImg) gen.faith = 0.5;
+        return gen;
     };
 
-    const getDecreeCost = () => Math.floor(120 * Math.pow(1.65, state.clickLvl - 1));
-
-    const canAfford = (costs) => {
-        if (typeof costs === 'number') return state.resources.gold >= costs;
-        for (let r in costs) if (state.resources[r] < costs[r]) return false;
-        return true;
+    const renderLedgerOnly = (gen = null) => {
+        if (!gen) gen = calculateGeneration();
+        for (let res in state.resources) {
+            const node = document.getElementById(`res-${res}`);
+            const rateEl = document.getElementById(`rate-${res}`);
+            if (node) {
+                const valEl = node.querySelector('.res-val');
+                if (valEl) valEl.innerText = Math.floor(state.resources[res]).toLocaleString();
+            }
+            if (rateEl) {
+                const prefix = gen[res] >= 0 ? '+' : '';
+                rateEl.innerText = `${prefix}${gen[res].toFixed(1)}/s`;
+                rateEl.style.color = gen[res] >= 0 ? 'var(--success)' : 'var(--danger)';
+            }
+        }
     };
 
     const renderPrices = () => {
-        // Decree Price
-        const decreeCost = getDecreeCost();
-        const decreePriceEl = document.getElementById('click-price');
+        // Decree
+        const decCost = Math.floor(120 * Math.pow(1.65, state.clickLvl - 1));
+        const decPriceEl = document.getElementById('click-price');
         const upBtn = document.getElementById('upgrade-click-btn');
-        if (decreePriceEl) {
-            const aff = canAfford(decreeCost);
-            decreePriceEl.innerHTML = `<span class="price-tag ${aff?'can-afford':'cannot-afford'}">Cost: ${decreeCost} GOLD</span>`;
+        if (decPriceEl) {
+            const aff = state.resources.gold >= decCost;
+            decPriceEl.innerHTML = `<span class="price-tag ${aff?'can-afford':'cannot-afford'}">Cost: ${decCost} GOLD</span>`;
             if (upBtn) upBtn.disabled = !aff;
         }
 
-        // Building Prices
+        // Buildings
         for (let id in config.buildings) {
-            const cost = getBuildingCost(id);
+            const b = config.buildings[id];
+            const count = state.buildings[id];
             const container = document.getElementById(`price-${id}`);
             const btn = document.getElementById(`buy-${id}`);
             if (container) {
-                container.innerHTML = Object.entries(cost).map(([res, val]) => {
-                    const aff = state.resources[res] >= val;
-                    return `<span class="price-tag ${aff?'can-afford':'cannot-afford'}">${val} ${res.toUpperCase()}</span>`;
-                }).join('');
-                if (btn) btn.disabled = !canAfford(cost);
+                let html = '';
+                let affAll = true;
+                for (let r in b.baseCost) {
+                    const costVal = Math.floor(b.baseCost[r] * Math.pow(1.35, count));
+                    const aff = state.resources[r] >= costVal;
+                    if (!aff) affAll = false;
+                    html += `<span class="price-tag ${aff?'can-afford':'cannot-afford'}">${costVal} ${r.toUpperCase()}</span>`;
+                }
+                container.innerHTML = html;
+                if (btn) btn.disabled = !affAll;
             }
         }
 
-        // Unit Prices
+        // Units
         for (let id in config.units) {
-            const cost = config.units[id].baseCost;
-            const btn = document.getElementById(`recruit-${id}`);
+            const u = config.units[id];
             const container = document.getElementById(`price-unit-${id}`);
+            const btn = document.getElementById(`recruit-${id}`);
             if (container) {
-                container.innerHTML = Object.entries(cost).map(([res, val]) => {
-                    const aff = state.resources[res] >= val;
-                    return `<span class="price-tag ${aff?'can-afford':'cannot-afford'}">${val} ${res.toUpperCase()}</span>`;
-                }).join('');
-                if (btn) btn.disabled = !canAfford(cost);
+                let html = '';
+                let affAll = true;
+                for (let r in u.baseCost) {
+                    const aff = state.resources[r] >= u.baseCost[r];
+                    if (!aff) affAll = false;
+                    html += `<span class="price-tag ${aff?'can-afford':'cannot-afford'}">${u.baseCost[r]} ${r.toUpperCase()}</span>`;
+                }
+                container.innerHTML = html;
+                if (btn) btn.disabled = !affAll;
             }
         }
     };
 
-    // --- Rendering ---
     const render = () => {
         renderLedgerOnly();
         renderThroneRoom();
@@ -173,36 +191,8 @@ const Sovereign = (() => {
         renderDynasty();
         renderStatue();
         const eraEl = document.getElementById('current-era');
-        if (eraEl) eraEl.innerText = ["Age of Iron", "Feudal Reign", "Imperial Sovereignty", "Grand Dynasty"][state.era] || "Ethereal Society";
+        if (eraEl) eraEl.innerText = ["Age of Iron", "Feudal Reign", "Imperial Sovereignty", "Grand Dynasty"][state.era] || "Divine Reign";
         lucide.createIcons();
-    };
-
-    const renderLedgerOnly = () => {
-        const rel = religions[state.faithId] || religions.none;
-        const getMult = (key) => 1 + (rel.mult[key] || 0);
-
-        for (let res in state.resources) {
-            const node = document.getElementById(`res-${res}`);
-            if (node) {
-                const valEl = node.querySelector('.res-val');
-                if (valEl) valEl.innerText = Math.floor(state.resources[res]).toLocaleString();
-                
-                const rateEl = node.querySelector('.res-rate');
-                if (rateEl) {
-                    let rTotal = 0;
-                    for (let bid in state.buildings) {
-                        const b = config.buildings[bid];
-                        if (b.res === res) rTotal += b.prod * state.buildings[bid];
-                    }
-                    state.regions.filter(reg => reg.captured).forEach(reg => {
-                        if (reg.tribute[res]) rTotal += reg.tribute[res];
-                    });
-                    const m = getMult(`prod_${res}`);
-                    const finalRate = rTotal * state.modifiers.production * m;
-                    rateEl.innerText = `+${finalRate.toFixed(1)}/s`;
-                }
-            }
-        }
     };
 
     const renderThroneRoom = () => {
@@ -236,7 +226,7 @@ const Sovereign = (() => {
             const btn = document.createElement('div');
             btn.className = `religion-btn ${state.faithId === id ? 'active' : ''}`;
             btn.innerHTML = `<h4>${r.name}</h4><p>${r.effect}</p>`;
-            btn.onclick = () => { state.faithId = id; renderPantheon(); renderLedgerOnly(); };
+            btn.onclick = () => { state.faithId = id; renderPantheon(); renderLedgerOnly(); triggerShake(); };
             list.appendChild(btn);
         }
     };
@@ -263,19 +253,18 @@ const Sovereign = (() => {
         if (!container) return;
         container.innerHTML = '';
         const trades = [
-            { id: 'f_sell', name: 'Grain Caravan', from: 'food', to: 'gold', rate: 0.15, icon: 'wheat', clr: 'icon-grain' },
-            { id: 'w_sell', name: 'Lumber Caravan', from: 'wood', to: 'gold', rate: 0.20, icon: 'hammer', clr: 'icon-wood' },
-            { id: 'o_sell', name: 'Iron Caravan', from: 'ore', to: 'gold', rate: 0.40, icon: 'anvil', clr: 'icon-iron' }
+            { id: 'f_sell', name: 'Grain Caravan', from: 'food', rate: 0.15, icon: 'wheat', clr: 'icon-grain' },
+            { id: 'w_sell', name: 'Lumber Caravan', from: 'wood', rate: 0.20, icon: 'hammer', clr: 'icon-wood' },
+            { id: 'o_sell', name: 'Iron Caravan', from: 'ore', rate: 0.40, icon: 'anvil', clr: 'icon-iron' }
         ];
         trades.forEach(t => {
             const div = document.createElement('div');
-            div.className = 'caravan-item iron-banded';
+            div.className = 'chamber-card iron-banded';
             div.innerHTML = `
-                <div class="caravan-info"><h3><i data-lucide="${t.icon}" class="${t.clr}"></i> ${t.name}</h3><p>Rate: 1 = ${t.rate} Gold</p></div>
-                <div class="caravan-actions">
-                    <button class="command-btn" onclick="Sovereign.trade('${t.id}', 10)">Trade 10</button>
-                    <button class="command-btn" onclick="Sovereign.trade('${t.id}', 100)">Trade 100</button>
-                </div>`;
+                <div class="card-header"><h3><i data-lucide="${t.icon}" class="${t.clr}"></i> ${t.name}</h3></div>
+                <div class="card-body"><p>Rate: 1 = ${t.rate} Gold</p>
+                <button class="command-btn" onclick="Sovereign.trade('${t.id}', 10)">Trade 10</button>
+                <button class="command-btn" onclick="Sovereign.trade('${t.id}', 100)">Trade 100</button></div>`;
             container.appendChild(div);
         });
     };
@@ -296,8 +285,8 @@ const Sovereign = (() => {
 
     const renderDynasty = () => {
         const legEl = document.getElementById('legacy-points');
-        if (legEl) legEl.innerText = state.legacyPoints;
         const prodEl = document.getElementById('prod-mult');
+        if (legEl) legEl.innerText = state.legacyPoints;
         if (prodEl) prodEl.innerText = state.modifiers.production.toFixed(2) + 'x';
     };
 
@@ -309,32 +298,44 @@ const Sovereign = (() => {
     // --- Actions ---
     const manualGather = (res, e) => {
         state.resources[res] += state.clickLvl;
-        if (e && typeof spawnParticle === 'function') spawnParticle(`+${state.clickLvl}`, e.clientX, e.clientY);
+        if (e) spawnParticle(`+${state.clickLvl}`, e.clientX, e.clientY);
         renderLedgerOnly();
     };
 
     const upgradeDecree = () => {
-        const cost = getDecreeCost();
-        if (canAfford(cost)) {
+        const cost = Math.floor(120 * Math.pow(1.65, state.clickLvl - 1));
+        if (state.resources.gold >= cost) {
             state.resources.gold -= cost;
             state.clickLvl++;
             render();
+            triggerShake();
         }
     };
 
     const buyBuilding = (id) => {
-        const cost = getBuildingCost(id);
-        if (canAfford(cost)) {
-            for (let r in cost) state.resources[r] -= cost[r];
+        const b = config.buildings[id];
+        const count = state.buildings[id];
+        let canAfford = true;
+        let costs = {};
+        for (let r in b.baseCost) {
+            costs[r] = Math.floor(b.baseCost[r] * Math.pow(1.35, count));
+            if (state.resources[r] < costs[r]) canAfford = false;
+        }
+        if (canAfford) {
+            for (let r in costs) state.resources[r] -= costs[r];
             state.buildings[id]++;
             render();
         }
     };
 
     const recruitUnit = (id) => {
-        const cost = config.units[id].baseCost;
-        if (canAfford(cost)) {
-            for (let r in cost) state.resources[r] -= cost[r];
+        const u = config.units[id];
+        let canAfford = true;
+        for (let r in u.baseCost) {
+            if (state.resources[r] < u.baseCost[r]) canAfford = false;
+        }
+        if (canAfford) {
+            for (let r in u.baseCost) state.resources[r] -= u.baseCost[r];
             state.units[id]++;
             render();
         }
@@ -346,7 +347,7 @@ const Sovereign = (() => {
         if (state.resources[t.from] >= amt) {
             state.resources[t.from] -= amt;
             state.resources.gold += amt * t.r;
-            render();
+            renderLedgerOnly();
         }
     };
 
@@ -363,6 +364,7 @@ const Sovereign = (() => {
             notify(`REPELLED FROM ${r.name}`);
         }
         render();
+        triggerShake();
     };
 
     const concludeReign = () => {
@@ -391,6 +393,14 @@ const Sovereign = (() => {
         setTimeout(() => p.remove(), 800);
     };
 
+    const triggerShake = () => {
+        const app = document.getElementById('app');
+        if (app) {
+            app.classList.add('shaking');
+            setTimeout(() => app.classList.remove('shaking'), 400);
+        }
+    };
+
     const notify = (msg) => {
         const entries = document.getElementById('log-entries');
         if (entries) {
@@ -400,82 +410,72 @@ const Sovereign = (() => {
         }
     };
 
-    const save = () => localStorage.setItem('sov_aaa_v3_polish', JSON.stringify(state));
-    const load = () => {
-        const s = localStorage.getItem('sov_aaa_v3_polish');
-        if (s) state = { ...state, ...JSON.parse(s), lastUpdate: Date.now() };
-    };
-
-    // --- Statue Creator (Restored & Stabilized) ---
-    let canvasCtx, painting = false, activeColor = '#f5f5f0', brushSize = 1;
-    
+    // --- Canvas Logic ---
+    let ctx, painting = false, color = '#f5f5f0', brushSize = 1;
     const setupCanvas = () => {
         const cvs = document.getElementById('statue-canvas');
         if (!cvs) return;
-        canvasCtx = cvs.getContext('2d');
-        canvasCtx.imageSmoothingEnabled = false;
+        ctx = cvs.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
 
-        cvs.onmousedown = (e) => { painting = true; drawPixel(e); };
-        cvs.onmousemove = drawPixel;
-        window.addEventListener('mouseup', () => painting = false);
+        cvs.onmousedown = (e) => { painting = true; paint(e); };
+        cvs.onmousemove = paint;
+        window.onmouseup = () => painting = false;
 
-        // Palette Listeners
         document.querySelectorAll('.palette-color').forEach(p => {
             p.onclick = () => {
                 document.querySelectorAll('.palette-color').forEach(x => x.classList.remove('active'));
                 p.classList.add('active');
-                activeColor = p.getAttribute('data-color');
+                color = p.getAttribute('data-color');
             };
         });
 
-        // Tool Listeners
-        const clearBtn = document.getElementById('tool-clear');
-        if (clearBtn) clearBtn.onclick = () => canvasCtx.clearRect(0,0,64,64);
-
-        const gridBtn = document.getElementById('tool-grid');
-        if (gridBtn) gridBtn.onclick = () => {
-            const grid = document.getElementById('canvas-grid');
-            if (grid) grid.classList.toggle('hidden');
-            gridBtn.classList.toggle('active');
-        };
-
-        const brushBtns = document.querySelectorAll('.brush-btn');
-        brushBtns.forEach(b => {
+        document.querySelectorAll('.brush-btn').forEach(b => {
             b.onclick = () => {
-                brushBtns.forEach(x => x.classList.remove('active'));
+                document.querySelectorAll('.brush-btn').forEach(x => x.classList.remove('active'));
                 b.classList.add('active');
                 brushSize = parseInt(b.getAttribute('data-size'));
             };
         });
 
-        // Blueprint Listeners
+        document.getElementById('tool-clear').onclick = () => ctx.clearRect(0, 0, 64, 64);
+        document.getElementById('tool-grid').onclick = () => {
+            document.getElementById('canvas-grid').classList.toggle('hidden');
+            document.getElementById('tool-grid').classList.toggle('active');
+        };
+
         document.querySelectorAll('.bp-btn').forEach(btn => {
-            btn.onclick = () => loadTemplate(btn.getAttribute('data-bp'));
+            btn.onclick = () => loadBlueprint(btn.getAttribute('data-bp'));
         });
+
+        if (state.statueImg) {
+            const img = new Image();
+            img.onload = () => ctx.drawImage(img, 0, 0);
+            img.src = state.statueImg;
+        }
     };
 
-    const drawPixel = (e) => {
-        if (!painting || !canvasCtx) return;
+    const paint = (e) => {
+        if (!painting) return;
         const cvs = document.getElementById('statue-canvas');
         const rect = cvs.getBoundingClientRect();
         const x = Math.floor((e.clientX - rect.left) / (rect.width / 64));
         const y = Math.floor((e.clientY - rect.top) / (rect.height / 64));
 
-        if (activeColor === 'transparent') {
-            canvasCtx.clearRect(x, y, brushSize, brushSize);
+        if (color === 'transparent') {
+            ctx.clearRect(x, y, brushSize, brushSize);
         } else {
-            canvasCtx.fillStyle = activeColor;
-            canvasCtx.fillRect(x, y, brushSize, brushSize);
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, brushSize, brushSize);
         }
     };
 
-    const loadTemplate = (bp) => {
-        if (!canvasCtx) return;
-        canvasCtx.clearRect(0,0,64,64);
-        canvasCtx.fillStyle = 'rgba(255,255,255,0.15)';
-        if (bp === 'crown') canvasCtx.fillRect(10, 30, 44, 20);
-        if (bp === 'sword') canvasCtx.fillRect(30, 5, 4, 50);
-        if (bp === 'pillar') canvasCtx.fillRect(20, 10, 24, 44);
+    const loadBlueprint = (bp) => {
+        ctx.clearRect(0,0,64,64);
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        if (bp === 'crown') ctx.fillRect(10, 30, 44, 20);
+        if (bp === 'sword') ctx.fillRect(30, 5, 4, 50);
+        if (bp === 'pillar') ctx.fillRect(20, 10, 24, 44);
     };
 
     const carveStatue = () => {
@@ -484,11 +484,21 @@ const Sovereign = (() => {
             state.statueImg = cvs.toDataURL();
             renderStatue();
             save();
-            notify("MONUMENT CARVED: FAITH RADIATES THROUGH THE REALM.");
+            notify("MONUMENT CARVED. FAITH TRICKLE ACTIVE.");
+            triggerShake();
         }
     };
 
-    return { init, manualGather, buyBuilding, recruitUnit, trade, attack };
+    const save = () => localStorage.setItem('sov_statue_image', JSON.stringify(state));
+    const load = () => {
+        const s = localStorage.getItem('sov_statue_image');
+        if (s) {
+            const p = JSON.parse(s);
+            state = { ...state, ...p, lastUpdate: Date.now() };
+        }
+    };
+
+    return { init, manualGather, buyBuilding, recruitUnit, trade, attack, upgradeDecree, carveStatue, concludeReign };
 })();
 
 window.onload = Sovereign.init;

@@ -66,7 +66,7 @@
                     <div class="ledger-meta">
                         <span class="res-label">Grain</span>
                         <span class="res-val">0</span>
-                        <span class="res-rate">+0/s</span>
+                        <span class="res-rate" id="rate-food">+0/s</span>
                     </div>
                     <button class="command-btn" onclick="Sovereign.manualGather('food', event)">Levy</button>
                 </div>
@@ -75,7 +75,7 @@
                     <div class="ledger-meta">
                         <span class="res-label">Lumber</span>
                         <span class="res-val">0</span>
-                        <span class="res-rate">+0/s</span>
+                        <span class="res-rate" id="rate-wood">+0/s</span>
                     </div>
                     <button class="command-btn" onclick="Sovereign.manualGather('wood', event)">Levy</button>
                 </div>
@@ -84,7 +84,7 @@
                     <div class="ledger-meta">
                         <span class="res-label">Iron</span>
                         <span class="res-val">0</span>
-                        <span class="res-rate">+0/s</span>
+                        <span class="res-rate" id="rate-ore">+0/s</span>
                     </div>
                     <button class="command-btn" onclick="Sovereign.manualGather('ore', event)">Levy</button>
                 </div>
@@ -93,7 +93,7 @@
                     <div class="ledger-meta">
                         <span class="res-label">Treasury</span>
                         <span class="res-val">0</span>
-                        <span class="res-rate">+0/s</span>
+                        <span class="res-rate" id="rate-gold">+0/s</span>
                     </div>
                 </div>
                 <div class="ledger-item citizens" id="res-pop">
@@ -108,7 +108,7 @@
                     <div class="ledger-meta">
                         <span class="res-label">Faith</span>
                         <span class="res-val">0</span>
-                        <span class="res-rate">+0/s</span>
+                        <span class="res-rate" id="rate-faith">+0/s</span>
                     </div>
                 </div>
             </header>
@@ -121,7 +121,6 @@
                         <p>Command the subjects and infrastructure of your sovereign realm.</p>
                     </div>
                     <div class="hall-layout">
-                        <!-- Custom Statue Display -->
                         <div class="statue-pedestal no-select">
                             <div class="statue-spotlight"></div>
                             <div id="active-statue" class="pixel-monument"></div>
@@ -136,7 +135,7 @@
                             <div class="card-body">
                                 <p>Imperial mandates to optimize serf labor efficiency. Current Command: +<span id="click-power">1</span></p>
                                 <div class="price-display" id="click-price"></div>
-                                <button class="action-btn candle-glow" id="upgrade-click-btn">Scribe New Decree</button>
+                                <button class="action-btn candle-glow" id="upgrade-click-btn" onclick="Sovereign.upgradeDecree()">Scribe New Decree</button>
                             </div>
                         </div>
                         <div class="chamber-grid" id="senate-buildings"></div>
@@ -167,7 +166,7 @@
                                 </div>
                             </div>
                             
-                            <div class="canvas-container">
+                            <div class="canvas-container" id="canvas-wrapper">
                                 <canvas id="statue-canvas" width="64" height="64"></canvas>
                                 <div id="canvas-grid" class="grid-overlay"></div>
                             </div>
@@ -187,7 +186,7 @@
                                     <button class="brush-btn" data-size="2">2x2</button>
                                     <button class="brush-btn" data-size="4">4x4</button>
                                 </div>
-                                <button class="action-btn candle-glow" id="carve-btn">Carve Monument</button>
+                                <button class="action-btn candle-glow" id="carve-btn" onclick="Sovereign.carveStatue()">Carve Monument</button>
                             </div>
                             
                             <div class="blueprint-selector">
@@ -262,7 +261,7 @@
                                     <span id="combat-bonus">0%</span>
                                 </div>
                             </div>
-                            <button class="action-btn candle-glow danger" id="prestige-btn">Conclude Current Reign</button>
+                            <button class="action-btn candle-glow danger" id="prestige-btn" onclick="Sovereign.concludeReign()">Conclude Current Reign</button>
                         </div>
                     </div>
                 </section>
@@ -271,15 +270,6 @@
 
         <!-- Floating Particles Layer -->
         <div id="particle-container"></div>
-
-        <!-- Decrees & Events -->
-        <div id="event-overlay" class="modal-overlay">
-            <div class="scroll-modal">
-                <h2 id="event-title">Imperial Decree</h2>
-                <p id="event-desc"></p>
-                <div id="event-options" class="command-stack"></div>
-            </div>
-        </div>
     </div>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
