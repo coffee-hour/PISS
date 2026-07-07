@@ -2,9 +2,6 @@
  * Sovereign: Imperium Simulator
  */
 
-const CF_API_TOKEN = "";
-const CF_ACCOUNT_ID = "";
-
 const Sovereign = (() => {
     // --- State ---
     let state = {
@@ -24,7 +21,7 @@ const Sovereign = (() => {
             { id: 'r4', name: 'Merchant Hub', difficulty: 100, captured: false, tribute: { gold: 1.0 } }
         ],
         lastUpdate: Date.now(),
-        nextEventTime: Date.now() + 120000 // 2 minutes from start
+        nextEventTime: Date.now() + 120000
     };
 
     // --- Config ---
@@ -82,14 +79,6 @@ const Sovereign = (() => {
                 }},
                 { text: "Pay off (100 Gold)", action: () => { state.resources.gold = Math.max(0, state.resources.gold - 100); } }
             ]
-        },
-        {
-            title: "Bountiful Harvest",
-            desc: "Favorable weather has led to an unexpected surplus.",
-            options: [
-                { text: "Fill Granaries (+500 Food)", action: () => { state.resources.food += 500; } },
-                { text: "Market Excess (+150 Gold)", action: () => { state.resources.gold += 150; } }
-            ]
         }
     ];
 
@@ -111,8 +100,10 @@ const Sovereign = (() => {
                 document.getElementById(`tab-${tab}`).classList.add('active');
             });
         });
-        document.getElementById('upgrade-click-btn').addEventListener('click', upgradeClick);
-        document.getElementById('prestige-btn').addEventListener('click', prestige);
+        const upBtn = document.getElementById('upgrade-click-btn');
+        if (upBtn) upBtn.addEventListener('click', upgradeClick);
+        const presBtn = document.getElementById('prestige-btn');
+        if (presBtn) presBtn.addEventListener('click', prestige);
     };
 
     const startLoop = () => {
@@ -127,17 +118,14 @@ const Sovereign = (() => {
     };
 
     const update = (delta) => {
-        // Prod
         for (let id in state.buildings) {
             const b = config.buildings[id];
             state.resources[b.res] += b.prod * state.buildings[id] * delta * state.modifiers.production;
         }
-        // Tributes
         const tributeMult = state.commanders.includes('spymaster') ? 1.5 : 1.0;
         state.regions.filter(r => r.captured).forEach(r => {
             for (let res in r.tribute) state.resources[res] += r.tribute[res] * delta * state.modifiers.production * tributeMult;
         });
-        // Upkeep
         const upkeepMult = state.tech.includes('t2') ? 0.7 : 1.0;
         for (let id in state.units) {
             const u = config.units[id];
@@ -155,19 +143,23 @@ const Sovereign = (() => {
         renderCampaign();
         renderTech();
         renderPrestige();
-        document.getElementById('current-era').innerText = config.eras[state.era] || "Ascended";
+        const eraEl = document.getElementById('current-era');
+        if (eraEl) eraEl.innerText = config.eras[state.era] || "Ascended";
     };
 
     const renderResources = () => {
         for (let res in state.resources) {
             const pill = document.getElementById(`res-${res}`);
             if (pill) {
-                pill.querySelector('.res-value').innerText = Math.floor(state.resources[res]).toLocaleString();
-                // Rough rate
-                let rate = 0;
-                for (let id in state.buildings) if (config.buildings[id].res === res) rate += config.buildings[id].prod * state.buildings[id];
-                state.regions.filter(r => r.captured).forEach(r => { if(r.tribute[res]) rate += r.tribute[res]; });
-                pill.querySelector('.res-rate').innerText = `+${(rate * state.modifiers.production).toFixed(1)}/s`;
+                const valEl = pill.querySelector('.res-value');
+                const rateEl = pill.querySelector('.res-rate');
+                if (valEl) valEl.innerText = Math.floor(state.resources[res]).toLocaleString();
+                if (rateEl) {
+                    let rate = 0;
+                    for (let id in state.buildings) if (config.buildings[id].res === res) rate += config.buildings[id].prod * state.buildings[id];
+                    state.regions.filter(r => r.captured).forEach(r => { if(r.tribute[res]) rate += r.tribute[res]; });
+                    rateEl.innerText = `+${(rate * state.modifiers.production).toFixed(1)}/s`;
+                }
             }
         }
     };
@@ -182,18 +174,25 @@ const Sovereign = (() => {
         if (state.resources.gold >= cost) {
             state.resources.gold -= cost;
             state.clickLvl++;
+            renderResources();
             renderCiv();
         }
     };
 
     const renderCiv = () => {
-        document.getElementById('click-lvl').innerText = `Lvl ${state.clickLvl}`;
-        document.getElementById('click-power').innerText = state.clickLvl;
+        const lvlEl = document.getElementById('click-lvl');
+        const powEl = document.getElementById('click-power');
+        const upBtn = document.getElementById('upgrade-click-btn');
+        if (lvlEl) lvlEl.innerText = `Lvl ${state.clickLvl}`;
+        if (powEl) powEl.innerText = state.clickLvl;
         const upgradeCost = Math.floor(100 * Math.pow(1.5, state.clickLvl - 1));
-        document.getElementById('upgrade-click-btn').innerText = `Upgrade (${upgradeCost} Gold)`;
-        document.getElementById('upgrade-click-btn').disabled = state.resources.gold < upgradeCost;
+        if (upBtn) {
+            upBtn.innerText = `Upgrade (${upgradeCost} Gold)`;
+            upBtn.disabled = state.resources.gold < upgradeCost;
+        }
 
         const container = document.getElementById('civ-buildings');
+        if (!container) return;
         container.innerHTML = '';
         for (let id in config.buildings) {
             const b = config.buildings[id];
@@ -210,6 +209,7 @@ const Sovereign = (() => {
 
     const renderBarracks = () => {
         const container = document.getElementById('military-units');
+        if (!container) return;
         container.innerHTML = '';
         for (let id in config.units) {
             const u = config.units[id];
@@ -226,6 +226,7 @@ const Sovereign = (() => {
 
     const renderMarket = () => {
         const container = document.getElementById('market-grid');
+        if (!container) return;
         container.innerHTML = '';
         config.trades.forEach(trade => {
             const card = document.createElement('div');
@@ -242,6 +243,7 @@ const Sovereign = (() => {
 
     const renderCommanders = () => {
         const container = document.getElementById('commander-list');
+        if (!container) return;
         container.innerHTML = '';
         for (let id in config.commanders) {
             const c = config.commanders[id];
@@ -257,6 +259,7 @@ const Sovereign = (() => {
 
     const renderCampaign = () => {
         const map = document.getElementById('campaign-map');
+        if (!map) return;
         map.innerHTML = '';
         state.regions.forEach(r => {
             const card = document.createElement('div');
@@ -269,6 +272,7 @@ const Sovereign = (() => {
 
     const renderTech = () => {
         const container = document.getElementById('tech-list');
+        if (!container) return;
         container.innerHTML = '';
         config.tech.forEach(t => {
             const owned = state.tech.includes(t.id);
@@ -282,44 +286,50 @@ const Sovereign = (() => {
     };
 
     const renderPrestige = () => {
-        document.getElementById('legacy-points').innerText = state.legacyPoints;
-        document.getElementById('prod-mult').innerText = state.modifiers.production.toFixed(2) + 'x';
-        document.getElementById('combat-bonus').innerText = ((state.modifiers.combat - 1) * 100).toFixed(0) + '%';
+        const legEl = document.getElementById('legacy-points');
+        const prodEl = document.getElementById('prod-mult');
+        const combEl = document.getElementById('combat-bonus');
+        if (legEl) legEl.innerText = state.legacyPoints;
+        if (prodEl) prodEl.innerText = state.modifiers.production.toFixed(2) + 'x';
+        if (combEl) combEl.innerText = ((state.modifiers.combat - 1) * 100).toFixed(0) + '%';
     };
 
     const triggerEvent = () => {
         const ev = events[Math.floor(Math.random() * events.length)];
-        document.getElementById('event-title').innerText = ev.title;
-        document.getElementById('event-desc').innerText = ev.desc;
+        const title = document.getElementById('event-title');
+        const desc = document.getElementById('event-desc');
         const opts = document.getElementById('event-options');
-        opts.innerHTML = '';
-        ev.options.forEach(o => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = o.text;
-            btn.onclick = () => {
-                o.action();
-                document.getElementById('event-overlay').style.display = 'none';
-                state.nextEventTime = Date.now() + 180000; // 3 min
-                render();
-            };
-            opts.appendChild(btn);
-        });
-        document.getElementById('event-overlay').style.display = 'flex';
+        const overlay = document.getElementById('event-overlay');
+        if (title) title.innerText = ev.title;
+        if (desc) desc.innerText = ev.desc;
+        if (opts) {
+            opts.innerHTML = '';
+            ev.options.forEach(o => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = o.text;
+                btn.onclick = () => {
+                    o.action();
+                    if (overlay) overlay.style.display = 'none';
+                    state.nextEventTime = Date.now() + 180000;
+                    render();
+                };
+                opts.appendChild(btn);
+            });
+        }
+        if (overlay) overlay.style.display = 'flex';
     };
 
-    // --- Actions ---
+    // Actions
     const buyBuilding = (id) => {
         const b = config.buildings[id];
         const cost = calcCost(b.baseCost, state.buildings[id]);
         if (canAfford(cost)) { pay(cost); state.buildings[id]++; render(); }
     };
-
     const recruitUnit = (id) => {
         const cost = config.units[id].baseCost;
         if (canAfford(cost)) { pay(cost); state.units[id]++; render(); }
     };
-
     const trade = (id, amt) => {
         const t = config.trades.find(x => x.id === id);
         if (state.resources[t.from] >= amt) {
@@ -328,7 +338,6 @@ const Sovereign = (() => {
             render();
         }
     };
-
     const hireCommander = (id) => {
         const c = config.commanders[id];
         if (canAfford(c.cost)) {
@@ -339,12 +348,10 @@ const Sovereign = (() => {
             render();
         }
     };
-
     const research = (id) => {
         const t = config.tech.find(x => x.id === id);
         if (canAfford(t.cost)) { pay(t.cost); state.tech.push(id); render(); }
     };
-
     const attack = (rid) => {
         const r = state.regions.find(x => x.id === rid);
         const power = getTotalPower();
@@ -357,7 +364,6 @@ const Sovereign = (() => {
         }
         render();
     };
-
     const prestige = () => {
         const gain = Math.floor(state.resources.gold / 2000);
         if (gain < 1) return alert("Needs 2000 Gold.");
@@ -372,7 +378,7 @@ const Sovereign = (() => {
         save(); render();
     };
 
-    // --- Helpers ---
+    // Helpers
     const calcCost = (base, count) => {
         const cost = {};
         for (let r in base) cost[r] = Math.floor(base[r] * Math.pow(1.2, count));
@@ -383,6 +389,14 @@ const Sovereign = (() => {
         return true;
     };
     const pay = (costs) => { for (let r in costs) state.resources[r] -= costs[r]; };
+    const renderCosts = (costs) => {
+        let h = '';
+        for (const r in costs) {
+            const aff = state.resources[r] >= costs[r];
+            h += `<span class="cost-tag ${aff ? 'affordable' : ''}">${costs[r]} ${r}</span>`;
+        }
+        return h;
+    };
     const getTotalPower = () => {
         let p = 0;
         for (let id in state.units) p += state.units[id] * config.units[id].power;
@@ -390,11 +404,11 @@ const Sovereign = (() => {
     };
     const notify = (msg) => {
         const entries = document.getElementById('log-entries');
+        if (!entries) return;
         const d = document.createElement('div');
         d.innerText = msg;
         entries.prepend(d);
     };
-
     const save = () => localStorage.setItem('sov_piss_save_v3', JSON.stringify(state));
     const load = () => {
         const s = localStorage.getItem('sov_piss_save_v3');
