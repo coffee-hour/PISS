@@ -12,7 +12,7 @@
 <body class="dark-mode">
     <div id="app">
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <aside class="sidebar no-select">
             <div class="sidebar-header">
                 <div class="brand-logo">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 5V11C4 16.19 7.41 21.05 12 22C16.59 21.05 20 16.19 20 11V5L12 2Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -27,6 +27,10 @@
                 <button class="nav-btn" data-tab="military">
                     <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v9c0 5 9 8 9 8s9-3 9-8V7l-9-5z"/><path d="M12 22V12"/></svg></span>
                     Barracks
+                </button>
+                <button class="nav-btn" data-tab="commanders">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                    Commanders
                 </button>
                 <button class="nav-btn" data-tab="campaign">
                     <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg></span>
@@ -52,98 +56,92 @@
         <!-- Main Workspace -->
         <main class="workspace">
             <!-- Global Resource Header -->
-            <header class="resource-header">
+            <header class="resource-header no-select">
                 <div class="resource-pill" id="res-food">
                     <div class="res-icon food-icon"></div>
                     <div class="res-content">
                         <span class="res-label">Food</span>
-                        <span class="res-value">1,000</span>
-                        <span class="res-rate">+2.4/s</span>
+                        <span class="res-value">0</span>
+                        <span class="res-rate">+0/s</span>
                     </div>
                 </div>
                 <div class="resource-pill" id="res-wood">
                     <div class="res-icon wood-icon"></div>
                     <div class="res-content">
                         <span class="res-label">Wood</span>
-                        <span class="res-value">500</span>
-                        <span class="res-rate">+1.2/s</span>
+                        <span class="res-value">0</span>
+                        <span class="res-rate">+0/s</span>
                     </div>
                 </div>
                 <div class="resource-pill" id="res-ore">
                     <div class="res-icon ore-icon"></div>
                     <div class="res-content">
                         <span class="res-label">Ore</span>
-                        <span class="res-value">250</span>
-                        <span class="res-rate">+0.8/s</span>
+                        <span class="res-value">0</span>
+                        <span class="res-rate">+0/s</span>
                     </div>
                 </div>
                 <div class="resource-pill" id="res-gold">
                     <div class="res-icon gold-icon"></div>
                     <div class="res-content">
                         <span class="res-label">Gold</span>
-                        <span class="res-value">100</span>
-                        <span class="res-rate">+0.4/s</span>
+                        <span class="res-value">0</span>
+                        <span class="res-rate">+0/s</span>
                     </div>
                 </div>
             </header>
 
-            <!-- Tab: Civ Center -->
+            <!-- Tab Content Sections -->
             <section id="tab-civ" class="tab-content active">
                 <div class="section-title">
                     <h2>Civ Center</h2>
-                    <p>Expand your infrastructure to increase production capacity.</p>
+                    <p>Manage your infrastructure and resources.</p>
                 </div>
-                <div class="action-grid" id="civ-buildings">
-                    <!-- Buildings dynamically injected -->
-                </div>
+                <div class="action-grid" id="civ-buildings"></div>
             </section>
 
-            <!-- Tab: Military -->
             <section id="tab-military" class="tab-content">
                 <div class="section-title">
                     <h2>Imperial Barracks</h2>
                     <p>Mobilize your forces. Each unit requires continuous upkeep.</p>
                 </div>
-                <div class="action-grid" id="military-units">
-                    <!-- Units dynamically injected -->
-                </div>
+                <div class="action-grid" id="military-units"></div>
             </section>
 
-            <!-- Tab: Campaign -->
+            <section id="tab-commanders" class="tab-content">
+                <div class="section-title">
+                    <h2>Tactical Commanders</h2>
+                    <p>Recruit elite leaders to oversee your empire and military.</p>
+                </div>
+                <div class="action-grid" id="commander-list"></div>
+            </section>
+
             <section id="tab-campaign" class="tab-content">
                 <div class="section-title">
                     <h2>Global Campaign</h2>
-                    <p>Deploy your army to secure strategic territories.</p>
+                    <p>Conquer regions to gain permanent production tributes.</p>
                 </div>
                 <div class="campaign-layout">
-                    <div class="campaign-map" id="campaign-map">
-                        <!-- Regions dynamically injected -->
-                    </div>
+                    <div class="campaign-map" id="campaign-map"></div>
                     <div class="campaign-log" id="campaign-log">
                         <div class="log-header">Combat Logs</div>
-                        <div class="log-entries" id="log-entries">
-                            <div class="log-entry">Awaiting deployment instructions...</div>
-                        </div>
+                        <div class="log-entries" id="log-entries"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- Tab: Tech Tree -->
             <section id="tab-tech" class="tab-content">
                 <div class="section-title">
                     <h2>Technological Research</h2>
-                    <p>Innovate to unlock higher tier units and efficiencies.</p>
+                    <p>Innovate to unlock higher tier units and tax automation.</p>
                 </div>
-                <div class="action-grid" id="tech-list">
-                    <!-- Techs dynamically injected -->
-                </div>
+                <div class="action-grid" id="tech-list"></div>
             </section>
 
-            <!-- Tab: Prestige -->
             <section id="tab-prestige" class="tab-content">
                 <div class="section-title">
                     <h2>Dynasty Rise</h2>
-                    <p>Sacrifice your current empire to forge a permanent legacy for your successors.</p>
+                    <p>Sacrifice your current empire to forge a permanent legacy.</p>
                 </div>
                 <div class="prestige-card">
                     <div class="prestige-info">
