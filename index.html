@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Rogue-like (v3.2.1)</title>
+    <title>Sovereign: Rogue-like (v3.2.2)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -14,9 +14,36 @@
     <canvas id="blood-canvas"></canvas>
     
     <div id="game-container">
+        <!-- Persistent Top Stat Bar (Single-file) -->
+        <header id="top-stat-bar">
+            <div class="stat-group condition">
+                <label>COND:</label>
+                <div class="mini-bar-container"><div id="player-hp" class="mini-bar-fill"></div></div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-group tier">
+                <label>TIER:</label>
+                <span id="run-tier" class="stat-value">1</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-group momentum">
+                <label>MOMENTUM:</label>
+                <div class="mini-bar-container"><div id="momentum-fill" class="mini-bar-fill"></div></div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-group kills">
+                <label>KILLS:</label>
+                <span id="enemies-defeated" class="stat-value">0</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-group modifier">
+                <label>BUFF:</label>
+                <span id="run-modifier" class="stat-value">STR +0%</span>
+            </div>
+        </header>
+
         <div id="arena">
             <div id="environment" class="skyline"></div>
-            
             <div id="enemy-target-container">
                 <div id="enemy-character" class="enemy-character">
                     <div id="enemy-visual" class="enemy-sprite">
@@ -27,48 +54,20 @@
             </div>
         </div>
 
-        <!-- Arms/Fists: Restored & Brought to Front -->
         <div id="arms-container">
             <div class="arm arm-left"></div>
             <div class="arm arm-right"></div>
         </div>
 
-        <div id="hud">
-            <div class="hud-top">
-                <div class="hud-box condition">
-                    <label>RUN CONDITION</label>
-                    <div class="bar-container">
-                        <div id="player-hp" class="bar-fill"></div>
-                    </div>
-                </div>
-                <div class="hud-box run-stats">
-                    <label>CONQUEST RUN</label>
-                    <div class="run-value">
-                        <span id="enemies-defeated">0</span> KILLS
-                    </div>
-                </div>
-                <div class="hud-box threat">
-                    <label id="enemy-name">TARGET: ???</label>
-                    <div class="bar-container">
-                        <div id="enemy-hp" class="bar-fill"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="hud-center">
-                <div id="combat-log">NEW RUN INITIALIZED...</div>
-            </div>
-
-            <div class="hud-bottom">
-                <div class="progression-hud">
-                    <div class="stat-pill">MODIFIER: <span id="run-modifier">STRENGTH +0</span></div>
-                    <div class="momentum-gauge-box">
-                        <div id="momentum-fill"></div>
-                    </div>
-                    <div class="stat-pill">TIER <span id="run-tier">1</span></div>
-                </div>
+        <!-- Target HUD (Floating/Minimal) -->
+        <div id="target-hud">
+            <div id="enemy-name" class="target-label">TARGET: ???</div>
+            <div class="target-bar-container">
+                <div id="enemy-hp" class="target-bar-fill"></div>
             </div>
         </div>
+
+        <div id="combat-log-overlay">NEW RUN INITIALIZED...</div>
 
         <div id="interaction-layer"></div>
 
@@ -83,7 +82,7 @@
 
         <div id="death-overlay" class="overlay hidden">
             <div class="death-content">
-                <h1 class="glitch-text">RUN TERMINATED</h1>
+                <h1 class="glitch-text">CONDITION LOST</h1>
                 <p>THE EMPIRE FALLS WITH YOU.</p>
                 <button class="retry-btn" onclick="Fighter.resetRun()">START NEW CONQUEST</button>
             </div>
