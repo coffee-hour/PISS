@@ -3,9 +3,9 @@
     --bg-panel: rgba(10, 12, 16, 0.85);
     --bg-card: rgba(15, 18, 24, 0.6);
     --border: #1e242e;
-    --primary: #ff8c00; /* Amber-Orange */
+    --primary: #ff8c00;
     --primary-glow: rgba(255, 140, 0, 0.3);
-    --primary-bright: #ff4500; /* Red-Orange */
+    --primary-bright: #ff4500;
     --grey-sword: #94a3b8;
     --text: #f8fafc;
     --text-dim: #64748b;
@@ -73,7 +73,7 @@ body {
     border: 1px solid var(--border);
 }
 
-/* Boss Health Display */
+/* Threat Display */
 .boss-display {
     width: 400px;
     margin-bottom: 20px;
@@ -81,6 +81,26 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 8px;
+}
+
+.threat-label-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.viltrumite-v {
+    width: 24px;
+    height: 24px;
+    background: var(--primary);
+    color: #000;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    font-size: 0.8rem;
+    box-shadow: 0 0 10px var(--primary-glow);
 }
 
 .boss-name {

@@ -1,6 +1,6 @@
 /**
- * Sovereign: Tactility (v2.6.0)
- * Kinetic Combat, Boss Cycles, Critical Strikes, and Dynamic Screen Shake.
+ * Sovereign: Invincible (v2.6.1)
+ * Invincible Rebranding, Threat Cycles, and Essence Collection.
  */
 
 const Sovereign = (() => {
@@ -23,55 +23,54 @@ const Sovereign = (() => {
         comboValue: 0,
         furyActive: false,
         furyTimer: 0,
-        // v2.6.0 Systems
         bossIndex: 0,
         bossHealth: 1000
     };
 
     const config = {
         bosses: [
-            { name: "NEMESIS HUSK", health: 1000, reward: 500 },
-            { name: "FLAXAN COMMAND", health: 10000, reward: 5000 },
-            { name: "REANIMAN", health: 100000, reward: 50000 },
-            { name: "BATTLE BEAST", health: 1000000, reward: 500000 },
+            { name: "SEQUID SWARM", health: 1000, reward: 500 },
+            { name: "FLAXAN INVASION", health: 10000, reward: 5000 },
+            { name: "DOC SEISMIC", health: 100000, reward: 50000 },
+            { name: "THRAGG", health: 1000000, reward: 500000 },
             { name: "OMNI-MAN", health: 10000000, reward: 5000000 }
         ],
         upgrades: [
-            { id: 'militia', name: "Conscripted Militia", desc: "Basic levies. +0.1 Passive/s", baseCost: 15, passive: 0.1, click: 0, icon: 'users' },
-            { id: 'scouts', name: "Border Scouts", desc: "Raiding scouts. +1 per Click", baseCost: 50, passive: 0, click: 1, icon: 'eye' },
-            { id: 'spearmen', name: "Iron Spearmen", desc: "Line infantry. +1 Passive/s", baseCost: 100, passive: 1, click: 0, icon: 'shield' },
-            { id: 'trebuchet', name: "Imperial Trebuchet", desc: "Siege engineering. +5 per Click", baseCost: 500, passive: 0, click: 5, icon: 'target' },
-            { id: 'knights', name: "Gilded Knights", desc: "Heavy cavalry. +8 Passive/s", baseCost: 1100, passive: 8, click: 0, icon: 'swords' },
-            { id: 'v6', name: "Ironclads", desc: "+20 Passive/s", baseCost: 5000, passive: 20, click: 0, icon: 'anchor' },
-            { id: 'v7', name: "Hellfire Battery", desc: "+30 per Click", baseCost: 12000, passive: 0, click: 30, icon: 'flame' },
-            { id: 'v8', name: "Steel Falcons", desc: "+100 Passive/s", baseCost: 25000, passive: 100, click: 0, icon: 'bird' },
-            { id: 'v9', name: "Void Saboteurs", desc: "+150 per Click", baseCost: 55000, passive: 0, click: 150, icon: 'ghost' },
-            { id: 'v10', name: "Praetorian Guard", desc: "+500 Passive/s", baseCost: 120000, passive: 500, click: 0, icon: 'shield-alert' },
-            { id: 'v11', name: "Storm Walkers", desc: "+1200 Passive/s", baseCost: 350000, passive: 1200, click: 0, icon: 'bot' },
-            { id: 'v12', name: "Titan Legion", desc: "+800 per Click", baseCost: 800000, passive: 0, click: 800, icon: 'mountain' },
-            { id: 'v13', name: "Eclipse Wraiths", desc: "+4000 Passive/s", baseCost: 2000000, passive: 4000, click: 0, icon: 'moon' },
-            { id: 'v14', name: "Solar Engines", desc: "+2500 per Click", baseCost: 5000000, passive: 0, click: 2500, icon: 'sun' },
-            { id: 'v15', name: "Goliath Siege", desc: "+15000 Passive/s", baseCost: 15000000, passive: 15000, click: 0, icon: 'anvil' },
-            { id: 'v16', name: "Nebula Wings", desc: "+50000 Passive/s", baseCost: 50000000, passive: 50000, click: 0, icon: 'sparkles' },
-            { id: 'v17', name: "Star Eaters", desc: "+15000 per Click", baseCost: 120000000, passive: 0, click: 15000, icon: 'star' },
-            { id: 'v18', name: "Omega Division", desc: "+250000 Passive/s", baseCost: 400000000, passive: 250000, click: 0, icon: 'terminal' },
-            { id: 'v19', name: "Singularity Core", desc: "+1M Passive/s", baseCost: 1500000000, passive: 1000000, click: 0, icon: 'circle-dot' },
-            { id: 'v20', name: "Divine Arbiter", desc: "+10M Passive/s", baseCost: 10000000000, passive: 10000000, click: 0, icon: 'crown' },
-            { id: 'v21', name: "Reality Breaker", desc: "+1M per Click", baseCost: 50000000000, passive: 0, click: 1000000, icon: 'zap' },
-            { id: 'v22', name: "Epoch Guard", desc: "+50M Passive/s", baseCost: 200000000000, passive: 50000000, click: 0, icon: 'hourglass' },
-            { id: 'v23', name: "Abyssal Fleet", desc: "+250M Passive/s", baseCost: 1000000000000, passive: 250000000, click: 0, icon: 'waves' },
-            { id: 'v24', name: "Void Titan", desc: "+1B Passive/s", baseCost: 5000000000000, passive: 1000000000, click: 0, icon: 'mountain-snow' },
-            { id: 'v25', name: "Imperial Overlord", desc: "+10B Passive/s", baseCost: 25000000000000, passive: 10000000000, click: 0, icon: 'castle' }
+            { id: 'militia', name: "Viltrumite Conscripts", desc: "+0.1 Essence/s", baseCost: 15, passive: 0.1, click: 0, icon: 'users' },
+            { id: 'scouts', name: "Sky Scouts", desc: "+1 per Strike", baseCost: 50, passive: 0, click: 1, icon: 'eye' },
+            { id: 'spearmen', name: "Iron Guardians", desc: "+1 Essence/s", baseCost: 100, passive: 1, click: 0, icon: 'shield' },
+            { id: 'trebuchet', name: "Orbital Battery", desc: "+5 per Strike", baseCost: 500, passive: 0, click: 5, icon: 'target' },
+            { id: 'knights', name: "Noble Vanguard", desc: "+8 Essence/s", baseCost: 1100, passive: 8, click: 0, icon: 'swords' },
+            { id: 'v6', name: "Empire Ironclads", desc: "+20 Essence/s", baseCost: 5000, passive: 20, click: 0, icon: 'anchor' },
+            { id: 'v7', name: "Solar Battery", desc: "+30 per Strike", baseCost: 12000, passive: 0, click: 30, icon: 'flame' },
+            { id: 'v8', name: "Steel Falcons", desc: "+100 Essence/s", baseCost: 25000, passive: 100, click: 0, icon: 'bird' },
+            { id: 'v9', name: "Void Saboteurs", desc: "+150 per Strike", baseCost: 55000, passive: 0, click: 150, icon: 'ghost' },
+            { id: 'v10', name: "Praetorian Guard", desc: "+500 Essence/s", baseCost: 120000, passive: 500, click: 0, icon: 'shield-alert' },
+            { id: 'v11', name: "Storm Walkers", desc: "+1200 Essence/s", baseCost: 350000, passive: 1200, click: 0, icon: 'bot' },
+            { id: 'v12', name: "Titan Legion", desc: "+800 per Strike", baseCost: 800000, passive: 0, click: 800, icon: 'mountain' },
+            { id: 'v13', name: "Eclipse Wraiths", desc: "+4000 Essence/s", baseCost: 2000000, passive: 4000, click: 0, icon: 'moon' },
+            { id: 'v14', name: "Solar Engines", desc: "+2500 per Strike", baseCost: 5000000, passive: 0, click: 2500, icon: 'sun' },
+            { id: 'v15', name: "Goliath Siege", desc: "+15000 Essence/s", baseCost: 15000000, passive: 15000, click: 0, icon: 'anvil' },
+            { id: 'v16', name: "Nebula Wings", desc: "+50000 Essence/s", baseCost: 50000000, passive: 50000, click: 0, icon: 'sparkles' },
+            { id: 'v17', name: "Star Eaters", desc: "+15000 per Strike", baseCost: 120000000, passive: 0, click: 15000, icon: 'star' },
+            { id: 'v18', name: "Omega Division", desc: "+250000 Essence/s", baseCost: 400000000, passive: 250000, click: 0, icon: 'terminal' },
+            { id: 'v19', name: "Singularity Core", desc: "+1M Essence/s", baseCost: 1500000000, passive: 1000000, click: 0, icon: 'circle-dot' },
+            { id: 'v20', name: "Divine Arbiter", desc: "+10M Essence/s", baseCost: 10000000000, passive: 10000000, click: 0, icon: 'crown' },
+            { id: 'v21', name: "Reality Breaker", desc: "+1M per Strike", baseCost: 50000000000, passive: 0, click: 1000000, icon: 'zap' },
+            { id: 'v22', name: "Epoch Guard", desc: "+50M Essence/s", baseCost: 200000000000, passive: 50000000, click: 0, icon: 'hourglass' },
+            { id: 'v23', name: "Abyssal Fleet", desc: "+250M Essence/s", baseCost: 1000000000000, passive: 250000000, click: 0, icon: 'waves' },
+            { id: 'v24', name: "Void Titan", desc: "+1B Essence/s", baseCost: 5000000000000, passive: 1000000000, click: 0, icon: 'mountain-snow' },
+            { id: 'v25', name: "Empire Overlord", desc: "+10B Essence/s", baseCost: 25000000000000, passive: 10000000000, click: 0, icon: 'castle' }
         ],
         advancements: [
-            { id: 'master_smithing', name: "Master Smithing", desc: "+10% Passive Output", baseCost: 1000, multiplier: 1.1, type: 'passive', icon: 'hammer' },
-            { id: 'imperial_logistics', name: "Imperial Logistics", desc: "+20% Click Power", baseCost: 5000, multiplier: 1.2, type: 'click', icon: 'package' },
+            { id: 'master_smithing', name: "Master Smithing", desc: "+10% Essence Output", baseCost: 1000, multiplier: 1.1, type: 'passive', icon: 'hammer' },
+            { id: 'imperial_logistics', name: "Imperial Logistics", desc: "+20% Strike Power", baseCost: 5000, multiplier: 1.2, type: 'click', icon: 'package' },
             { id: 'war_economy', name: "War Economy", desc: "Permanent -5% Upgrade Cost", baseCost: 25000, multiplier: 0.95, type: 'cost', icon: 'bar-chart' },
-            { id: 'bloodthirst', name: "Bloodthirst", desc: "+50% Combo Gain", baseCost: 100000, multiplier: 1.5, type: 'combo', icon: 'droplet' },
-            { id: 'strategic_mastery', name: "Strategic Mastery", desc: "+25% Global Production", baseCost: 1000000, multiplier: 1.25, type: 'global', icon: 'brain' },
-            { id: 'imperial_command', name: "Imperial Command", desc: "Double Passive/s", baseCost: 10000000, multiplier: 2.0, type: 'passive', icon: 'megaphone' },
-            { id: 'divine_wrath', name: "Divine Wrath", desc: "+5s Fury Duration", baseCost: 100000000, multiplier: 5, type: 'fury', icon: 'cloud-lightning' },
-            { id: 'total_conquest', name: "Total Conquest", desc: "Triple Click Power", baseCost: 1000000000, multiplier: 3.0, type: 'click', icon: 'swords' }
+            { id: 'bloodthirst', name: "Bloodthirst", desc: "+50% Momentum Gain", baseCost: 100000, multiplier: 1.5, type: 'combo', icon: 'droplet' },
+            { id: 'strategic_mastery', name: "Strategic Mastery", desc: "+25% Global Essence", baseCost: 1000000, multiplier: 1.25, type: 'global', icon: 'brain' },
+            { id: 'imperial_command', name: "Imperial Command", desc: "Double Essence/s", baseCost: 10000000, multiplier: 2.0, type: 'passive', icon: 'megaphone' },
+            { id: 'divine_wrath', name: "Divine Wrath", desc: "+5s Frenzy Duration", baseCost: 100000000, multiplier: 5, type: 'fury', icon: 'cloud-lightning' },
+            { id: 'total_conquest', name: "Total Conquest", desc: "Triple Strike Power", baseCost: 1000000000, multiplier: 3.0, type: 'click', icon: 'swords' }
         ]
     };
 
@@ -203,7 +202,6 @@ const Sovereign = (() => {
         state.treasury += power; state.totalGoldEarned += power;
         state.bossHealth -= power;
 
-        // Visual Feedback
         const enemy = document.getElementById('enemy-sprite');
         if (enemy) { enemy.classList.remove('enemy-hit'); void enemy.offsetWidth; enemy.classList.add('enemy-hit'); }
         
@@ -233,7 +231,7 @@ const Sovereign = (() => {
         const nextBoss = config.bosses[state.bossIndex % config.bosses.length];
         state.bossHealth = nextBoss.health * Math.pow(1.5, Math.floor(state.bossIndex / config.bosses.length));
         
-        notify(`BOSS DEFEATED: ${boss.name}. SPOILS: ${boss.reward.toLocaleString()} GOLD.`);
+        notify(`THREAT NEUTRALIZED: ${boss.name}. +${boss.reward.toLocaleString()} ESSENCE.`);
         spawnSparks(window.innerWidth / 2, window.innerHeight / 2, 20, true);
     };
 
@@ -267,7 +265,7 @@ const Sovereign = (() => {
         const dw = (state.advancements.divine_wrath || 0) * config.advancements[6].multiplier;
         state.furyTimer = 5 + dw;
         document.body.classList.add('fury-active');
-        notify("THE GREAT SLAUGHTER BEGINS!");
+        notify("VILTRUMITE FURY ACTIVATED!");
     };
     
     const deactivateFury = () => {
@@ -289,7 +287,7 @@ const Sovereign = (() => {
         const cost = calculateAdvancementCost(adv);
         if (state.treasury >= cost) {
             state.treasury -= cost; state.advancements[id]++;
-            notify(`IMPERIAL DECREE: ${adv.name} ASCENDED.`);
+            notify(`EMPIRE DECREE: ${adv.name} ASCENDED.`);
             render(); playImpactSound();
         }
     };
@@ -313,7 +311,7 @@ const Sovereign = (() => {
             card.className = `upgrade-card ${state.treasury < cost ? 'disabled' : ''}`;
             card.id = `upgrade-${u.id}`;
             card.onclick = () => buyUpgrade(u.id);
-            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${u.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Gold</div></div><div class="upgrade-count">${state.upgrades[u.id] || 0}</div>`;
+            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${u.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${u.name}</div><div class="upgrade-desc">${u.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Essence</div></div><div class="upgrade-count">${state.upgrades[u.id] || 0}</div>`;
             gContainer.appendChild(card);
         });
         aContainer.innerHTML = '';
@@ -322,7 +320,7 @@ const Sovereign = (() => {
             const card = document.createElement('div');
             card.className = `upgrade-card ${state.treasury < cost ? 'disabled' : ''}`;
             card.onclick = () => buyAdvancement(adv.id);
-            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${adv.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${adv.name}</div><div class="upgrade-desc">${adv.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Gold</div></div><div class="upgrade-count">${state.advancements[adv.id] || 0}</div>`;
+            card.innerHTML = `<div class="upgrade-icon"><i data-lucide="${adv.icon}"></i></div><div class="upgrade-info"><div class="upgrade-name">${adv.name}</div><div class="upgrade-desc">${adv.desc}</div><div class="upgrade-cost">${cost.toLocaleString()} Essence</div></div><div class="upgrade-count">${state.advancements[adv.id] || 0}</div>`;
             aContainer.appendChild(card);
         });
         lucide.createIcons();
@@ -339,7 +337,6 @@ const Sovereign = (() => {
         if (fillEl) fillEl.style.width = `${state.comboValue * 10}%`;
         if (textEl) textEl.innerText = state.furyActive ? `FRENZY: ${state.furyTimer.toFixed(1)}s` : `STRIKE x${Math.floor(state.comboValue)}`;
 
-        // Boss UI
         const boss = config.bosses[state.bossIndex % config.bosses.length];
         const bossNameEl = document.getElementById('boss-name');
         const bossFillEl = document.getElementById('boss-health-fill');
@@ -367,7 +364,7 @@ const Sovereign = (() => {
 
     const save = () => localStorage.setItem('sov_tactility_v26', JSON.stringify(state));
     const load = () => {
-        const s = localStorage.getItem('sov_tactility_v26') || localStorage.getItem('sov_slaughter_v25');
+        const s = localStorage.getItem('sov_tactility_v26');
         if (s) {
             try { 
                 const p = JSON.parse(s); 

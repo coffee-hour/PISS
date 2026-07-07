@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Tactility (v2.6.0)</title>
+    <title>Sovereign: Invincible (v2.6.1)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="sovereign-clicker">
-    <!-- Oversized Grey Sword Cursor -->
+    <!-- Grey Sword Cursor -->
     <div id="custom-cursor">
         <div class="sword-wrapper">
             <i data-lucide="sword"></i>
         </div>
     </div>
 
-    <!-- Flash Layer for Boss Defeat -->
+    <!-- Flash Layer for Threat Defeat -->
     <div id="white-flash"></div>
 
     <div id="app" class="shake-layer">
@@ -28,9 +28,9 @@
         <main class="throne-room">
             <div class="imperial-header">
                 <div class="treasury-display">
-                    <span class="label">Spoils of War</span>
+                    <span class="label">Viltrumite Energy</span>
                     <div class="value-container">
-                        <i data-lucide="gem" class="icon-gold"></i>
+                        <i data-lucide="zap" class="icon-gold"></i>
                         <span id="treasury-count">0</span>
                     </div>
                     <span id="passive-rate" class="rate-text">+0/s</span>
@@ -38,9 +38,12 @@
             </div>
 
             <div class="war-banner-container">
-                <!-- Boss Status -->
+                <!-- Threat Status -->
                 <div class="boss-display">
-                    <div id="boss-name" class="boss-name">NEMESIS HUSK</div>
+                    <div class="threat-label-row">
+                        <div class="viltrumite-v">V</div>
+                        <div id="boss-name" class="boss-name">SEQUID SWARM</div>
+                    </div>
                     <div class="boss-health-container">
                         <div id="boss-health-fill" class="boss-health-fill"></div>
                     </div>
@@ -57,14 +60,14 @@
 
                 <!-- Combo Gauge -->
                 <div class="combo-gauge-container">
-                    <div class="combo-label">Combat Momentum</div>
+                    <div class="combo-label">Viltrumite Momentum</div>
                     <div class="combo-meter">
                         <div id="combo-fill" class="combo-fill"></div>
                     </div>
                     <div id="combo-text" class="combo-text">STRIKE x0</div>
                 </div>
 
-                <div class="click-instructions">Slay the Nemesis to Fund the Empire</div>
+                <div class="click-instructions">Slay the Viltrumite Threat to Fuel the Empire</div>
             </div>
 
             <div class="dispatch-footer glass-panel">
@@ -81,8 +84,8 @@
 
             <div id="shop-garrison" class="shop-panel active">
                 <div class="shop-header">
-                    <h2><i data-lucide="swords"></i> Imperial Garrison</h2>
-                    <p>Mobilize the military machine.</p>
+                    <h2><i data-lucide="swords"></i> Viltrumite Garrison</h2>
+                    <p>Mobilize the Empire's Might.</p>
                 </div>
                 <div class="upgrade-list" id="upgrade-container"></div>
             </div>
@@ -90,7 +93,7 @@
             <div id="shop-advancements" class="shop-panel">
                 <div class="shop-header">
                     <h2><i data-lucide="trending-up"></i> Advancements</h2>
-                    <p>Permanent logistical multipliers.</p>
+                    <p>Permanent Logistical Mastery.</p>
                 </div>
                 <div class="upgrade-list" id="advancement-container"></div>
             </div>
