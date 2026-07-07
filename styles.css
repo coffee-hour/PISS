@@ -13,94 +13,71 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 
 #game-container { 
     position: relative; 
-    width: 100vw; 
-    height: 100vh; 
-    perspective: 1000px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 100vw; height: 100vh; 
+    display: flex; align-items: center; justify-content: center;
 }
-
-#blood-canvas { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
 
 #top-stat-bar {
     position: absolute; top: 0; left: 0; width: 100%; height: 50px;
     background: var(--glass); border-bottom: 1px solid var(--amber);
     display: flex; align-items: center; justify-content: center;
-    padding: 0 40px; z-index: 500; font-family: var(--font-mono); gap: 20px;
+    z-index: 500; font-family: var(--font-mono); gap: 20px;
 }
-.stat-group { display: flex; align-items: center; gap: 10px; }
-.stat-group label { font-size: 0.6rem; color: var(--amber); font-weight: 800; letter-spacing: 1px; }
-.stat-value { font-size: 0.85rem; font-weight: 800; color: #fff; }
-.stat-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
-.mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
-.mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; box-shadow: 0 0 10px var(--amber-glow); }
 
-/* --- v3.3.1 CENTERING & OFFSET FIXES --- */
+/* --- v3.3.2 SPRITE REGISTRY REWRITE (DECOUPLED) --- */
 
+/* 1. Layout Logic (Purely Positioning) */
 #arena { 
     position: absolute; inset: 0; 
     display: flex; align-items: center; justify-content: center;
-    transform-style: preserve-3d;
-    background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%);
     z-index: 1;
 }
 
 #enemy-target-container {
-    position: relative;
-    width: 300px;
-    height: 400px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative; width: 300px; height: 400px;
+    display: flex; align-items: center; justify-content: center;
     z-index: 10;
 }
 
-.enemy-character { 
-    position: relative; 
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-}
-
+/* 2. Sprite Core (Geometry Only) */
 .enemy-sprite {
-    position: relative;
-    width: 200px;
-    height: 350px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+    position: relative; width: 150px; height: 300px;
+    display: flex; flex-direction: column; align-items: center;
 }
 
-/* Base Stick Elements */
-.stick-head { width: 60px; height: 60px; border: 5px solid currentColor; border-radius: 50%; margin-bottom: 5px; }
-.stick-body { width: 5px; height: 120px; background: currentColor; }
-.stick-arm { position: absolute; width: 80px; height: 5px; background: currentColor; top: 100px; transform-origin: center; }
-.stick-arm.left { transform: rotate(-30deg) translateX(-40px); }
-.stick-arm.right { transform: rotate(30deg) translateX(40px); }
+.stick-head { width: 50px; height: 50px; border: 4px solid currentColor; border-radius: 50%; }
+.stick-body { width: 4px; height: 100px; background: currentColor; }
 
-/* Recalibrated Leg Alignment - Fix for Atom Eve & Others */
-.stick-leg { position: absolute; width: 90px; height: 5px; background: currentColor; top: 185px; transform-origin: top center; }
-.stick-leg.left { transform: rotate(45deg) translateX(-42px); } /* Adjusted offset for visual centering */
-.stick-leg.right { transform: rotate(-45deg) translateX(42px); }
+.stick-arm { position: absolute; width: 60px; height: 4px; background: currentColor; top: 80px; transform-origin: center; }
+.stick-arm.left { transform: rotate(-30deg) translateX(-30px); }
+.stick-arm.right { transform: rotate(30deg) translateX(30px); }
 
-/* Identity Coloring */
-.omniman { color: #f8fafc; }
-.thragg { color: #b91c1c; }
-.atomeve { color: #f06292; }
-.robot { color: #43a047; }
-.rexsplode { color: #fb8c00; }
-.duplikate { color: #1e88e5; }
-.sequid { color: #ff80ab; }
-.monstergirl { color: #81c784; }
-.battlebeast { color: #455a64; }
-.shrinkingrae { color: #9e9e9e; }
-.flaxan { color: #e65100; }
+/* Leg Geometry Hard-Clamp: Forced Neutral Standing */
+.stick-leg { 
+    position: absolute; width: 70px; height: 4px; background: currentColor; top: 150px;
+    transform-origin: top center !important; /* HARD CLAMP */
+}
+.stick-leg.left { transform: rotate(75deg) translateX(-30px) !important; }
+.stick-leg.right { transform: rotate(-75deg) translateX(30px) !important; }
 
-.atomeve .stick-head { box-shadow: 0 0 20px #f06292; }
+/* 3. Hard-Coded Color Registry (Manual Audit) */
+.sequid { color: #ff80ab !important; }        /* Pink */
+.flaxan { color: #e65100 !important; }        /* Technical Orange */
+.duplikate { color: #1e88e5 !important; }     /* Guardian Blue */
+.shrinkingrae { color: #9e9e9e !important; }  /* Tactical Gray */
+.rexsplode { color: #fb8c00 !important; }     /* Explosive Orange */
+.atomeve { color: #f06292 !important; }       /* Signature Pink */
+.robot { color: #43a047 !important; }         /* Metallic Green */
+.monstergirl { color: #81c784 !important; }    /* Ogre Green */
+.battlebeast { color: #455a64 !important; }   /* Steel Gray */
+.omniman { color: #f8fafc !important; }       /* Imperial White */
+.thragg { color: #b91c1c !important; }        /* Regent Red */
 
-/* Target HUD & Interaction Layer */
+/* Special Overrides */
+.atomeve .stick-head { box-shadow: 0 0 15px #f06292; }
+.omniman .stick-head { border-color: #b91c1c; }
+
+/* UI & FX */
 #target-hud { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 300; pointer-events: none; }
 .target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 6px; }
 .target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
@@ -111,13 +88,8 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .arm-left { transform: rotate(15deg) translateY(150px); }
 .arm-right { transform: rotate(-15deg) translateY(150px); }
 
-/* Choice Buttons */
 .choice-list { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; width: 100%; }
-.augment-btn {
-    background: var(--slate); border: 2px solid var(--amber); padding: 20px;
-    text-align: left; cursor: pointer; pointer-events: auto; display: flex;
-    justify-content: space-between; align-items: center; transition: all 0.2s;
-}
+.augment-btn { background: var(--slate); border: 2px solid var(--amber); padding: 20px; text-align: left; cursor: pointer; pointer-events: auto; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
 .augment-btn:hover { background: var(--amber); color: #000; transform: scale(1.02); }
 .augment-info b { display: block; font-size: 1.1rem; color: var(--amber); margin-bottom: 5px; text-transform: uppercase; }
 .augment-btn:hover b { color: #000; }
@@ -125,7 +97,5 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .hidden { display: none !important; }
 .glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; width: 500px; text-align: center; }
-#combat-log-overlay { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); z-index: 300; }
-
-/* REPAIR: Absolute overlay for interaction to ensure clicks are caught */
 #interaction-layer { position: absolute; inset: 0; z-index: 400; cursor: crosshair; }
+#blood-canvas { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
