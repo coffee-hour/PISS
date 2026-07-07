@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Viltrumite Carnage (v3.0.1)</title>
+    <title>Sovereign: Viltrumite Conflict (v3.1.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -17,9 +17,9 @@
             
             <div id="enemy-target-container">
                 <div id="enemy-character" class="enemy-character">
-                    <div class="enemy-sprite"></div>
-                    <div class="enemy-emblem">V</div>
-                    <div class="enemy-aura"></div>
+                    <div id="enemy-visual" class="enemy-sprite"></div>
+                    <div id="enemy-emblem" class="enemy-emblem">V</div>
+                    <div id="enemy-aura" class="enemy-aura"></div>
                 </div>
             </div>
 
@@ -29,17 +29,21 @@
         <div id="hud">
             <div class="hud-top">
                 <div class="hud-box condition">
-                    <label>VILTRUMITE CONDITION</label>
+                    <label>CONDITION</label>
                     <div class="bar-container">
                         <div id="player-hp" class="bar-fill"></div>
                     </div>
                 </div>
                 <div class="hud-box threat">
-                    <label id="enemy-name">TARGET: OMNI-MAN</label>
+                    <label id="enemy-name">TARGET: ???</label>
                     <div class="bar-container">
                         <div id="enemy-hp" class="bar-fill"></div>
                     </div>
                 </div>
+            </div>
+
+            <div class="hud-center">
+                <div id="combat-log">WAITING FOR TARGET...</div>
             </div>
 
             <div class="hud-bottom">

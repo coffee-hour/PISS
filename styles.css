@@ -10,230 +10,102 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
 
-body {
-    background-color: var(--obsidian);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: white;
-}
+body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
 
-#game-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    perspective: 1000px;
-}
+#game-container { position: relative; width: 100vw; height: 100vh; perspective: 1000px; }
 
-/* Arena & Perspective */
 #arena {
-    position: absolute;
-    inset: 0;
-    transform-style: preserve-3d;
+    position: absolute; inset: 0; transform-style: preserve-3d;
     background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%);
     transition: filter 0.1s;
 }
 
 #environment {
-    position: absolute;
-    width: 200%;
-    height: 200%;
-    top: -50%;
-    left: -50%;
+    position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
     background-image: 
         linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px);
     background-size: 100px 100px;
     transform: rotateX(60deg);
-    z-index: 1;
 }
 
-/* Enemy Layer - Enhanced v3.0.1 */
+/* Enemy Logic Visuals */
 #enemy-target-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) translateZ(0);
-    z-index: 10;
-    width: 400px;
-    height: 600px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) translateZ(0);
+    z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center;
 }
 
 .enemy-character {
-    position: relative;
-    width: 240px;
-    height: 440px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative; width: 240px; height: 440px; display: flex; justify-content: center; align-items: center;
+    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
 }
 
 .enemy-sprite {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: var(--glass);
-    border: 3px solid var(--amber);
-    box-shadow: 0 0 60px var(--amber-glow);
-    /* Multi-layered geometric body */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 50%, 80% 90%, 50% 100%, 20% 90%, 0% 50%, 10% 20%);
-    z-index: 2;
-    animation: enemyPulse 2s infinite alternate ease-in-out;
+    position: absolute; width: 100%; height: 100%; background: var(--glass);
+    border: 3px solid var(--amber); box-shadow: 0 0 60px var(--amber-glow);
+    z-index: 2; transition: all 0.3s;
 }
 
+/* Target Specific Shapes */
+.enemy-character.sequid .enemy-sprite { border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 40px #8b5cf6; }
+.enemy-character.flaxan .enemy-sprite { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); background: #ea580c; }
+.enemy-character.thragg .enemy-sprite { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); background: #b91c1c; border-color: #fff; }
+.enemy-character.omniman .enemy-sprite { clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); background: #f8fafc; border: 4px solid #b91c1c; }
+
 .enemy-emblem {
-    position: absolute;
-    top: 25%;
-    width: 60px;
-    height: 80px;
-    background: var(--crimson);
+    position: absolute; top: 25%; width: 60px; height: 80px; background: var(--crimson);
     clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
-    z-index: 3;
-    box-shadow: 0 0 20px var(--crimson-glow);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    font-size: 1.5rem;
-    color: white;
+    z-index: 3; box-shadow: 0 0 20px var(--crimson-glow);
+    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.5rem;
 }
 
 .enemy-aura {
-    position: absolute;
-    inset: -20px;
-    border: 2px solid var(--amber-glow);
-    border-radius: 50%;
-    filter: blur(10px);
-    animation: auraSpin 4s infinite linear;
-}
-
-@keyframes enemyPulse {
-    0% { transform: scale(1); filter: brightness(1); }
-    100% { transform: scale(1.05); filter: brightness(1.3); }
+    position: absolute; inset: -30px; border: 2px solid var(--amber-glow);
+    border-radius: 50%; filter: blur(15px); animation: auraSpin 4s infinite linear;
 }
 
 @keyframes auraSpin {
     from { transform: rotate(0deg) scale(1); opacity: 0.5; }
-    50% { transform: rotate(180deg) scale(1.2); opacity: 0.8; }
+    50% { transform: rotate(180deg) scale(1.3); opacity: 0.8; }
     to { transform: rotate(360deg) scale(1); opacity: 0.5; }
 }
 
-/* Hit Reaction */
-.hit-active {
-    animation: hitFlash 0.15s ease-out forwards;
-}
-
+/* Hit & Damage Effects */
+.hit-active { animation: hitFlash 0.15s ease-out forwards; }
 @keyframes hitFlash {
-    0% { transform: scale(0.9) translate(0,0); filter: brightness(3) saturate(2); }
-    50% { transform: scale(0.85) translate(20px, -10px); }
-    100% { transform: scale(1) translate(0,0); filter: brightness(1); }
+    0% { transform: scale(0.9); filter: brightness(3) saturate(2); }
+    100% { transform: scale(1); filter: brightness(1); }
 }
 
-/* First-Person HUD */
-#hud {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+.enemy-attack { animation: attackLunge 0.4s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards; }
+@keyframes attackLunge {
+    0% { transform: translateZ(0) scale(1); }
+    50% { transform: translateZ(200px) scale(1.5); filter: brightness(2); }
+    100% { transform: translateZ(0) scale(1); }
 }
 
-.hud-top {
-    display: flex;
-    justify-content: space-between;
-}
+/* HUD */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 100; padding: 40px; display: flex; flex-direction: column; justify-content: space-between; }
+.hud-top { display: flex; justify-content: space-between; }
+.hud-box { width: 350px; }
+.hud-box label { display: block; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 3px; margin-bottom: 8px; color: var(--amber); }
+.bar-container { height: 10px; background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); overflow: hidden; position: relative; }
+.bar-fill { height: 100%; width: 100%; background: var(--amber); transition: width 0.3s; box-shadow: 0 0 15px var(--amber-glow); }
+.threat .bar-fill { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
 
-.hud-box {
-    width: 350px;
-}
+.hud-center { text-align: center; font-family: var(--font-mono); font-size: 0.8rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); }
 
-.hud-box label {
-    display: block;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    letter-spacing: 3px;
-    margin-bottom: 8px;
-    color: var(--amber);
-}
-
-.bar-container {
-    height: 10px;
-    background: rgba(0,0,0,0.8);
-    border: 1px solid rgba(255,255,255,0.1);
-    overflow: hidden;
-    position: relative;
-}
-
-.bar-fill {
-    height: 100%;
-    width: 100%;
-    background: var(--amber);
-    transition: width 0.3s cubic-bezier(0.1, 0.7, 1.0, 0.1);
-    box-shadow: 0 0 15px var(--amber-glow);
-}
-
-.threat .bar-fill { 
-    background: linear-gradient(90deg, #7f1d1d, #ef4444); 
-    box-shadow: 0 0 15px var(--crimson-glow);
-}
-
-/* Arms & Fists */
-#arms-container {
-    position: absolute;
-    bottom: -80px;
-    width: 100%;
-    height: 400px;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 10%;
-    z-index: 200;
-    pointer-events: none;
-}
-
+/* Arms */
+#arms-container { position: absolute; bottom: -80px; width: 100%; height: 400px; display: flex; justify-content: space-between; padding: 0 10%; z-index: 200; pointer-events: none; }
 .arm {
-    width: 280px;
-    height: 550px;
-    background: linear-gradient(to top, #000, #1a1a1a 40%, #444 100%);
-    border: 4px solid #000;
-    border-radius: 60px 60px 0 0;
-    transform: translateY(150px);
-    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
+    width: 280px; height: 550px; background: linear-gradient(to top, #000, #1a1a1a 40%, #444 100%);
+    border: 4px solid #000; border-radius: 60px 60px 0 0; transform: translateY(150px);
+    transition: transform 0.1s; position: relative;
 }
-
-.arm::after {
-    content: '';
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    height: 100px;
-    background: rgba(255, 140, 0, 0.1);
-    filter: blur(10px);
-    border-radius: 40px;
-}
-
 .arm-left { transform: rotate(12deg) translateY(150px); }
 .arm-right { transform: rotate(-12deg) translateY(150px); }
 
-/* Input Layer */
-#interaction-layer {
-    position: absolute;
-    inset: 0;
-    z-index: 300;
-}
-
-/* Screen Flash Layer */
-#fx-flash {
-    position: fixed;
-    inset: 0;
-    background: white;
-    z-index: 400;
-    opacity: 0;
-    pointer-events: none;
-}
+#interaction-layer { position: absolute; inset: 0; z-index: 300; }
+#fx-flash { position: fixed; inset: 0; background: #fff; z-index: 400; opacity: 0; pointer-events: none; }
+.blood-splat { position: fixed; inset: 0; background: radial-gradient(circle, transparent 40%, rgba(185, 28, 28, 0.4) 100%); z-index: 350; opacity: 0; transition: opacity 0.3s; }
+.damaged .blood-splat { opacity: 1; }
