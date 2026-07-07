@@ -21,31 +21,31 @@
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-btn active" data-tab="civ">
-                    <span class="nav-icon">🏛️</span>
+                    <span class="nav-icon ic-civ"></span>
                     Civ Center
                 </button>
                 <button class="nav-btn" data-tab="military">
-                    <span class="nav-icon">⚔️</span>
+                    <span class="nav-icon ic-mil"></span>
                     Barracks
                 </button>
                 <button class="nav-btn" data-tab="market">
-                    <span class="nav-icon">⚖️</span>
+                    <span class="nav-icon ic-mkt"></span>
                     Marketplace
                 </button>
                 <button class="nav-btn" data-tab="commanders">
-                    <span class="nav-icon">👤</span>
+                    <span class="nav-icon ic-cmd"></span>
                     Commanders
                 </button>
                 <button class="nav-btn" data-tab="campaign">
-                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-icon ic-cmp"></span>
                     Campaign
                 </button>
                 <button class="nav-btn" data-tab="tech">
-                    <span class="nav-icon">📜</span>
+                    <span class="nav-icon ic-tch"></span>
                     Tech Tree
                 </button>
                 <button class="nav-btn" data-tab="prestige">
-                    <span class="nav-icon">✨</span>
+                    <span class="nav-icon ic-dyn"></span>
                     Dynasty
                 </button>
             </nav>
@@ -99,89 +99,91 @@
             </header>
 
             <!-- Tab Content Sections -->
-            <section id="tab-civ" class="tab-content active">
-                <div class="section-title">
-                    <h2>Civ Center</h2>
-                    <p>Manage infrastructure and manual labor optimization.</p>
-                </div>
-                <div class="optimization-bar action-card">
-                    <div class="card-header">
-                        <h3>Manual Labor Optimization</h3>
-                        <span class="card-badge" id="click-lvl">Lvl 1</span>
+            <div class="scroll-container">
+                <section id="tab-civ" class="tab-content active">
+                    <div class="section-title">
+                        <h2>Civ Center</h2>
+                        <p>Manage infrastructure and manual labor optimization.</p>
                     </div>
-                    <div class="card-body">
-                        <p>Increase resources gathered per click. Current: +<span id="click-power">1</span></p>
-                        <button class="primary-btn" id="upgrade-click-btn">Upgrade (100 Gold)</button>
+                    <div class="optimization-bar action-card">
+                        <div class="card-header">
+                            <h3>Manual Labor Optimization</h3>
+                            <span class="card-badge" id="click-lvl">Lvl 1</span>
+                        </div>
+                        <div class="card-body">
+                            <p>Increase resources gathered per click. Current: +<span id="click-power">1</span></p>
+                            <button class="primary-btn" id="upgrade-click-btn">Upgrade (100 Gold)</button>
+                        </div>
                     </div>
-                </div>
-                <div class="action-grid" id="civ-buildings"></div>
-            </section>
+                    <div class="action-grid" id="civ-buildings"></div>
+                </section>
 
-            <section id="tab-military" class="tab-content">
-                <div class="section-title">
-                    <h2>Imperial Barracks</h2>
-                    <p>Train and maintain your specialized units.</p>
-                </div>
-                <div class="action-grid" id="military-units"></div>
-            </section>
-
-            <section id="tab-market" class="tab-content">
-                <div class="section-title">
-                    <h2>Imperial Marketplace</h2>
-                    <p>Barter excess resources for gold or purchase materials.</p>
-                </div>
-                <div class="market-grid" id="market-grid">
-                    <!-- Trades injected here -->
-                </div>
-            </section>
-
-            <section id="tab-commanders" class="tab-content">
-                <div class="section-title">
-                    <h2>Tactical Commanders</h2>
-                    <p>Recruit elite leaders for passive empire boosts.</p>
-                </div>
-                <div class="action-grid" id="commander-list"></div>
-            </section>
-
-            <section id="tab-campaign" class="tab-content">
-                <div class="section-title">
-                    <h2>Global Campaign</h2>
-                    <p>Conquer regions to secure permanent resource tributes.</p>
-                </div>
-                <div class="campaign-layout">
-                    <div class="campaign-map" id="campaign-map"></div>
-                    <div class="campaign-log" id="campaign-log">
-                        <div class="log-header">Combat Logs</div>
-                        <div class="log-entries" id="log-entries"></div>
+                <section id="tab-military" class="tab-content">
+                    <div class="section-title">
+                        <h2>Imperial Barracks</h2>
+                        <p>Train and maintain your specialized units.</p>
                     </div>
-                </div>
-            </section>
+                    <div class="action-grid" id="military-units"></div>
+                </section>
 
-            <section id="tab-tech" class="tab-content">
-                <div class="section-title">
-                    <h2>Technological Research</h2>
-                    <p>Unlock advanced logistical and military tiers.</p>
-                </div>
-                <div class="action-grid" id="tech-list"></div>
-            </section>
-
-            <section id="tab-prestige" class="tab-content">
-                <div class="section-title">
-                    <h2>Dynasty Rise</h2>
-                    <p>Restart for permanent production and combat legacy points.</p>
-                </div>
-                <div class="prestige-card">
-                    <div class="prestige-info">
-                        <h3>Phoenix Legacy</h3>
-                        <p>Total Legacy Points: <span id="legacy-points">0</span></p>
-                        <ul class="modifier-list">
-                            <li>Production: <span id="prod-mult">1.0x</span></li>
-                            <li>Combat Strength: <span id="combat-bonus">0%</span></li>
-                        </ul>
+                <section id="tab-market" class="tab-content">
+                    <div class="section-title">
+                        <h2>Imperial Marketplace</h2>
+                        <p>Barter excess resources for gold or purchase materials.</p>
                     </div>
-                    <button class="primary-btn reset-btn" id="prestige-btn">Reset for Legacy</button>
-                </div>
-            </section>
+                    <div class="market-grid" id="market-grid">
+                        <!-- Trades injected here -->
+                    </div>
+                </section>
+
+                <section id="tab-commanders" class="tab-content">
+                    <div class="section-title">
+                        <h2>Tactical Commanders</h2>
+                        <p>Recruit elite leaders for passive empire boosts.</p>
+                    </div>
+                    <div class="action-grid" id="commander-list"></div>
+                </section>
+
+                <section id="tab-campaign" class="tab-content">
+                    <div class="section-title">
+                        <h2>Global Campaign</h2>
+                        <p>Conquer regions to secure permanent resource tributes.</p>
+                    </div>
+                    <div class="campaign-layout">
+                        <div class="campaign-map" id="campaign-map"></div>
+                        <div class="campaign-log" id="campaign-log">
+                            <div class="log-header">Combat Logs</div>
+                            <div class="log-entries" id="log-entries"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="tab-tech" class="tab-content">
+                    <div class="section-title">
+                        <h2>Technological Research</h2>
+                        <p>Unlock advanced logistical and military tiers.</p>
+                    </div>
+                    <div class="action-grid" id="tech-list"></div>
+                </section>
+
+                <section id="tab-prestige" class="tab-content">
+                    <div class="section-title">
+                        <h2>Dynasty Rise</h2>
+                        <p>Restart for permanent production and combat legacy points.</p>
+                    </div>
+                    <div class="prestige-card">
+                        <div class="prestige-info">
+                            <h3>Phoenix Legacy</h3>
+                            <p>Total Legacy Points: <span id="legacy-points">0</span></p>
+                            <ul class="modifier-list">
+                                <li>Production: <span id="prod-mult">1.0x</span></li>
+                                <li>Combat Strength: <span id="combat-bonus">0%</span></li>
+                            </ul>
+                        </div>
+                        <button class="primary-btn reset-btn" id="prestige-btn">Reset for Legacy</button>
+                    </div>
+                </section>
+            </div>
         </main>
 
         <!-- Event Modal -->
