@@ -1,5 +1,5 @@
 /**
- * Sovereign: Statecraft - Sovereign Engine (AAA V3 - Visual Polish)
+ * Sovereign: Statecraft - Sovereign Engine (V3.1 Stabilization & Fixes)
  */
 
 const Sovereign = (() => {
@@ -82,7 +82,6 @@ const Sovereign = (() => {
             const delta = (now - state.lastUpdate) / 1000;
             state.lastUpdate = now;
             update(delta);
-            renderPrices(); // Update price tags in real-time
         }, 100);
         setInterval(save, 5000);
     };
@@ -103,9 +102,10 @@ const Sovereign = (() => {
         }
 
         renderLedgerOnly();
+        renderPrices(); // Ensure prices and per-sec rates update every tick
     };
 
-    // --- Pricing Logic ---
+    // --- Pricing & Gen Rates ---
     const getBuildingCost = (id) => {
         const b = config.buildings[id];
         const count = state.buildings[id];
@@ -178,11 +178,29 @@ const Sovereign = (() => {
     };
 
     const renderLedgerOnly = () => {
+        const rel = religions[state.faithId] || religions.none;
+        const getMult = (key) => 1 + (rel.mult[key] || 0);
+
         for (let res in state.resources) {
             const node = document.getElementById(`res-${res}`);
             if (node) {
                 const valEl = node.querySelector('.res-val');
                 if (valEl) valEl.innerText = Math.floor(state.resources[res]).toLocaleString();
+                
+                const rateEl = node.querySelector('.res-rate');
+                if (rateEl) {
+                    let rTotal = 0;
+                    for (let bid in state.buildings) {
+                        const b = config.buildings[bid];
+                        if (b.res === res) rTotal += b.prod * state.buildings[bid];
+                    }
+                    state.regions.filter(reg => reg.captured).forEach(reg => {
+                        if (reg.tribute[res]) rTotal += reg.tribute[res];
+                    });
+                    const m = getMult(`prod_${res}`);
+                    const finalRate = rTotal * state.modifiers.production * m;
+                    rateEl.innerText = `+${finalRate.toFixed(1)}/s`;
+                }
             }
         }
     };
@@ -218,7 +236,7 @@ const Sovereign = (() => {
             const btn = document.createElement('div');
             btn.className = `religion-btn ${state.faithId === id ? 'active' : ''}`;
             btn.innerHTML = `<h4>${r.name}</h4><p>${r.effect}</p>`;
-            btn.onclick = () => { state.faithId = id; renderPantheon(); };
+            btn.onclick = () => { state.faithId = id; renderPantheon(); renderLedgerOnly(); };
             list.appendChild(btn);
         }
     };
@@ -388,23 +406,76 @@ const Sovereign = (() => {
         if (s) state = { ...state, ...JSON.parse(s), lastUpdate: Date.now() };
     };
 
-    // Canvas logic remains unchanged for now to preserve user drawings
+    // --- Statue Creator (Restored & Stabilized) ---
+    let canvasCtx, painting = false, activeColor = '#f5f5f0', brushSize = 1;
+    
     const setupCanvas = () => {
         const cvs = document.getElementById('statue-canvas');
         if (!cvs) return;
-        const ctx = cvs.getContext('2d');
-        let painting = false, color = '#f5f5f0', size = 1;
-        cvs.onmousedown = (e) => { painting = true; draw(e); };
-        cvs.onmousemove = draw;
-        window.onmouseup = () => painting = false;
-        function draw(e) {
-            if (!painting) return;
-            const rect = cvs.getBoundingClientRect();
-            const x = Math.floor((e.clientX - rect.left) / (rect.width / 64));
-            const y = Math.floor((e.clientY - rect.top) / (rect.height / 64));
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, size, size);
+        canvasCtx = cvs.getContext('2d');
+        canvasCtx.imageSmoothingEnabled = false;
+
+        cvs.onmousedown = (e) => { painting = true; drawPixel(e); };
+        cvs.onmousemove = drawPixel;
+        window.addEventListener('mouseup', () => painting = false);
+
+        // Palette Listeners
+        document.querySelectorAll('.palette-color').forEach(p => {
+            p.onclick = () => {
+                document.querySelectorAll('.palette-color').forEach(x => x.classList.remove('active'));
+                p.classList.add('active');
+                activeColor = p.getAttribute('data-color');
+            };
+        });
+
+        // Tool Listeners
+        const clearBtn = document.getElementById('tool-clear');
+        if (clearBtn) clearBtn.onclick = () => canvasCtx.clearRect(0,0,64,64);
+
+        const gridBtn = document.getElementById('tool-grid');
+        if (gridBtn) gridBtn.onclick = () => {
+            const grid = document.getElementById('canvas-grid');
+            if (grid) grid.classList.toggle('hidden');
+            gridBtn.classList.toggle('active');
+        };
+
+        const brushBtns = document.querySelectorAll('.brush-btn');
+        brushBtns.forEach(b => {
+            b.onclick = () => {
+                brushBtns.forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                brushSize = parseInt(b.getAttribute('data-size'));
+            };
+        });
+
+        // Blueprint Listeners
+        document.querySelectorAll('.bp-btn').forEach(btn => {
+            btn.onclick = () => loadTemplate(btn.getAttribute('data-bp'));
+        });
+    };
+
+    const drawPixel = (e) => {
+        if (!painting || !canvasCtx) return;
+        const cvs = document.getElementById('statue-canvas');
+        const rect = cvs.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / (rect.width / 64));
+        const y = Math.floor((e.clientY - rect.top) / (rect.height / 64));
+
+        if (activeColor === 'transparent') {
+            canvasCtx.clearRect(x, y, brushSize, brushSize);
+        } else {
+            canvasCtx.fillStyle = activeColor;
+            canvasCtx.fillRect(x, y, brushSize, brushSize);
         }
+    };
+
+    const loadTemplate = (bp) => {
+        if (!canvasCtx) return;
+        canvasCtx.clearRect(0,0,64,64);
+        canvasCtx.fillStyle = 'rgba(255,255,255,0.15)';
+        if (bp === 'crown') canvasCtx.fillRect(10, 30, 44, 20);
+        if (bp === 'sword') canvasCtx.fillRect(30, 5, 4, 50);
+        if (bp === 'pillar') canvasCtx.fillRect(20, 10, 24, 44);
     };
 
     const carveStatue = () => {
@@ -413,6 +484,7 @@ const Sovereign = (() => {
             state.statueImg = cvs.toDataURL();
             renderStatue();
             save();
+            notify("MONUMENT CARVED: FAITH RADIATES THROUGH THE REALM.");
         }
     };
 
