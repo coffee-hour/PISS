@@ -3,121 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chibi Empire: Smooth Conquest</title>
+    <title>Sovereign: Imperium Simulator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="dark-theme">
-    <div id="game-app">
+<body class="dark-mode">
+    <div id="app">
         <!-- Sidebar Navigation -->
-        <nav class="sidebar">
-            <div class="brand">
-                <div class="logo-icon"></div>
-                <span class="brand-name">Chibi Empire</span>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 5V11C4 16.19 7.41 21.05 12 22C16.59 21.05 20 16.19 20 11V5L12 2Z" fill="currentColor" fill-opacity="0.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h1 class="brand-name">SOVEREIGN</h1>
             </div>
-            <ul class="nav-links">
-                <li class="active" data-tab="civilization">Civ Center</li>
-                <li data-tab="military">Iron Barracks</li>
-                <li data-tab="campaign">Campaign Map</li>
-                <li data-tab="research">Cute Tech</li>
-                <li data-tab="prestige">Phoenix Rise</li>
-            </ul>
-            <div class="era-badge">
-                <span id="current-era">Chibi Tribe</span>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-tab="civ">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10l9-7 9 7v11H3V10z"/><path d="M9 21V12h6v9"/></svg></span>
+                    Civ Center
+                </button>
+                <button class="nav-btn" data-tab="military">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v9c0 5 9 8 9 8s9-3 9-8V7l-9-5z"/><path d="M12 22V12"/></svg></span>
+                    Barracks
+                </button>
+                <button class="nav-btn" data-tab="campaign">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg></span>
+                    Campaign
+                </button>
+                <button class="nav-btn" data-tab="tech">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"/></svg></span>
+                    Tech Tree
+                </button>
+                <button class="nav-btn" data-tab="prestige">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
+                    Dynasty
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="era-indicator">
+                    <span class="label">Era</span>
+                    <span id="current-era" class="value">Age of Discovery</span>
+                </div>
             </div>
-        </nav>
+        </aside>
 
-        <!-- Main Content Area -->
-        <main class="content">
+        <!-- Main Workspace -->
+        <main class="workspace">
             <!-- Global Resource Header -->
-            <header class="resource-bar">
-                <div class="res-item" title="Food">
-                    <span class="icon">🍎</span>
-                    <span id="res-food">0</span>
-                    <span class="rate" id="rate-food">+0/s</span>
+            <header class="resource-header">
+                <div class="resource-pill" id="res-food">
+                    <div class="res-icon food-icon"></div>
+                    <div class="res-content">
+                        <span class="res-label">Food</span>
+                        <span class="res-value">1,000</span>
+                        <span class="res-rate">+2.4/s</span>
+                    </div>
                 </div>
-                <div class="res-item" title="Gold">
-                    <span class="icon">🪙</span>
-                    <span id="res-gold">0</span>
-                    <span class="rate" id="rate-gold">+0/s</span>
+                <div class="resource-pill" id="res-wood">
+                    <div class="res-icon wood-icon"></div>
+                    <div class="res-content">
+                        <span class="res-label">Wood</span>
+                        <span class="res-value">500</span>
+                        <span class="res-rate">+1.2/s</span>
+                    </div>
                 </div>
-                <div class="res-item" title="Materials">
-                    <span class="icon">⚒️</span>
-                    <span id="res-materials">0</span>
-                    <span class="rate" id="rate-materials">+0/s</span>
+                <div class="resource-pill" id="res-ore">
+                    <div class="res-icon ore-icon"></div>
+                    <div class="res-content">
+                        <span class="res-label">Ore</span>
+                        <span class="res-value">250</span>
+                        <span class="res-rate">+0.8/s</span>
+                    </div>
                 </div>
-                <div class="res-item" title="Recruits">
-                    <span class="icon">⚔️</span>
-                    <span id="res-recruits">0</span>
-                    <span class="rate" id="rate-recruits">+0/s</span>
+                <div class="resource-pill" id="res-gold">
+                    <div class="res-icon gold-icon"></div>
+                    <div class="res-content">
+                        <span class="res-label">Gold</span>
+                        <span class="res-value">100</span>
+                        <span class="res-rate">+0.4/s</span>
+                    </div>
                 </div>
             </header>
 
-            <!-- Tab Content: Civilization -->
-            <section id="tab-civilization" class="tab-pane active">
-                <div class="pane-header">
-                    <h2>Civilization Hub</h2>
-                    <p>Build the foundation of your cute empire.</p>
+            <!-- Tab: Civ Center -->
+            <section id="tab-civ" class="tab-content active">
+                <div class="section-title">
+                    <h2>Civ Center</h2>
+                    <p>Expand your infrastructure to increase production capacity.</p>
                 </div>
-                <div class="grid-container">
-                    <div class="card build-card" onclick="game.build('farm')">
-                        <div class="card-icon">🧺</div>
-                        <div class="card-info">
-                            <h3>Chibi Farm</h3>
-                            <p>Produces Food.</p>
-                            <span class="cost" id="cost-farm">Food: 10</span>
-                        </div>
-                        <div class="count-badge" id="count-farm">0</div>
+                <div class="action-grid" id="civ-buildings">
+                    <!-- Buildings dynamically injected -->
+                </div>
+            </section>
+
+            <!-- Tab: Military -->
+            <section id="tab-military" class="tab-content">
+                <div class="section-title">
+                    <h2>Imperial Barracks</h2>
+                    <p>Mobilize your forces. Each unit requires continuous upkeep.</p>
+                </div>
+                <div class="action-grid" id="military-units">
+                    <!-- Units dynamically injected -->
+                </div>
+            </section>
+
+            <!-- Tab: Campaign -->
+            <section id="tab-campaign" class="tab-content">
+                <div class="section-title">
+                    <h2>Global Campaign</h2>
+                    <p>Deploy your army to secure strategic territories.</p>
+                </div>
+                <div class="campaign-layout">
+                    <div class="campaign-map" id="campaign-map">
+                        <!-- Regions dynamically injected -->
                     </div>
-                    <div class="card build-card" onclick="game.build('market')">
-                        <div class="card-icon">⚖️</div>
-                        <div class="card-info">
-                            <h3>Tiny Market</h3>
-                            <p>Produces Gold.</p>
-                            <span class="cost" id="cost-market">Gold: 15</span>
+                    <div class="campaign-log" id="campaign-log">
+                        <div class="log-header">Combat Logs</div>
+                        <div class="log-entries" id="log-entries">
+                            <div class="log-entry">Awaiting deployment instructions...</div>
                         </div>
-                        <div class="count-badge" id="count-market">0</div>
-                    </div>
-                    <div class="card build-card" onclick="game.build('quarry')">
-                        <div class="card-icon">🪨</div>
-                        <div class="card-info">
-                            <h3>Pebble Quarry</h3>
-                            <p>Produces Materials.</p>
-                            <span class="cost" id="cost-quarry">Materials: 25</span>
-                        </div>
-                        <div class="count-badge" id="count-quarry">0</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Other tabs are dynamically handled/hidden -->
-            <section id="tab-military" class="tab-pane">
-                <div class="pane-header">
-                    <h2>Iron Barracks</h2>
-                    <p>Train your specialized military units.</p>
+            <!-- Tab: Tech Tree -->
+            <section id="tab-tech" class="tab-content">
+                <div class="section-title">
+                    <h2>Technological Research</h2>
+                    <p>Innovate to unlock higher tier units and efficiencies.</p>
                 </div>
-                <div class="grid-container" id="unit-container">
-                    <!-- Units injected by JS -->
+                <div class="action-grid" id="tech-list">
+                    <!-- Techs dynamically injected -->
                 </div>
             </section>
 
-            <section id="tab-campaign" class="tab-pane">
-                <div class="pane-header">
-                    <h2>Campaign Map</h2>
-                    <p>Conquer the world, one cute territory at a time.</p>
+            <!-- Tab: Prestige -->
+            <section id="tab-prestige" class="tab-content">
+                <div class="section-title">
+                    <h2>Dynasty Rise</h2>
+                    <p>Sacrifice your current empire to forge a permanent legacy for your successors.</p>
                 </div>
-                <div class="map-container" id="map-grid">
-                    <!-- Map territories -->
+                <div class="prestige-card">
+                    <div class="prestige-info">
+                        <h3>Phoenix Modifiers</h3>
+                        <p>Total Legacy Points: <span id="legacy-points">0</span></p>
+                        <ul class="modifier-list">
+                            <li>Production Multiplier: <span id="prod-mult">1.0x</span></li>
+                            <li>Combat Strength Bonus: <span id="combat-bonus">0%</span></li>
+                        </ul>
+                    </div>
+                    <button class="primary-btn reset-btn" id="prestige-btn">Reset for Legacy</button>
                 </div>
             </section>
         </main>
     </div>
-
-    <!-- Notification system -->
-    <div id="notif-container"></div>
-
+    <div id="toast-container"></div>
     <script src="app.js"></script>
 </body>
 </html>
