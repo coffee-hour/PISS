@@ -13,7 +13,6 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 #game-container { position: relative; width: 100vw; height: 100vh; perspective: 1000px; }
 #blood-canvas { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
 
-/* Top Stat Bar */
 #top-stat-bar {
     position: absolute; top: 0; left: 0; width: 100%; height: 50px;
     background: var(--glass); border-bottom: 1px solid var(--amber);
@@ -21,90 +20,72 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
     padding: 0 40px; z-index: 500; font-family: var(--font-mono); gap: 20px;
 }
 .stat-group { display: flex; align-items: center; gap: 10px; }
-.stat-group label { font-size: 0.6rem; color: var(--amber); letter-spacing: 1px; font-weight: 800; }
+.stat-group label { font-size: 0.6rem; color: var(--amber); font-weight: 800; }
 .stat-value { font-size: 0.85rem; font-weight: 800; color: #fff; }
 .stat-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
 .mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
 .mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
 
-/* Multi-layered High-Detail Sprites */
-.enemy-sprite {
-    position: relative; width: 280px; height: 460px;
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.4s;
-}
+/* Character Visual Architecture v3.2.4 */
+.enemy-character { position: relative; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.enemy-sprite { position: relative; width: 280px; height: 460px; display: flex; align-items: center; justify-content: center; }
 .layer { position: absolute; transition: all 0.3s; }
 
-/* Omni-Man Detailed */
-.omniman .layer-body { 
-    width: 240px; height: 440px; background: #f8fafc; border-radius: 20px 20px 0 0; border: 6px solid #b91c1c; 
-}
-.omniman .layer-armor {
-    width: 240px; height: 150px; background: #b91c1c; top: 0; border-radius: 20px 20px 0 0;
-    clip-path: polygon(0 0, 100% 0, 100% 40%, 80% 100%, 20% 100%, 0% 40%);
-}
-.omniman .layer-feature {
-    width: 130px; height: 40px; background: #1a1a1a; top: 32%;
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 60%, 50% 100%, 20% 60%, 0% 100%);
-}
-.omniman .layer-eyes {
-    width: 100px; height: 10px; background: rgba(255,255,255,0.8); top: 25%;
-    box-shadow: 0 0 10px #fff;
-}
+/* Sequid: Pink body with tentacles */
+.sequid .layer-body { width: 100px; height: 120px; background: #ff80ab; border-radius: 50%; box-shadow: 0 0 20px rgba(255, 128, 171, 0.5); }
+.sequid .tentacle { position: absolute; width: 10px; height: 80px; background: #ff80ab; border-radius: 5px; top: 80px; transform-origin: top center; animation: tentacleWave 2s infinite ease-in-out; }
+.sequid .t1 { left: 40px; animation-delay: 0s; }
+.sequid .t2 { left: 60px; animation-delay: 0.5s; }
+.sequid .t3 { left: 80px; animation-delay: 0.2s; }
+.sequid .t4 { left: 100px; animation-delay: 0.7s; }
+@keyframes tentacleWave { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
 
-/* Thragg Detailed */
-.thragg .layer-body {
-    width: 320px; height: 480px; background: #7f1d1d; border: 8px solid #fff; border-radius: 5px;
-}
-.thragg .layer-armor {
-    width: 100%; height: 100%; background: rgba(255,255,255,0.1);
-    clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%, 0 40%, 100% 40%, 100% 42%, 0 42%);
-}
-.thragg .layer-feature {
-    width: 90%; height: 80px; background: #fff; top: 10%;
-    clip-path: polygon(0 0, 100% 0, 100% 20%, 0 20%, 0 40%, 100% 40%, 100% 60%, 0 60%);
-}
+/* Robot: Green blocky/tech design */
+.robot .layer-body { width: 180px; height: 220px; background: #2e7d32; border: 4px solid #1b5e20; border-radius: 10px; }
+.robot .layer-eyes { width: 100px; height: 10px; background: #fff; box-shadow: 0 0 15px #81c784; top: 25%; }
+.robot .layer-detail { width: 140px; height: 40px; background: rgba(0,0,0,0.3); bottom: 20%; border-radius: 5px; }
 
-/* Flaxan Detailed */
-.flaxan .layer-body {
-    width: 220px; height: 400px; background: #c2410c; 
-    clip-path: polygon(50% 0%, 100% 30%, 100% 100%, 0 100%, 0 30%);
-}
-.flaxan .layer-armor {
-    width: 100%; height: 100%; background: rgba(251, 146, 60, 0.3);
-    clip-path: circle(30% at 50% 30%);
-}
-.flaxan .layer-eyes {
-    width: 60%; height: 20px; background: #fb923c; top: 20%;
-    clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
-}
+/* Monster Girl: Green/Tough appearance */
+.monstergirl .layer-body { width: 220px; height: 350px; background: #4caf50; clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); border: 4px solid #1b5e20; }
+.monstergirl .layer-eyes { width: 120px; height: 20px; background: #ffeb3b; top: 20%; clip-path: polygon(0 40%, 100% 40%, 90% 60%, 10% 60%); }
 
-/* Sequid Detailed */
-.sequid .layer-body {
-    width: 200px; height: 200px; background: #6d28d9; border-radius: 50%; border: 10px solid #4c1d95;
-}
-.sequid .layer-feature {
-    width: 100%; height: 100%; background: transparent;
-    box-shadow: inset 0 0 40px #a78bfa; border-radius: 50%;
-}
-.sequid .layer-eyes {
-    width: 30px; height: 30px; background: #a78bfa; border-radius: 50%;
-    box-shadow: 40px 0 0 #a78bfa, -40px 0 0 #a78bfa;
-}
+/* Rex Splode: Orange/Explosive theme */
+.rexsplode .layer-body { width: 180px; height: 380px; background: #ef6c00; border-radius: 20px 20px 0 0; border: 4px solid #e65100; }
+.rexsplode .layer-detail { width: 180px; height: 100px; background: #ffeb3b; clip-path: polygon(0 0, 100% 0, 50% 100%); top: 0; opacity: 0.8; }
 
-/* Arena & Combat */
-#arena { position: absolute; inset: 0; transform-style: preserve-3d; background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%); z-index: 1; }
+/* Dupli-Kate: Blue/White costume motif */
+.duplikate .layer-body { width: 170px; height: 380px; background: #1565c0; border: 4px solid #0d47a1; border-radius: 50px 50px 0 0; }
+.duplikate .layer-detail { width: 100%; height: 60px; background: #fff; top: 40%; transform: rotate(-15deg); opacity: 0.9; }
+
+/* Battle Beast: Dark/Lion-like fierce shape */
+.battlebeast .layer-body { width: 260px; height: 440px; background: #37474f; border: 6px solid #000; clip-path: polygon(50% 0%, 100% 20%, 100% 100%, 0% 100%, 0% 20%); }
+.battlebeast .layer-feature { width: 100%; height: 150px; background: #b0bec5; top: 0; clip-path: polygon(0 0, 100% 0, 100% 30%, 80% 50%, 20% 50%, 0 30%); }
+
+/* Omni-Man / Thragg (Standardized v3.2.4) */
+.omniman .layer-body { width: 220px; height: 420px; background: #f8fafc; border: 6px solid #b91c1c; border-radius: 20px 20px 0 0; }
+.omniman .layer-accessory { width: 120px; height: 30px; background: #1a1a1a; top: 35%; clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 60%, 50% 100%, 20% 60%, 0% 100%); }
+
+.thragg .layer-body { width: 300px; height: 460px; background: #7f1d1d; border: 8px solid #fff; border-radius: 5px; }
+.thragg .layer-detail { width: 100%; height: 100%; background: rgba(255,255,255,0.1); clip-path: polygon(0 20%, 100% 20%, 100% 22%, 0 22%); }
+
+/* General Combat Styling */
+#arena { position: absolute; inset: 0; transform-style: preserve-3d; background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%); }
 #environment { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px); background-size: 100px 100px; transform: rotateX(60deg); }
 #enemy-target-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center; }
 #target-hud { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 300; pointer-events: none; }
 .target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 6px; }
 .target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
 .target-bar-fill { height: 100%; background: var(--crimson); transition: width 0.3s; }
+
 #arms-container { position: absolute; bottom: -80px; width: 100%; height: 400px; display: flex; justify-content: space-between; padding: 0 10%; z-index: 200; pointer-events: none; }
 .arm { width: 300px; height: 600px; background: linear-gradient(to top, #000, #1a1a1a 30%, #444 100%); border: 5px solid #000; border-radius: 80px 80px 0 0; transform: translateY(150px); transition: transform 0.1s; }
 .arm-left { transform: rotate(15deg) translateY(150px); }
 .arm-right { transform: rotate(-15deg) translateY(150px); }
+
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .hidden { display: none !important; }
+.choice-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px; }
+.choice-card { background: rgba(255,255,255,0.05); border: 1px solid var(--amber); padding: 20px; text-align: center; cursor: pointer; pointer-events: auto; }
+.retry-btn { background: var(--crimson); color: white; border: none; padding: 15px 40px; font-weight: 800; cursor: pointer; pointer-events: auto; }
 #interaction-layer { position: absolute; inset: 0; z-index: 400; }
 #combat-log-overlay { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); z-index: 300; }
