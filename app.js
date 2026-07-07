@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign AAA (v4.6.3)
- * Features: Daylight Visibility Overhaul, High-Contrast Sunlight, Building Collision, 
- * Aggressive AI, Boss Icons, Corrected Mini-map Projection.
+ * Sovereign AAA (v4.6.6)
+ * Features: Fixed Deterministic City, Omni-Man Arena Lock, Blue Hand Polish,
+ * Daylight Visibility, Solid Collisions, Aggressive AI.
  */
 
 const Fighter = (() => {
@@ -33,14 +33,15 @@ const Fighter = (() => {
     let enemies = [];
     let buildings = [];
     let bloodParticles = [];
+    const OMNI_ARENA_CENTER = new THREE.Vector3(0, 0, 350);
+    const OMNI_ARENA_RADIUS = 40;
 
     const init = () => {
         scene = new THREE.Scene();
-        // 1. DAYLIGHT SKY & FOG
         scene.background = new THREE.Color(0xddeeff);
-        scene.fog = new THREE.Fog(0xddeeff, 50, 400); // Clear visibility near, soft fade at 400
+        scene.fog = new THREE.Fog(0xddeeff, 50, 500);
 
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1500);
         camera.position.set(0, state.player.height, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -52,52 +53,73 @@ const Fighter = (() => {
         raycaster = new THREE.Raycaster();
         collisionRaycaster = new THREE.Raycaster();
 
-        // 2. DAYLIGHT LIGHTING
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Strong global fill
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xfffaf0, 1.2); // Warm sun
-        sunLight.position.set(100, 200, 100);
+        sunLight = new THREE.DirectionalLight(0xfffaf0, 1.3);
+        sunLight.position.set(200, 400, 200);
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        createCity();
+        createFixedCity();
         setupControls();
         
         spawnWorldSectors();
-        forceBossSpawn(roster[4], new THREE.Vector3(0, 0, 300));
-        forceBossSpawn(roster[5], new THREE.Vector3(250, 0, 300));
+        // FORCE OMNI-MAN INTO ARENA
+        forceBossSpawn(roster[4], OMNI_ARENA_CENTER.clone()); 
+        forceBossSpawn(roster[5], new THREE.Vector3(300, 0, 300));
 
         animate();
     };
 
-    const createCity = () => {
-        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    const createFixedCity = () => {
+        const floorGeo = new THREE.PlaneGeometry(3000, 3000);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0xbbbbbb });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
 
-        const grid = new THREE.GridHelper(1000, 100, 0x000000, 0xbbbbbb);
+        const grid = new THREE.GridHelper(2000, 100, 0x000000, 0x999999);
         grid.position.y = 0.02;
         scene.add(grid);
 
+        // OMNI-MAN ARENA PLAZA (FIXED)
+        const plazaGeo = new THREE.CircleGeometry(OMNI_ARENA_RADIUS, 32);
+        const plazaMat = new THREE.MeshStandardMaterial({ color: 0x999999 });
+        const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+        plaza.rotation.x = -Math.PI / 2;
+        plaza.position.copy(OMNI_ARENA_CENTER);
+        plaza.position.y = 0.05;
+        scene.add(plaza);
+
+        // FIXED DETERMINISTIC BUILDING SEED
         const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
-        for (let i = 0; i < 450; i++) {
-            const h = 10 + Math.random() * 50;
-            const w = 6 + Math.random() * 12;
-            const d = 6 + Math.random() * 12;
+        const buildingMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0 });
+        
+        // Simple LCG for deterministic layout
+        let seed = 42;
+        const random = () => {
+            seed = (seed * 1664525 + 1013904223) % 4294967296;
+            return seed / 4294967296;
+        };
+
+        for (let i = 0; i < 500; i++) {
+            const h = 15 + random() * 60;
+            const w = 8 + random() * 15;
+            const d = 8 + random() * 15;
             
-            const buildingMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
             const building = new THREE.Mesh(buildingGeo, buildingMat);
             building.scale.set(w, h, d);
             
             let x, z;
             do {
-                x = (Math.random() - 0.5) * 800;
-                z = (Math.random() - 0.5) * 800;
-            } while (Math.abs(x) < 25 && Math.abs(z) < 25);
+                x = (random() - 0.5) * 1200;
+                z = (random() - 0.5) * 1200;
+            } while (
+                (Math.abs(x) < 30 && Math.abs(z) < 30) || // Spawn safety
+                (new THREE.Vector3(x, 0, z).distanceTo(OMNI_ARENA_CENTER) < OMNI_ARENA_RADIUS + 10) // Arena safety
+            );
 
             building.position.set(x, h/2, z);
             building.castShadow = true;
@@ -106,7 +128,7 @@ const Fighter = (() => {
             buildings.push(building);
             
             const edges = new THREE.EdgesGeometry(buildingGeo);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x999999 }));
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x888888 }));
             line.scale.set(w, h, d);
             line.position.copy(building.position);
             scene.add(line);
@@ -138,56 +160,63 @@ const Fighter = (() => {
         });
     };
 
-    const createAAAStickman = (data) => {
+    const createPolishedStickman = (data) => {
         const canvas = document.createElement('canvas');
         canvas.width = 256; canvas.height = 512;
         const ctx = canvas.getContext('2d');
         const color = '#' + data.color.toString(16).padStart(6, '0');
         const cx = 128;
 
-        ctx.strokeStyle = '#000'; ctx.lineWidth = 16;
-        drawBase(ctx, cx);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 18;
+        drawBase(ctx, cx, false); // Outline
         
-        ctx.strokeStyle = color; ctx.lineWidth = 10;
-        drawBase(ctx, cx);
+        ctx.strokeStyle = color; ctx.lineWidth = 12;
+        drawBase(ctx, cx, true); // Primary + BLUE HANDS
         
-        // High-Contrast Daylight Accents
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.globalAlpha = 0.9;
-        ctx.beginPath(); ctx.moveTo(cx-10, 140); ctx.lineTo(cx-10, 280); ctx.stroke();
-        ctx.globalAlpha = 1.0;
-
         if (data.id === 'omniman') {
             ctx.fillStyle = '#b71c1c'; ctx.globalAlpha = 0.8;
-            ctx.beginPath(); ctx.moveTo(cx-50, 110); ctx.lineTo(cx-110, 420); ctx.lineTo(cx+110, 420); ctx.lineTo(cx+50, 110); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(cx-50, 110); ctx.lineTo(cx-120, 440); ctx.lineTo(cx+120, 440); ctx.lineTo(cx+50, 110); ctx.fill();
             ctx.globalAlpha = 1.0;
         }
 
         return new THREE.CanvasTexture(canvas);
     };
 
-    const drawBase = (ctx, cx) => {
+    const drawBase = (ctx, cx, withHands) => {
+        // Head
         ctx.beginPath(); ctx.arc(cx, 80, 40, 0, Math.PI*2); ctx.stroke();
+        // Body
         ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 320); ctx.stroke();
+        // Arms
         ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx-80, 260); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx+80, 260); ctx.stroke();
+        
+        // v4.6.6 BLUE HAND POLISH
+        if (withHands) {
+            ctx.fillStyle = '#1e88e5'; // Blue Hands
+            ctx.beginPath(); ctx.arc(cx-80, 260, 12, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx+80, 260, 12, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Legs
         ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx-60, 480); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx+60, 480); ctx.stroke();
     };
 
     const spawnEnemy = (data, pos) => {
-        const texture = createAAAStickman(data);
+        const texture = createPolishedStickman(data);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(2.5, 5, 1); // Increased size for visibility
+        sprite.scale.set(3, 6, 1);
         sprite.position.copy(pos);
-        sprite.position.y = 2.5;
+        sprite.position.y = 3;
         scene.add(sprite);
         
         if (data.boss) {
-            const iconGeo = new THREE.OctahedronGeometry(1.2, 0);
+            const iconGeo = new THREE.OctahedronGeometry(1.5, 0);
             const iconMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00 });
             const icon = new THREE.Mesh(iconGeo, iconMat);
-            icon.position.set(0, 4, 0);
+            icon.position.set(0, 5, 0);
             sprite.add(icon);
             sprite.userData.icon = icon;
         }
@@ -196,7 +225,7 @@ const Fighter = (() => {
     };
 
     const forceBossSpawn = (data, pos) => {
-        const ringGeo = new THREE.RingGeometry(24, 26, 32);
+        const ringGeo = new THREE.RingGeometry(26, 28, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xb71c1c, side: THREE.DoubleSide });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
@@ -207,19 +236,26 @@ const Fighter = (() => {
     };
 
     const spawnWorldSectors = () => {
-        for(let i = 0; i < 40; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const r = 80 + Math.random() * 200;
-            spawnEnemy(roster[i % 2], new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r));
+        let seed = 99;
+        const random = () => {
+            seed = (seed * 1664525 + 1013904223) % 4294967296;
+            return seed / 4294967296;
+        };
+
+        for(let i = 0; i < 50; i++) {
+            const angle = random() * Math.PI * 2;
+            const r = 100 + random() * 300;
+            const pos = new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r);
+            if (pos.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS + 20) {
+                spawnEnemy(roster[i % 2], pos);
+            }
         }
-        spawnEnemy(roster[2], new THREE.Vector3(100, 0, 100));
-        spawnEnemy(roster[3], new THREE.Vector3(-100, 0, 100));
     };
 
     const checkCollision = (dir) => {
         collisionRaycaster.set(camera.position, dir);
         const intersects = collisionRaycaster.intersectObjects(buildings);
-        if (intersects.length > 0 && intersects[0].distance < 3.0) return true;
+        if (intersects.length > 0 && intersects[0].distance < 3.5) return true;
         return false;
     };
 
@@ -232,7 +268,7 @@ const Fighter = (() => {
         if (intersects.length > 0) {
             const hit = enemies.find(e => e.sprite === intersects[0].object);
             if (hit && camera.position.distanceTo(hit.sprite.position) <= state.player.punchRange) {
-                hit.data.hp -= 60 * state.player.strength;
+                hit.data.hp -= 80 * state.player.strength;
                 spawnBlood(intersects[0].point);
                 updateTargetHUD(hit.data);
                 if (hit.data.hp <= 0) {
@@ -247,7 +283,7 @@ const Fighter = (() => {
     const animateFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if(fist) {
-            fist.style.transform = `translateY(-160px) scale(1.3) rotate(${side === 'left' ? 20 : -20}deg)`;
+            fist.style.transform = `translateY(-180px) scale(1.3) rotate(${side === 'left' ? 22 : -22}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
         }
     };
@@ -255,19 +291,19 @@ const Fighter = (() => {
     const gainXP = (amt) => {
         state.player.xp += amt;
         state.run.kills++;
-        if(state.player.xp >= state.run.tier * 350) {
+        if(state.player.xp >= state.run.tier * 400) {
             state.run.tier++;
             state.player.points++;
         }
     };
 
     const spawnBlood = (pos) => {
-        const geo = new THREE.SphereGeometry(0.2, 4, 4);
+        const geo = new THREE.SphereGeometry(0.25, 4, 4);
         const mat = new THREE.MeshBasicMaterial({ color: 0xb71c1c });
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 30; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
-            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8), life: 1.0 };
+            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*1.0, (Math.random()-0.5)*1.0, (Math.random()-0.5)*1.0), life: 1.0 };
             scene.add(p); bloodParticles.push(p);
         }
     };
@@ -279,21 +315,18 @@ const Fighter = (() => {
         
         if (moving) {
             state.timeDilation = superSpeed ? 0.12 : 1.0; 
-            const speed = (superSpeed ? 1.8 : 0.5);
-            
+            const speed = (superSpeed ? 2.0 : 0.6);
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
             if (state.keys.s) moveDir.z += 1;
             if (state.keys.a) moveDir.x -= 1;
             if (state.keys.d) moveDir.x += 1;
             moveDir.normalize().applyQuaternion(camera.quaternion);
-            
             if (!checkCollision(moveDir)) {
                 camera.position.add(moveDir.multiplyScalar(speed));
             }
-            
-            if (state.player.isFlying) camera.position.y = Math.min(80, camera.position.y + 0.5);
-            else camera.position.y = Math.max(state.player.height, camera.position.y - 0.6);
+            if (state.player.isFlying) camera.position.y = Math.min(100, camera.position.y + 0.6);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 0.7);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
@@ -302,14 +335,24 @@ const Fighter = (() => {
         
         enemies.forEach(enemy => {
             const dist = camera.position.distanceTo(enemy.sprite.position);
+            
+            // v4.6.5 OMNI-MAN ARENA LOCK
+            if (enemy.data.id === 'omniman') {
+                const distToArena = enemy.sprite.position.distanceTo(OMNI_ARENA_CENTER);
+                if (distToArena > OMNI_ARENA_RADIUS) {
+                    const returnDir = OMNI_ARENA_CENTER.clone().sub(enemy.sprite.position).normalize();
+                    enemy.sprite.position.add(returnDir.multiplyScalar(0.2 * dt));
+                }
+            }
+
             if (enemy.sprite.userData.icon) {
                 enemy.sprite.userData.icon.rotation.y += 0.05 * dt;
-                enemy.sprite.userData.icon.position.y = 4.5 + Math.sin(Date.now() * 0.005) * 0.5;
+                enemy.sprite.userData.icon.position.y = 5.5 + Math.sin(Date.now() * 0.005) * 0.5;
             }
-            if (dist < 100 && dist > 5) {
-                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.1 * dt));
+            if (dist < 150 && dist > 6) {
+                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.12 * dt));
             }
-            if (dist < 7 && state.run.active) {
+            if (dist < 8 && state.run.active) {
                 enemy.attackTimer += (0.02 * dt);
                 if (enemy.attackTimer >= 1.0) {
                     state.player.hp -= enemy.data.power;
@@ -333,21 +376,17 @@ const Fighter = (() => {
     const drawMinimap = () => {
         const canvas = document.getElementById('minimap'); if(!canvas) return;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         ctx.fillRect(0, 0, 200, 200);
-        
         const centerX = 100, centerY = 100;
-        // Corrected Projection: Map player center
         ctx.fillStyle = '#ff8c00';
-        ctx.beginPath(); ctx.arc(centerX, centerY, 5, 0, Math.PI*2); ctx.fill();
-
+        ctx.beginPath(); ctx.arc(centerX, centerY, 6, 0, Math.PI*2); ctx.fill();
         enemies.forEach(e => {
-            // Corrected Projection relative to player XZ
-            const dx = (e.sprite.position.x - camera.position.x) * 0.5;
-            const dz = (e.sprite.position.z - camera.position.z) * 0.5;
+            const dx = (e.sprite.position.x - camera.position.x) * 0.4;
+            const dz = (e.sprite.position.z - camera.position.z) * 0.4;
             if(Math.abs(dx) < 100 && Math.abs(dz) < 100) {
                 ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0');
-                ctx.beginPath(); ctx.arc(centerX + dx, centerY + dz, 3, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(centerX + dx, centerY + dz, 4, 0, Math.PI*2); ctx.fill();
             }
         });
     };
@@ -359,7 +398,7 @@ const Fighter = (() => {
         const tier = document.getElementById('run-tier');
         const pts = document.getElementById('skill-points');
         if (php) php.style.width = `${Math.max(0, state.player.hp)}%`;
-        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 350)) * 100}%`;
+        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 400)) * 100}%`;
         if (kills) kills.innerText = state.run.kills;
         if (tier) tier.innerText = state.run.tier;
         if (pts) pts.innerText = state.player.points;
