@@ -3,79 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Invincible-Hot (v4.0.0)</title>
+    <title>Sovereign 3D (v4.1.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --amber: #ff8c00;
+            --amber-glow: rgba(255, 140, 0, 0.4);
+            --crimson: #b91c1c;
+            --obsidian: #050608;
+            --slate: #0a0e17;
+            --glass: rgba(10, 14, 23, 0.98);
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
+        body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
+
+        canvas { display: block; }
+
+        /* HUD Overlay */
+        #ui-overlay {
+            position: fixed; inset: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #top-stat-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
+            background: var(--glass); border-bottom: 1px solid var(--amber);
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-mono); gap: 20px;
+            pointer-events: auto;
+        }
+        .stat-group { display: flex; align-items: center; gap: 10px; }
+        .stat-group label { font-size: 0.6rem; color: var(--amber); font-weight: 800; }
+        .stat-value { font-size: 0.85rem; font-weight: 800; color: #fff; }
+        .mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
+        .mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.1s; }
+
+        #target-hud {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            text-align: center;
+        }
+        .target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; }
+        .target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
+        .target-bar-fill { height: 100%; background: var(--crimson); transition: width 0.1s; }
+
+        #time-status {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            font-family: var(--font-mono); font-size: 1.2rem; font-weight: 900;
+            letter-spacing: 4px; color: var(--amber); opacity: 0.5;
+        }
+        .time-active { opacity: 1 !important; color: #fff; }
+
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            border: 2px solid var(--amber);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+        }
+
+        /* Choice Overlay */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+        .hidden { display: none !important; }
+        .glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; width: 500px; text-align: center; pointer-events: auto; }
+        .augment-btn { 
+            background: var(--slate); border: 2px solid var(--amber); padding: 20px; 
+            text-align: left; cursor: pointer; display: flex; justify-content: space-between; 
+            align-items: center; transition: all 0.2s; margin-top: 10px; width: 100%;
+            color: white; font-family: inherit;
+        }
+        .augment-btn:hover { background: var(--amber); color: #000; }
+        
+        #instruction-hint {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            font-size: 0.7rem; color: rgba(255,255,255,0.4); font-family: var(--font-mono);
+        }
+    </style>
 </head>
 <body>
-    <div id="fx-flash"></div>
-    <canvas id="blood-canvas"></canvas>
-    
-    <div id="game-container">
+    <div id="ui-overlay">
         <header id="top-stat-bar">
             <div class="stat-group condition">
                 <label>COND:</label>
                 <div class="mini-bar-container"><div id="player-hp" class="mini-bar-fill"></div></div>
             </div>
-            <div class="stat-divider"></div>
             <div class="stat-group tier">
                 <label>TIER:</label>
                 <span id="run-tier" class="stat-value">1</span>
             </div>
-            <div class="stat-divider"></div>
             <div class="stat-group kills">
                 <label>KILLS:</label>
                 <span id="enemies-defeated" class="stat-value">0</span>
             </div>
         </header>
 
-        <div id="arena">
-            <div id="enemy-target-container">
-                <div id="enemy-character" class="enemy-character">
-                    <div id="enemy-visual" class="enemy-sprite">
-                        <div class="stick-head"></div>
-                        <div class="stick-body"></div>
-                        <div class="stick-arm left"></div>
-                        <div class="stick-arm right"></div>
-                        <div class="stick-leg left"></div>
-                        <div class="stick-leg right"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="arms-container">
-            <div class="arm arm-left"></div>
-            <div class="arm arm-right"></div>
-        </div>
-
         <div id="target-hud">
-            <div id="enemy-name" class="target-label">TARGET: ???</div>
+            <div id="enemy-name" class="target-label">SCANNING...</div>
             <div class="target-bar-container">
                 <div id="enemy-hp" class="target-bar-fill"></div>
             </div>
         </div>
 
-        <div id="time-status" class="time-frozen">TIME FROZEN</div>
-        <div id="interaction-layer"></div>
+        <div id="crosshair"></div>
+        <div id="time-status">TIME FROZEN</div>
+        <div id="instruction-hint">WASD TO MOVE | MOUSE TO LOOK | CLICK TO STRIKE</div>
 
         <div id="choice-overlay" class="overlay hidden">
             <div class="glass-panel">
-                <h2>AUGMENTATION READY</h2>
+                <h2 style="color: var(--amber); margin-bottom: 20px;">AUGMENTATION READY</h2>
                 <div id="choice-list"></div>
             </div>
         </div>
 
         <div id="death-overlay" class="overlay hidden">
             <div class="glass-panel">
-                <h1>RUN TERMINATED</h1>
-                <button class="retry-btn" onclick="Fighter.resetRun()">RETRY CONQUEST</button>
+                <h1 style="color: var(--crimson); margin-bottom: 20px;">RUN TERMINATED</h1>
+                <button class="augment-btn" onclick="location.reload()" style="text-align: center; justify-content: center;">RETRY CONQUEST</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Three.js from CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
