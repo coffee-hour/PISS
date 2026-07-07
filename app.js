@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign AAA (v4.6.9)
- * Features: Reduced Fist Scale, Alpha Artifact Fix, AI Flight Restriction,
- * Full-Screen Map (M), Canonical City, Arena Lock.
+ * Sovereign AAA (v4.7.0)
+ * Features: High-Action FOV, Y-Axis Billboard Lock, Reduced Fist Scale, 
+ * AI Flight Restriction, Full-Screen Map (M), Canonical City, Arena Lock.
  */
 
 const Fighter = (() => {
@@ -40,9 +40,10 @@ const Fighter = (() => {
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0xddeeff);
-        scene.fog = new THREE.Fog(0xddeeff, 120, 700);
+        scene.fog = new THREE.Fog(0xddeeff, 150, 800);
 
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        // 1. PERSPECTIVE: INCREASED FOV (95 for high-action awareness)
+        camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2500);
         camera.position.set(0, state.player.height, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -54,11 +55,11 @@ const Fighter = (() => {
         raycaster = new THREE.Raycaster();
         collisionRaycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xfffaf0, 1.6);
-        sunLight.position.set(300, 600, 300);
+        sunLight = new THREE.DirectionalLight(0xfffaf0, 1.7);
+        sunLight.position.set(400, 700, 400);
         sunLight.castShadow = true;
         scene.add(sunLight);
 
@@ -72,8 +73,8 @@ const Fighter = (() => {
     };
 
     const createInvincibleCity = () => {
-        const floorGeo = new THREE.PlaneGeometry(5000, 5000);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x999999 });
+        const floorGeo = new THREE.PlaneGeometry(6000, 6000);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
@@ -83,14 +84,13 @@ const Fighter = (() => {
         const buildingMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
         
         const cityMap = [
-            { x: 50, z: 50, w: 25, h: 90, d: 25 },
-            { x: -50, z: 50, w: 25, h: 70, d: 25 },
-            { x: 50, z: -50, w: 25, h: 80, d: 25 },
-            { x: -50, z: -50, w: 25, h: 100, d: 25 },
-            { x: 200, z: 0, w: 50, h: 35, d: 120 },
-            { x: -200, z: 0, w: 50, h: 35, d: 120 },
-            { x: 0, z: 250, w: 160, h: 60, d: 40 },
-            { x: 0, z: -250, w: 160, h: 55, d: 40 },
+            { x: 60, z: 60, w: 30, h: 100, d: 30 },
+            { x: -60, z: 60, w: 30, h: 80, d: 30 },
+            { x: 60, z: -60, w: 30, h: 90, d: 30 },
+            { x: -60, z: -60, w: 30, h: 110, d: 30 },
+            { x: 250, z: 0, w: 60, h: 40, d: 150 },
+            { x: -250, z: 0, w: 60, h: 40, d: 150 },
+            { x: 0, z: 300, w: 200, h: 70, d: 50 },
         ];
 
         cityMap.forEach(data => {
@@ -101,16 +101,16 @@ const Fighter = (() => {
             scene.add(b); buildings.push(b);
         });
 
-        let seed = 999;
+        let seed = 12345;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-        for (let i = 0; i < 480; i++) {
-            const h = 30 + random() * 60;
-            const w = 15 + random() * 20;
-            const d = 15 + random() * 20;
-            const x = (random() - 0.5) * 1800;
-            const z = (random() - 0.5) * 1800;
-            if (new THREE.Vector3(x, 0, z).distanceTo(OMNI_ARENA_CENTER) < OMNI_ARENA_RADIUS + 50) continue;
-            if (Math.abs(x) < 60 && Math.abs(z) < 60) continue;
+        for (let i = 0; i < 500; i++) {
+            const h = 40 + random() * 80;
+            const w = 20 + random() * 25;
+            const d = 20 + random() * 25;
+            const x = (random() - 0.5) * 2000;
+            const z = (random() - 0.5) * 2000;
+            if (new THREE.Vector3(x, 0, z).distanceTo(OMNI_ARENA_CENTER) < OMNI_ARENA_RADIUS + 60) continue;
+            if (Math.abs(x) < 80 && Math.abs(z) < 80) continue;
             const b = new THREE.Mesh(buildingGeo, buildingMat);
             b.scale.set(w, h, d);
             b.position.set(x, h/2, z);
@@ -182,15 +182,15 @@ const Fighter = (() => {
         const texture = createNPCStickman(data);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(3.5, 7, 1);
+        sprite.scale.set(4, 8, 1);
         sprite.position.copy(pos);
-        sprite.position.y = 3.5;
+        sprite.position.y = 4;
         scene.add(sprite);
         if (data.boss) {
-            const iconGeo = new THREE.OctahedronGeometry(2, 0);
+            const iconGeo = new THREE.OctahedronGeometry(2.2, 0);
             const iconMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00 });
             const icon = new THREE.Mesh(iconGeo, iconMat);
-            icon.position.set(0, 6.5, 0);
+            icon.position.set(0, 7, 0);
             sprite.add(icon);
             sprite.userData.icon = icon;
         }
@@ -198,7 +198,7 @@ const Fighter = (() => {
     };
 
     const forceBossSpawn = (data, pos) => {
-        const ringGeo = new THREE.RingGeometry(38, 40, 32);
+        const ringGeo = new THREE.RingGeometry(42, 45, 32);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xb71c1c, side: THREE.DoubleSide });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
@@ -208,13 +208,13 @@ const Fighter = (() => {
     };
 
     const spawnWorldSectors = () => {
-        let seed = 111;
+        let seed = 222;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-        for(let i = 0; i < 70; i++) {
+        for(let i = 0; i < 80; i++) {
             const angle = random() * Math.PI * 2;
-            const r = 200 + random() * 500;
+            const r = 250 + random() * 600;
             const pos = new THREE.Vector3(Math.cos(angle)*r, 0, Math.sin(angle)*r);
-            if (pos.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS + 60) {
+            if (pos.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS + 80) {
                 spawnEnemy(roster[i % 2], pos);
             }
         }
@@ -229,7 +229,7 @@ const Fighter = (() => {
         if (intersects.length > 0) {
             const hit = enemies.find(e => e.sprite === intersects[0].object);
             if (hit && camera.position.distanceTo(hit.sprite.position) <= state.player.punchRange) {
-                hit.data.hp -= 150 * state.player.strength;
+                hit.data.hp -= 200 * state.player.strength;
                 spawnBlood(intersects[0].point);
                 updateTargetHUD(hit.data);
                 if (hit.data.hp <= 0) {
@@ -244,7 +244,7 @@ const Fighter = (() => {
     const animateFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if(fist) {
-            fist.style.transform = `translateY(-220px) scale(1.4) rotate(${side === 'left' ? 26 : -26}deg)`;
+            fist.style.transform = `translateY(-240px) scale(1.4) rotate(${side === 'left' ? 28 : -28}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
         }
     };
@@ -252,19 +252,19 @@ const Fighter = (() => {
     const gainXP = (amt) => {
         state.player.xp += amt;
         state.run.kills++;
-        if(state.player.xp >= state.run.tier * 600) {
+        if(state.player.xp >= state.run.tier * 700) {
             state.run.tier++;
             state.player.points++;
         }
     };
 
     const spawnBlood = (pos) => {
-        const geo = new THREE.SphereGeometry(0.4, 4, 4);
+        const geo = new THREE.SphereGeometry(0.45, 4, 4);
         const mat = new THREE.MeshBasicMaterial({ color: 0xb71c1c });
-        for (let i = 0; i < 45; i++) {
+        for (let i = 0; i < 50; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
-            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*1.4, (Math.random()-0.5)*1.4, (Math.random()-0.5)*1.4), life: 1.0 };
+            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*1.5, (Math.random()-0.5)*1.5, (Math.random()-0.5)*1.5), life: 1.0 };
             scene.add(p); bloodParticles.push(p);
         }
     };
@@ -280,7 +280,7 @@ const Fighter = (() => {
         let superSpeed = state.keys[' '];
         if (moving) {
             state.timeDilation = superSpeed ? 0.12 : 1.0; 
-            const speed = (superSpeed ? 2.6 : 0.75);
+            const speed = (superSpeed ? 2.8 : 0.85);
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
             if (state.keys.s) moveDir.z += 1;
@@ -288,8 +288,8 @@ const Fighter = (() => {
             if (state.keys.d) moveDir.x += 1;
             moveDir.normalize().applyQuaternion(camera.quaternion);
             camera.position.add(moveDir.multiplyScalar(speed));
-            if (state.player.isFlying) camera.position.y = Math.min(180, camera.position.y + 0.85);
-            else camera.position.y = Math.max(state.player.height, camera.position.y - 0.95);
+            if (state.player.isFlying) camera.position.y = Math.min(250, camera.position.y + 0.9);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.0);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
@@ -298,32 +298,35 @@ const Fighter = (() => {
         enemies.forEach(enemy => {
             const dist = camera.position.distanceTo(enemy.sprite.position);
             
-            // v4.6.9 AI FLIGHT LOGIC
+            // 2. BILLBOARD MECHANICS: HORIZONTAL ONLY (Y-Axis Lock)
+            // We manually rotate the sprite to face the player but keep it upright.
+            enemy.sprite.quaternion.copy(camera.quaternion);
+            enemy.sprite.rotation.x = 0; // Lock pitch
+            enemy.sprite.rotation.z = 0; // Lock roll
+
             if (enemy.data.flies) {
-                // Viltrumite/Eve logic: Match player height if tracking
-                if (dist < 300) {
-                    const targetY = Math.max(3.5, camera.position.y + (Math.sin(Date.now() * 0.002) * 2));
+                if (dist < 350) {
+                    const targetY = Math.max(4, camera.position.y + (Math.sin(Date.now() * 0.002) * 3));
                     enemy.sprite.position.y += (targetY - enemy.sprite.position.y) * 0.05 * dt;
                 }
             } else {
-                // Grounded: Lock to floor
-                enemy.sprite.position.y = 3.5;
+                enemy.sprite.position.y = 4;
             }
 
             if (enemy.data.id === 'omniman') {
                 if (enemy.sprite.position.distanceTo(OMNI_ARENA_CENTER) > OMNI_ARENA_RADIUS) {
-                    enemy.sprite.position.add(OMNI_ARENA_CENTER.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.35 * dt));
+                    enemy.sprite.position.add(OMNI_ARENA_CENTER.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.4 * dt));
                 }
             }
             if (enemy.sprite.userData.icon) {
                 enemy.sprite.userData.icon.rotation.y += 0.05 * dt;
-                enemy.sprite.userData.icon.position.y = 7.0 + Math.sin(Date.now() * 0.005) * 0.5;
+                enemy.sprite.userData.icon.position.y = 7.5 + Math.sin(Date.now() * 0.005) * 0.5;
             }
-            if (dist < 300 && dist > 7.5) {
-                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.18 * dt));
+            if (dist < 350 && dist > 8) {
+                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.2 * dt));
             }
-            if (dist < 9.5 && state.run.active) {
-                enemy.attackTimer += (0.024 * dt);
+            if (dist < 10 && state.run.active) {
+                enemy.attackTimer += (0.026 * dt);
                 if (enemy.attackTimer >= 1.0) {
                     state.player.hp -= enemy.data.power; enemy.attackTimer = 0;
                     if (state.player.hp <= 0) die();
@@ -347,8 +350,8 @@ const Fighter = (() => {
         const cx = 100, cy = 100;
         ctx.fillStyle = '#1e88e5'; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI*2); ctx.fill();
         enemies.forEach(e => {
-            const dx = (e.sprite.position.x - camera.position.x) * 0.3;
-            const dz = (e.sprite.position.z - camera.position.z) * 0.3;
+            const dx = (e.sprite.position.x - camera.position.x) * 0.25;
+            const dz = (e.sprite.position.z - camera.position.z) * 0.25;
             if(Math.abs(dx) < 100 && Math.abs(dz) < 100) {
                 ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0');
                 ctx.beginPath(); ctx.arc(cx + dx, dz + cy, 4, 0, Math.PI*2); ctx.fill();
@@ -360,12 +363,12 @@ const Fighter = (() => {
         const canvas = document.getElementById('map-canvas'); if(!canvas) return;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0,0,800,800);
-        ctx.fillStyle = 'rgba(10, 10, 20, 0.98)'; ctx.fillRect(0,0,800,800);
-        const center = 400, scale = 0.35;
-        buildings.forEach(b => { ctx.fillStyle = '#444'; ctx.fillRect(center + b.position.x*scale, center + b.position.z*scale, 5, 5); });
+        ctx.fillStyle = 'rgba(10, 10, 25, 0.98)'; ctx.fillRect(0,0,800,800);
+        const center = 400, scale = 0.3;
+        buildings.forEach(b => { ctx.fillStyle = '#555'; ctx.fillRect(center + b.position.x*scale, center + b.position.z*scale, 6, 6); });
         ctx.strokeStyle = '#b71c1c'; ctx.beginPath(); ctx.arc(center + OMNI_ARENA_CENTER.x*scale, center + OMNI_ARENA_CENTER.z*scale, OMNI_ARENA_RADIUS*scale, 0, Math.PI*2); ctx.stroke();
-        enemies.forEach(e => { ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0'); ctx.beginPath(); ctx.arc(center + e.sprite.position.x*scale, center + e.sprite.position.z*scale, 3, 0, Math.PI*2); ctx.fill(); });
-        ctx.fillStyle = '#1e88e5'; ctx.beginPath(); ctx.arc(center + camera.position.x*scale, center + camera.position.z*scale, 6, 0, Math.PI*2); ctx.fill();
+        enemies.forEach(e => { ctx.fillStyle = '#' + e.data.color.toString(16).padStart(6, '0'); ctx.beginPath(); ctx.arc(center + e.sprite.position.x*scale, center + e.sprite.position.z*scale, 4, 0, Math.PI*2); ctx.fill(); });
+        ctx.fillStyle = '#1e88e5'; ctx.beginPath(); ctx.arc(center + camera.position.x*scale, center + camera.position.z*scale, 7, 0, Math.PI*2); ctx.fill();
     };
 
     const updateUI = () => {
@@ -374,7 +377,7 @@ const Fighter = (() => {
         const kills = document.getElementById('enemies-defeated');
         const tier = document.getElementById('run-tier');
         if (php) php.style.width = `${Math.max(0, state.player.hp)}%`;
-        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 600)) * 100}%`;
+        if (xp) xp.style.width = `${(state.player.xp / (state.run.tier * 700)) * 100}%`;
         if (kills) kills.innerText = state.run.kills;
         if (tier) tier.innerText = state.run.tier;
     };
