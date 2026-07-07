@@ -1,6 +1,6 @@
 /**
- * Sovereign v3.2.1: Rogue-like / Arms Fix
- * Restored arm rendering, implemented permanent death, and run-based augmentation choices.
+ * Sovereign v3.2.2: HUD Restructure & Combo Flow
+ * Single-line header HUD, automatic alternating arms, and Rogue-like integrity.
  */
 
 const Fighter = (() => {
@@ -17,7 +17,8 @@ const Fighter = (() => {
         },
         currentTarget: null,
         isAttacking: false,
-        lastAttackTime: Date.now()
+        lastAttackTime: Date.now(),
+        lastArmUsed: 'right' // Tracks for automatic alternating
     };
 
     const enemyPool = [
@@ -44,7 +45,7 @@ const Fighter = (() => {
         setupListeners();
         spawnNewEnemy();
         gameLoop();
-        console.log("Sovereign Rogue-like v3.2.1 Initialized.");
+        console.log("Sovereign HUD Refresh v3.2.2 Initialized.");
     };
 
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
@@ -53,7 +54,8 @@ const Fighter = (() => {
         const layer = document.getElementById('interaction-layer');
         layer.addEventListener('mousedown', (e) => {
             if (!state.run.active || state.run.choicesPending) return;
-            const side = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
+            // Alternating arm logic
+            const side = state.lastArmUsed === 'left' ? 'right' : 'left';
             executePunch(side, e.clientX, e.clientY);
         });
 
@@ -91,6 +93,7 @@ const Fighter = (() => {
     const executePunch = (side, x, y) => {
         if (state.isAttacking) return;
         state.isAttacking = true;
+        state.lastArmUsed = side;
 
         const arm = document.querySelector(`.arm-${side}`);
         arm.style.transform = `translateY(-350px) rotate(${side === 'left' ? 25 : -25}deg) scale(1.1)`;
@@ -160,7 +163,6 @@ const Fighter = (() => {
         const list = document.getElementById('choice-list');
         overlay.classList.remove('hidden');
         
-        // Pick 3 random augments
         const shuffled = [...augmentations].sort(() => 0.5 - Math.random()).slice(0, 3);
         list.innerHTML = shuffled.map(a => `
             <div class="choice-card" onclick="Fighter.applyAugment('${a.id}')">
@@ -202,14 +204,25 @@ const Fighter = (() => {
     const resetRun = () => { location.reload(); };
 
     const renderUI = () => {
-        document.getElementById('player-hp').style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
+        const playerHpEl = document.getElementById('player-hp');
+        if (playerHpEl) playerHpEl.style.width = `${(state.player.hp / state.player.maxHp) * 100}%`;
+        
         if (state.currentTarget) {
-            document.getElementById('enemy-hp').style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
+            const enemyHpEl = document.getElementById('enemy-hp');
+            if (enemyHpEl) enemyHpEl.style.width = `${Math.max(0, (state.currentTarget.hp / state.currentTarget.maxHp) * 100)}%`;
         }
-        document.getElementById('enemies-defeated').innerText = state.run.kills;
-        document.getElementById('momentum-fill').style.width = `${state.player.momentum}%`;
-        document.getElementById('run-tier').innerText = state.run.tier;
-        document.getElementById('run-modifier').innerText = `STRENGTH +${((state.player.strength - 1) * 100).toFixed(0)}%`;
+        
+        const defeatedEl = document.getElementById('enemies-defeated');
+        if (defeatedEl) defeatedEl.innerText = state.run.kills;
+        
+        const momentumEl = document.getElementById('momentum-fill');
+        if (momentumEl) momentumEl.style.width = `${state.player.momentum}%`;
+        
+        const tierEl = document.getElementById('run-tier');
+        if (tierEl) tierEl.innerText = state.run.tier;
+        
+        const modEl = document.getElementById('run-modifier');
+        if (modEl) modEl.innerText = `STR +${((state.player.strength - 1) * 100).toFixed(0)}%`;
     };
 
     const triggerShake = (i) => {
@@ -218,7 +231,10 @@ const Fighter = (() => {
         setTimeout(() => c.style.transform = 'translate(0,0)', 50);
     };
 
-    const log = (msg) => { document.getElementById('combat-log').innerText = msg; };
+    const log = (msg) => { 
+        const logEl = document.getElementById('combat-log-overlay');
+        if (logEl) logEl.innerText = msg;
+    };
 
     const gameLoop = () => {
         updateParticles();
