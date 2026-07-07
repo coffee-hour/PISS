@@ -3,120 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign 3D Expanded (v4.2.1)</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --amber: #ff8c00;
-            --amber-glow: rgba(255, 140, 0, 0.4);
-            --crimson: #b91c1c;
-            --obsidian: #050608;
-            --slate: #0a0e17;
-            --glass: rgba(10, 14, 23, 0.98);
-            --font-mono: 'JetBrains Mono', monospace;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-        body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans-serif; color: white; }
-
-        canvas { display: block; }
-
-        #ui-overlay { 
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none; z-index: 100;
-        }
-
-        #top-stat-bar {
-            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
-            background: var(--glass); border-bottom: 1px solid var(--amber);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; font-family: var(--font-mono); pointer-events: auto;
-        }
-
-        .stat-group { display: flex; align-items: center; gap: 10px; }
-        .stat-label { font-size: 0.6rem; color: var(--amber); font-weight: 800; }
-        .bar-container { width: 120px; height: 8px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
-        .bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
-
-        #minimap {
-            position: absolute; top: 80px; right: 20px;
-            width: 200px; height: 200px;
-            border: 2px solid var(--amber);
-            background: rgba(10, 14, 23, 0.9);
-        }
-
-        #fists {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 300px;
-            display: flex; justify-content: space-between; padding: 0 10%;
-        }
-        .fist {
-            width: 280px; height: 100%;
-            background: linear-gradient(to top, #050608, #1a1a1a);
-            border: 5px solid #000; border-radius: 60px 60px 0 0;
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        #target-hud {
-            position: absolute; top: 100px; left: 50%; transform: translateX(-50%);
-            text-align: center;
-        }
-        .target-label { font-size: 0.8rem; color: var(--crimson); letter-spacing: 3px; font-weight: 800; }
-
-        #skill-hub {
-            position: absolute; left: 20px; top: 80px;
-            background: var(--glass); border: 1px solid var(--amber);
-            padding: 20px; pointer-events: auto; width: 220px;
-        }
-        .skill-btn {
-            background: var(--slate); border: 1px solid var(--amber);
-            color: var(--amber); width: 100%; padding: 10px; margin-top: 10px;
-            cursor: pointer; font-family: var(--font-mono); font-size: 0.7rem;
-        }
-        .skill-btn:hover { background: var(--amber); color: #000; }
-
-        #crosshair {
-            position: absolute; top: 50%; left: 50%;
-            width: 14px; height: 14px;
-            border: 2px solid var(--amber); border-radius: 50%;
-            transform: translate(-50%, -50%); opacity: 0.7;
-        }
-    </style>
+    <title>Sovereign AAA (v4.6.8)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=468">
 </head>
 <body>
     <div id="ui-overlay">
         <header id="top-stat-bar">
             <div class="stat-group">
-                <span class="stat-label">HP</span>
                 <div class="bar-container"><div id="player-hp" class="bar-fill"></div></div>
             </div>
-            <div class="stat-group">
-                <span class="stat-label">XP</span>
-                <div class="bar-container"><div id="xp-fill" class="bar-fill" style="background: #4caf50;"></div></div>
-            </div>
-            <div style="display: flex; gap: 20px; font-size: 0.8rem;">
+            <div class="stat-group" style="font-family: 'JetBrains Mono'; font-weight: 800;">
                 <div>TIER: <span id="run-tier">1</span></div>
+                <div class="bar-container" style="width: 100px;"><div id="xp-fill" class="bar-fill" style="background: #4caf50;"></div></div>
                 <div>KILLS: <span id="enemies-defeated">0</span></div>
             </div>
         </header>
 
         <canvas id="minimap" width="200" height="200"></canvas>
 
-        <div id="skill-hub">
-            <div style="font-size: 0.7rem; color: var(--amber);">POINTS: <span id="skill-points">0</span></div>
-            <button class="skill-btn" onclick="Fighter.upgrade('range')">EXTEND REACH</button>
-            <button class="skill-btn" onclick="Fighter.upgrade('speed')">STRENGTH UPGRADE</button>
-            <div style="font-size: 0.5rem; margin-top: 10px; color: rgba(255,255,255,0.4);">
-                WASD: MOVE<br>
-                SPACE: SLOW TIME (SPEED)<br>
-                F: TOGGLE FLIGHT
-            </div>
-        </div>
-
         <div id="target-hud">
-            <div id="enemy-name" class="target-label">READY...</div>
-            <div class="bar-container" style="width: 250px;"><div id="enemy-hp" class="bar-fill" style="background: var(--crimson);"></div></div>
+            <div id="enemy-name" class="target-label">SCANNING...</div>
+            <div class="bar-container" style="width: 300px;"><div id="enemy-hp" class="bar-fill" style="background: #b71c1c;"></div></div>
         </div>
 
         <div id="fists">
@@ -126,13 +34,26 @@
         </div>
     </div>
 
+    <!-- v4.6.8 FULL SCREEN MAP OVERLAY -->
+    <div id="map-overlay" class="hidden">
+        <div style="text-align: center; color: white; font-family: 'JetBrains Mono';">
+            <h2 style="color: #ff8c00; margin-bottom: 10px;">CITY TACTICAL GRID</h2>
+            <canvas id="map-canvas" width="800" height="800"></canvas>
+            <p style="margin-top: 10px;">[M] TO CLOSE MAP</p>
+        </div>
+    </div>
+
+    <div id="death-overlay" class="overlay hidden">
+        <div class="glass-panel">
+            <h1 style="color: #b71c1c; font-size: 3rem;">CONQUEST FAILED</h1>
+            <p style="margin: 20px 0; color: #444;">THE VILTRUMITE EMPIRE PERSISTS.</p>
+            <button onclick="location.reload()" class="skill-btn" style="background: #b71c1c; color: #fff; border: none;">RESTART SIMULATION</button>
+        </div>
+    </div>
+
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=468"></script>
 </body>
 </html>
