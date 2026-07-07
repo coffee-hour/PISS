@@ -31,7 +31,7 @@ body {
 
 #app { display: flex; height: 100vh; width: 100vw; }
 
-/* AAA Animations & Transitions */
+/* Tab Panels */
 .tab-panel { 
     display: none; 
     max-width: 1200px; 
@@ -45,7 +45,7 @@ body {
 }
 @keyframes tabEnter { to { opacity: 1; transform: translateY(0); } }
 
-/* Screen Shake Layers */
+/* Screen Shake */
 .shake-layer.shaking { animation: screenShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 @keyframes screenShake {
     10%, 90% { transform: translate3d(-1px, 0, 0); }
@@ -57,7 +57,7 @@ body {
 .clickable-card:active { transform: scale(0.98); animation: cardShake 0.2s; }
 @keyframes cardShake { 0% { transform: scale(0.98) rotate(0); } 50% { transform: scale(0.98) rotate(1deg); } 100% { transform: scale(0.98) rotate(0); } }
 
-/* Candlelight Effects */
+/* Candlelight Flicker */
 .candle-title { position: relative; display: inline-block; }
 .candle-title::after {
     content: '';
@@ -92,7 +92,7 @@ body {
     100% { transform: translateY(-80px) rotate(15deg) scale(0.8); opacity: 0; }
 }
 
-/* Sidebar - The Great Hall */
+/* Sidebar */
 .sidebar {
     width: 270px;
     min-width: 270px;
@@ -101,12 +101,11 @@ body {
     display: flex;
     flex-direction: column;
     padding: 30px 0;
-    z-index: 50;
 }
 .sidebar-header { padding: 0 24px; margin-bottom: 48px; display: flex; align-items: center; gap: 16px; }
 .brand-seal { color: var(--amber); }
 .brand-seal .lucide { width: 32px; height: 32px; filter: drop-shadow(0 0 10px var(--amber-glow)); }
-.brand-title { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800; letter-spacing: 4px; color: var(--parchment-text); }
+.brand-title { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800; letter-spacing: 4px; }
 .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .nav-btn {
     background: none; border: none; padding: 14px 28px; color: var(--ink-dim); display: flex; align-items: center; gap: 16px;
@@ -125,7 +124,6 @@ body {
     align-items: center;
     padding: 0 24px;
     gap: 12px;
-    overflow-x: auto;
 }
 .ledger-item {
     display: flex;
@@ -141,7 +139,26 @@ body {
 .ledger-meta { display: flex; flex-direction: column; flex: 1; }
 .res-val { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 800; color: var(--parchment-text); }
 .res-rate { font-size: 0.6rem; color: var(--success); font-weight: 800; }
-.res-label { font-size: 0.55rem; text-transform: uppercase; color: var(--ink-dim); letter-spacing: 0.5px; }
+.res-label { font-size: 0.55rem; text-transform: uppercase; color: var(--ink-dim); }
+
+/* Command Buttons (Levy) */
+.command-btn {
+    background: var(--iron-dark);
+    border: 1px solid var(--iron);
+    color: var(--ink-dim);
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    border-radius: 2px;
+    transition: var(--transition);
+}
+.command-btn:hover { color: var(--amber); border-color: var(--amber); background: #000; }
+
+/* Realm Viewport */
+.realm-view { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.parchment-viewport { flex: 1; overflow-y: auto; background-image: radial-gradient(circle at 50% 50%, #15202e 0%, #0a0e17 100%); padding: 48px; }
 
 /* Statue Pedestal */
 .statue-pedestal {
@@ -219,7 +236,7 @@ body {
     position: absolute; inset: 0; z-index: 10; pointer-events: none;
     background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 5px 5px; /* (320 / 64) */
+    background-size: 5px 5px;
 }
 .grid-overlay.hidden { display: none; }
 
@@ -235,14 +252,15 @@ body {
 .bp-btn { width: 40px; height: 40px; background: #000; border: 1px solid var(--iron); color: var(--ink-dim); cursor: pointer; }
 .bp-btn:hover { color: var(--amber); border-color: var(--amber); }
 
-/* Global Components */
+/* Cards & Layout */
+.hall-layout { display: flex; flex-direction: column; gap: 24px; }
 .chamber-card { background: var(--stone-light); border: 1px solid var(--iron); padding: 24px; position: relative; }
 .iron-banded { border: 1px solid var(--iron); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
 .chamber-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
 .action-btn {
     background: var(--iron-dark); border: 1px solid var(--iron); color: var(--parchment-text); padding: 14px;
     font-size: 0.85rem; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: var(--transition);
-    letter-spacing: 1.5px;
+    letter-spacing: 1.5px; width: 100%;
 }
 .action-btn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 20px var(--amber-glow); }
 .action-btn.danger:hover { color: var(--danger); border-color: var(--danger); box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
