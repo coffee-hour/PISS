@@ -15,41 +15,37 @@
         <aside class="sidebar no-select">
             <div class="sidebar-header">
                 <div class="brand-seal">
-                    <i data-lucide="crown"></i>
+                    <i data-lucide="crown" class="icon-gold"></i>
                 </div>
                 <h1 class="brand-title">SOVEREIGN</h1>
             </div>
             <nav class="sidebar-nav">
                 <button class="nav-btn active" data-tab="senate">
-                    <i data-lucide="castle"></i>
+                    <i data-lucide="castle" class="icon-stone"></i>
                     Throne Room
                 </button>
                 <button class="nav-btn" data-tab="pantheon">
-                    <i data-lucide="sparkles"></i>
+                    <i data-lucide="sparkles" class="icon-faith"></i>
                     Grand Pantheon
                 </button>
                 <button class="nav-btn" data-tab="garrison">
-                    <i data-lucide="shield"></i>
+                    <i data-lucide="shield" class="icon-combat"></i>
                     Imperial Garrison
                 </button>
                 <button class="nav-btn" data-tab="market">
-                    <i data-lucide="coins"></i>
+                    <i data-lucide="coins" class="icon-gold"></i>
                     Merchant Ledger
                 </button>
                 <button class="nav-btn" data-tab="council">
-                    <i data-lucide="users"></i>
+                    <i data-lucide="users" class="icon-subjects"></i>
                     Grand Council
                 </button>
                 <button class="nav-btn" data-tab="expansion">
-                    <i data-lucide="map"></i>
+                    <i data-lucide="map" class="icon-grain"></i>
                     War Table
                 </button>
-                <button class="nav-btn" data-tab="tech">
-                    <i data-lucide="scroll"></i>
-                    Imperial Archive
-                </button>
                 <button class="nav-btn" data-tab="dynasty">
-                    <i data-lucide="landmark"></i>
+                    <i data-lucide="landmark" class="icon-stone"></i>
                     Dynastic Legacy
                 </button>
             </nav>
@@ -66,7 +62,7 @@
             <!-- Resource Ledger -->
             <header class="resource-ledger no-select">
                 <div class="ledger-item" id="res-food">
-                    <i data-lucide="wheat" class="ledger-icon"></i>
+                    <i data-lucide="wheat" class="ledger-icon icon-grain"></i>
                     <div class="ledger-meta">
                         <span class="res-label">Grain</span>
                         <span class="res-val">0</span>
@@ -75,7 +71,7 @@
                     <button class="command-btn" onclick="Sovereign.manualGather('food', event)">Levy</button>
                 </div>
                 <div class="ledger-item" id="res-wood">
-                    <i data-lucide="hammer" class="ledger-icon"></i>
+                    <i data-lucide="hammer" class="ledger-icon icon-wood"></i>
                     <div class="ledger-meta">
                         <span class="res-label">Lumber</span>
                         <span class="res-val">0</span>
@@ -84,7 +80,7 @@
                     <button class="command-btn" onclick="Sovereign.manualGather('wood', event)">Levy</button>
                 </div>
                 <div class="ledger-item" id="res-ore">
-                    <i data-lucide="anvil" class="ledger-icon"></i>
+                    <i data-lucide="anvil" class="ledger-icon icon-iron"></i>
                     <div class="ledger-meta">
                         <span class="res-label">Iron</span>
                         <span class="res-val">0</span>
@@ -93,7 +89,7 @@
                     <button class="command-btn" onclick="Sovereign.manualGather('ore', event)">Levy</button>
                 </div>
                 <div class="ledger-item" id="res-gold">
-                    <i data-lucide="gem" class="ledger-icon"></i>
+                    <i data-lucide="gem" class="ledger-icon icon-gold"></i>
                     <div class="ledger-meta">
                         <span class="res-label">Treasury</span>
                         <span class="res-val">0</span>
@@ -101,14 +97,14 @@
                     </div>
                 </div>
                 <div class="ledger-item citizens" id="res-pop">
-                    <i data-lucide="users-2" class="ledger-icon"></i>
+                    <i data-lucide="users-2" class="ledger-icon icon-subjects"></i>
                     <div class="ledger-meta">
                         <span class="res-label">Subjects</span>
                         <span class="res-val">0</span>
                     </div>
                 </div>
                 <div class="ledger-item faith" id="res-faith">
-                    <i data-lucide="flame" class="ledger-icon"></i>
+                    <i data-lucide="flame" class="ledger-icon icon-faith"></i>
                     <div class="ledger-meta">
                         <span class="res-label">Faith</span>
                         <span class="res-val">0</span>
@@ -134,11 +130,12 @@
 
                         <div class="decree-card iron-banded clickable-card" id="decree-upgrade-card">
                             <div class="card-header">
-                                <h3>Workforce Decrees</h3>
+                                <h3><i data-lucide="scroll" class="icon-stone"></i> Workforce Decrees</h3>
                                 <span class="seal" id="click-lvl">Decree I</span>
                             </div>
                             <div class="card-body">
                                 <p>Imperial mandates to optimize serf labor efficiency. Current Command: +<span id="click-power">1</span></p>
+                                <div class="price-display" id="click-price"></div>
                                 <button class="action-btn candle-glow" id="upgrade-click-btn">Scribe New Decree</button>
                             </div>
                         </div>
@@ -153,15 +150,13 @@
                     </div>
                     
                     <div class="pantheon-layout">
-                        <!-- Religion Selection -->
                         <div class="chamber-card iron-banded">
-                            <div class="card-header"><h3>Select State Faith</h3></div>
+                            <div class="card-header"><h3><i data-lucide="sparkles" class="icon-faith"></i> Select State Faith</h3></div>
                             <div class="card-body">
                                 <div class="religion-options" id="religion-list"></div>
                             </div>
                         </div>
 
-                        <!-- Pixel Statue Creator -->
                         <div class="monument-workshop iron-banded">
                             <div class="workshop-header">
                                 <h3>The Carving Table (64x64)</h3>
@@ -198,9 +193,9 @@
                             <div class="blueprint-selector">
                                 <p>Historical Templates</p>
                                 <div class="blueprints">
-                                    <button class="bp-btn" data-bp="crown"><i data-lucide="crown"></i></button>
-                                    <button class="bp-btn" data-bp="sword"><i data-lucide="swords"></i></button>
-                                    <button class="bp-btn" data-bp="pillar"><i data-lucide="columns"></i></button>
+                                    <button class="bp-btn" data-bp="crown"><i data-lucide="crown" class="icon-gold"></i></button>
+                                    <button class="bp-btn" data-bp="sword"><i data-lucide="swords" class="icon-combat"></i></button>
+                                    <button class="bp-btn" data-bp="pillar"><i data-lucide="columns" class="icon-iron"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -245,14 +240,6 @@
                     </div>
                 </section>
 
-                <section id="tab-tech" class="tab-panel">
-                    <div class="panel-intro">
-                        <h2 class="candle-title">Imperial Archive</h2>
-                        <p>Decipher ancient scripts to unlock sovereign breakthroughs.</p>
-                    </div>
-                    <div class="archive-grid" id="tech-tree"></div>
-                </section>
-
                 <section id="tab-dynasty" class="tab-panel">
                     <div class="panel-intro">
                         <h2 class="candle-title">Dynastic Legacy</h2>
@@ -260,7 +247,7 @@
                     </div>
                     <div class="dynastic-hall">
                         <div class="legacy-seal prestige-card iron-banded">
-                            <h3>Eternal Registry</h3>
+                            <h3><i data-lucide="crown" class="icon-gold"></i> Eternal Registry</h3>
                             <div class="legacy-stats">
                                 <div class="stat">
                                     <label>Legacy Seal</label>
