@@ -1,6 +1,6 @@
 /**
- * Sovereign v3.2.6: Team Identity
- * Unique CSS sprites for Guardians/Teen Team and logic mapping.
+ * Sovereign v3.2.8: The Perfect Build
+ * Hard-mapped sprites, redesigned choice UI, and calibrated progression.
  */
 
 const Fighter = (() => {
@@ -21,36 +21,26 @@ const Fighter = (() => {
         lastArmUsed: 'right'
     };
 
-    // Updated Roster with Unique Class Mapping
+    // v3.2.8 Hard-Mapped Roster
     const roster = [
-        { name: 'SEQUID HOST', class: 'sequid', weight: 1, hp: 120, power: 8 },
-        { name: 'FLAXAN SCOUT', class: 'flaxan', weight: 1, hp: 150, power: 10 },
-        { name: 'DUPLI-KATE', class: 'duplikate', weight: 1, hp: 140, power: 9 },
-        { name: 'SHRINKING RAE', class: 'shrinkingrae', weight: 1, hp: 130, power: 8 },
-        { name: 'REX SPLODE', class: 'rexsplode', weight: 2, hp: 300, power: 15 },
-        { name: 'ATOM EVE', class: 'atomeve', weight: 2, hp: 350, power: 16 },
-        { name: 'ROBOT', class: 'robot', weight: 3, hp: 700, power: 25 },
-        { name: 'MONSTER GIRL', class: 'monstergirl', weight: 3, hp: 800, power: 28 },
-        { name: 'BATTLE BEAST', class: 'battlebeast', weight: 5, hp: 4000, power: 45 },
-        { name: 'ANISSA', class: 'omniman', weight: 8, hp: 6000, power: 55 },
-        { name: 'THRAGG', class: 'thragg', weight: 10, hp: 15000, power: 80 },
-        { name: 'OMNI-MAN', class: 'omniman', weight: 10, hp: 20000, power: 90 }
+        { id: 'sequid', name: 'SEQUID HOST', class: 'sequid', weight: 1, hp: 120, power: 8 },
+        { id: 'flaxan', name: 'FLAXAN SCOUT', class: 'flaxan', weight: 1, hp: 150, power: 10 },
+        { id: 'duplikate', name: 'DUPLI-KATE', class: 'duplikate', weight: 1, hp: 140, power: 9 },
+        { id: 'shrinkingrae', name: 'SHRINKING RAE', class: 'shrinkingrae', weight: 1, hp: 130, power: 8 },
+        { id: 'rexsplode', name: 'REX SPLODE', class: 'rexsplode', weight: 2, hp: 300, power: 15 },
+        { id: 'atomeve', name: 'ATOM EVE', class: 'atomeve', weight: 2, hp: 350, power: 16 },
+        { id: 'robot', name: 'ROBOT', class: 'robot', weight: 3, hp: 700, power: 25 },
+        { id: 'monstergirl', name: 'MONSTER GIRL', class: 'monstergirl', weight: 3, hp: 800, power: 28 },
+        { id: 'battlebeast', name: 'BATTLE BEAST', class: 'battlebeast', weight: 5, hp: 4000, power: 45 },
+        { id: 'omniman', name: 'OMNI-MAN', class: 'omniman', weight: 10, hp: 20000, power: 90 },
+        { id: 'thragg', name: 'GRAND REGENT THRAGG', class: 'thragg', weight: 10, hp: 25000, power: 100 }
     ];
 
-    const fullRoster = [];
-    roster.forEach(r => {
-        fullRoster.push(r);
-        if (r.weight < 5) {
-            fullRoster.push({ ...r, name: `ELITE ${r.name}`, hp: r.hp * 2, power: r.power * 1.5, weight: r.weight + 1 });
-            fullRoster.push({ ...r, name: `ALPHA ${r.name}`, hp: r.hp * 3, power: r.power * 2, weight: r.weight + 2 });
-        }
-    });
-
     const augmentations = [
-        { id: 'str', name: 'PURE STRENGTH', desc: '+50% Damage', apply: () => state.player.strength += 0.5 },
-        { id: 'hp', name: 'EMPIRE VITALITY', desc: '+50 Max HP', apply: () => { state.player.maxHp += 50; state.player.hp = state.player.maxHp; } },
-        { id: 'spd', name: 'VILTRUMITE SPEED', desc: '-15% Attack Delay', apply: () => state.player.speed *= 1.15 },
-        { id: 'luck', name: 'COMBAT PRECISION', desc: '+10% Crit Chance', apply: () => state.player.luck += 0.1 }
+        { id: 'str', name: 'Pure Strength', desc: 'Punch Output +50%', apply: () => state.player.strength += 0.5 },
+        { id: 'hp', name: 'Imperial Vitality', desc: 'Full Heal & +50 Max HP', apply: () => { state.player.maxHp += 50; state.player.hp = state.player.maxHp; } },
+        { id: 'spd', name: 'Viltrumite Speed', desc: 'Enemy Attack Delay +15%', apply: () => state.player.speed *= 1.15 },
+        { id: 'luck', name: 'Combat Precision', desc: 'Critical Strike Chance +10%', apply: () => state.player.luck += 0.1 }
     ];
 
     let bloodParticles = [];
@@ -63,6 +53,7 @@ const Fighter = (() => {
         setupListeners();
         spawnNewEnemy();
         gameLoop();
+        console.log("Sovereign v3.2.8: The Perfect Build.");
     };
 
     const resizeCanvas = () => { if (canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } };
@@ -90,19 +81,23 @@ const Fighter = (() => {
         const tier = state.run.tier;
         let minWeight = Math.max(1, Math.floor(tier / 2));
         let maxWeight = Math.min(10, tier + 1);
-        const candidates = fullRoster.filter(r => r.weight >= minWeight && r.weight <= maxWeight);
-        const base = candidates[Math.floor(Math.random() * candidates.length)] || roster[0];
-        const scaling = 1 + (state.run.kills * 0.1);
+        
+        const pool = roster.filter(r => r.weight >= minWeight && r.weight <= maxWeight);
+        const base = pool[Math.floor(Math.random() * pool.length)] || roster[0];
+        const scaling = 1 + (state.run.kills * 0.12);
+        
         state.currentTarget = {
             ...base,
             hp: Math.floor(base.hp * scaling),
             maxHp: Math.floor(base.hp * scaling),
-            attackRate: 4000 / (1 + (tier * 0.1)) / state.player.speed
+            attackRate: 3500 / (1 + (tier * 0.1)) / state.player.speed
         };
+
         const char = document.getElementById('enemy-character');
         const nameLabel = document.getElementById('enemy-name');
         if (char) { char.className = `enemy-character ${state.currentTarget.class}`; char.style.opacity = '1'; }
         if (nameLabel) nameLabel.innerText = `TARGET: ${state.currentTarget.name}`;
+        
         renderUI();
     };
 
@@ -124,13 +119,16 @@ const Fighter = (() => {
     const handleImpact = (x, y) => {
         const enemy = state.currentTarget;
         const enemyEl = document.getElementById('enemy-character');
-        triggerShake(15 + (100 - state.player.hp)/5);
-        const hpPercent = enemy.hp / enemy.maxHp;
-        const bloodVolume = 10 + Math.floor((1 - hpPercent) * 40);
+        triggerShake(15);
+        
+        const bloodVolume = 10 + Math.floor((1 - (enemy.hp / enemy.maxHp)) * 50);
         spawnBlood(x, y, bloodVolume);
+
         if (enemyEl) { enemyEl.classList.remove('hit-active'); void enemyEl.offsetWidth; enemyEl.classList.add('hit-active'); }
+        
         let dmg = (10 + Math.floor(state.player.momentum / 5)) * state.player.strength;
-        if (Math.random() < state.player.luck) { dmg *= 3; }
+        if (Math.random() < state.player.luck) { dmg *= 3; log("CRITICAL BLOW!"); }
+        
         enemy.hp -= dmg;
         state.player.momentum = Math.min(100, state.player.momentum + 6);
         if (enemy.hp <= 0) defeatEnemy();
@@ -140,7 +138,7 @@ const Fighter = (() => {
     const spawnBlood = (x, y, volume) => {
         for (let i = 0; i < volume; i++) {
             bloodParticles.push({
-                x, y, vx: (Math.random() - 0.5) * 30, vy: (Math.random() - 0.5) * 30,
+                x, y, vx: (Math.random() - 0.5) * 35, vy: (Math.random() - 0.5) * 35,
                 life: 1.0, size: Math.random() * 8 + 2
             });
         }
@@ -151,7 +149,7 @@ const Fighter = (() => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         bloodParticles = bloodParticles.filter(p => p.life > 0);
         bloodParticles.forEach(p => {
-            p.x += p.vx; p.y += p.vy; p.vy += 0.7; p.life -= 0.03;
+            p.x += p.vx; p.y += p.vy; p.vy += 0.8; p.life -= 0.035;
             ctx.fillStyle = `rgba(185, 28, 28, ${p.life})`;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
         });
@@ -167,13 +165,18 @@ const Fighter = (() => {
 
     const presentChoices = () => {
         state.run.choicesPending = true;
-        document.getElementById('choice-overlay').classList.remove('hidden');
+        const overlay = document.getElementById('choice-overlay');
         const list = document.getElementById('choice-list');
+        overlay.classList.remove('hidden');
+        
         const shuffled = [...augmentations].sort(() => 0.5 - Math.random()).slice(0, 3);
         list.innerHTML = shuffled.map(a => `
-            <div class="choice-card" onclick="Fighter.applyAugment('${a.id}')">
-                <b>${a.name}</b>
-                <p>${a.desc}</p>
+            <div class="augment-btn" onclick="Fighter.applyAugment('${a.id}')">
+                <div class="augment-info">
+                    <b>${a.name}</b>
+                    <span>${a.desc}</span>
+                </div>
+                <div class="augment-cost">FREE</div>
             </div>
         `).join('');
     };
@@ -214,6 +217,11 @@ const Fighter = (() => {
         const c = document.getElementById('game-container');
         if (c) c.style.transform = `translate(${(Math.random()-0.5)*i}px, ${(Math.random()-0.5)*i}px)`;
         setTimeout(() => { if (c) c.style.transform = 'translate(0,0)'; }, 50);
+    };
+
+    const log = (msg) => { 
+        const logEl = document.getElementById('combat-log-overlay');
+        if (logEl) logEl.innerText = msg;
     };
 
     const gameLoop = () => {

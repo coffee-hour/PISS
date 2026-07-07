@@ -3,7 +3,8 @@
     --amber-glow: rgba(255, 140, 0, 0.4);
     --crimson: #b91c1c;
     --obsidian: #050608;
-    --glass: rgba(10, 12, 16, 0.95);
+    --slate: #0a0e17;
+    --glass: rgba(10, 14, 23, 0.98);
     --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -20,126 +21,105 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
     padding: 0 40px; z-index: 500; font-family: var(--font-mono); gap: 20px;
 }
 .stat-group { display: flex; align-items: center; gap: 10px; }
-.stat-group label { font-size: 0.6rem; color: var(--amber); font-weight: 800; }
+.stat-group label { font-size: 0.6rem; color: var(--amber); font-weight: 800; letter-spacing: 1px; }
 .stat-value { font-size: 0.85rem; font-weight: 800; color: #fff; }
 .stat-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
 .mini-bar-container { width: 80px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
-.mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; }
+.mini-bar-fill { height: 100%; background: var(--amber); transition: width 0.3s; box-shadow: 0 0 10px var(--amber-glow); }
 
-/* v3.2.7: Sprite Audit & Fixes */
-.enemy-character { position: relative; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+/* --- v3.2.8 SPRITE FORENSICS --- */
 .enemy-sprite { position: relative; width: 280px; height: 460px; display: flex; align-items: center; justify-content: center; }
-.layer { position: absolute; transition: all 0.3s; box-shadow: inset 0 0 20px rgba(0,0,0,0.1); }
+.layer { position: absolute; transition: all 0.3s; box-shadow: inset 0 0 30px rgba(0,0,0,0.2); }
 
-/* --- TIER 1: EARLY RUN --- */
-
-/* Sequid: Pink body with tentacles (Fixing visibility/anchor) */
+/* Sequid: Specific pink oval + tentacles */
 .sequid .layer-body { 
-    width: 120px; height: 140px; background: linear-gradient(135deg, #ff80ab, #f06292); 
-    border-radius: 50%; z-index: 5;
+    width: 120px; height: 140px; background: radial-gradient(circle at 30% 30%, #ff80ab, #c2185b);
+    border-radius: 50%; z-index: 5; border: 2px solid #880e4f;
 }
 .sequid .tentacle { 
-    position: absolute; width: 12px; height: 100px; background: #f06292; 
-    border-radius: 6px; top: 50%; transform-origin: top center; 
-    animation: tentacleWave 2s infinite ease-in-out; z-index: 4;
+    position: absolute; width: 14px; height: 110px; background: linear-gradient(to bottom, #f06292, #880e4f); 
+    border-radius: 7px; top: 50%; transform-origin: top center; z-index: 4;
 }
-.sequid .t1 { left: 10px; --rot: -30deg; }
-.sequid .t2 { left: 40px; --rot: -10deg; }
-.sequid .t3 { right: 40px; --rot: 10deg; }
-.sequid .t4 { right: 10px; --rot: 30deg; }
+.sequid .t1 { left: 10px; --rot: -40deg; animation: wave 2.2s infinite ease-in-out; }
+.sequid .t2 { left: 40px; --rot: -15deg; animation: wave 1.8s infinite ease-in-out; }
+.sequid .t3 { right: 40px; --rot: 15deg; animation: wave 2.5s infinite ease-in-out; }
+.sequid .t4 { right: 10px; --rot: 40deg; animation: wave 2s infinite ease-in-out; }
 
-/* Flaxan Scout: Sharp orange tech design */
-.flaxan .layer-body { 
-    width: 180px; height: 320px; background: linear-gradient(135deg, #fb8c00, #e65100);
-    clip-path: polygon(50% 0, 100% 20%, 100% 100%, 0 100%, 0 20%); border-radius: 5px;
-}
-.flaxan .layer-detail { 
-    width: 100%; height: 20px; background: rgba(0,0,0,0.2); top: 30%; 
-    box-shadow: 0 40px 0 rgba(0,0,0,0.1), 0 80px 0 rgba(0,0,0,0.1);
-}
-
-/* Dupli-Kate: Blue/White patterned */
-.duplikate .layer-body { 
-    width: 170px; height: 380px; background: linear-gradient(135deg, #1976d2, #0d47a1);
-    border-radius: 40% 40% 0 0;
-}
-.duplikate .layer-detail {
-    width: 100%; height: 100%; background: #fff; opacity: 0.8;
-    clip-path: polygon(48% 0, 52% 0, 52% 100%, 48% 100%, 0 52%, 0 48%, 100% 48%, 100% 52%);
-}
-
-/* --- TIER 2: MID RUN --- */
-
-/* Robot: Metallic green blocky */
+/* Robot: Metallic green armored drone */
 .robot .layer-body { 
-    width: 200px; height: 300px; background: linear-gradient(135deg, #43a047, #1b5e20);
-    border-radius: 10px; border: 4px solid #000;
+    width: 200px; height: 280px; background: linear-gradient(135deg, #43a047, #1b5e20); 
+    border-radius: 10px; border: 4px solid #000; z-index: 5;
 }
 .robot .layer-eyes { 
-    width: 100px; height: 10px; background: #fff; box-shadow: 0 0 15px #c8e6c9; top: 20%;
+    width: 120px; height: 12px; background: #fff; box-shadow: 0 0 20px #a5d6a7; top: 20%; z-index: 6; 
+}
+.robot .layer-detail {
+    width: 160px; height: 100px; background: rgba(0,0,0,0.3); bottom: 10%; clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
 }
 
-/* Rex Splode: Orange/Yellow explosive */
-.rexsplode .layer-body { 
-    width: 180px; height: 380px; background: linear-gradient(135deg, #ff9800, #e65100);
-    border-radius: 25px 25px 0 0;
-}
-.rexsplode .layer-detail {
-    width: 100%; height: 100px; background: #ffeb3b; top: 15%; opacity: 0.7;
-    clip-path: polygon(0 20%, 100% 20%, 100% 30%, 0 30%, 0 50%, 100% 50%, 100% 60%, 0 60%);
-}
-
-/* Atom Eve: Pink energetic with symbol */
+/* Atom Eve: Pink energetic theme */
 .atomeve .layer-body { 
-    width: 180px; height: 380px; background: linear-gradient(135deg, #f06292, #880e4f);
-    border-radius: 50px;
+    width: 180px; height: 380px; background: linear-gradient(to bottom, #f06292, #880e4f);
+    border-radius: 50px; border: 4px solid #000; z-index: 5;
 }
 .atomeve .layer-detail {
-    width: 80px; height: 80px; background: #fff; border-radius: 50%;
-    border: 6px solid #f06292; display: flex; align-items: center; justify-content: center;
+    width: 100px; height: 100px; background: #fff; border-radius: 50%; border: 8px solid #f06292;
+    display: flex; align-items: center; justify-content: center; z-index: 6;
 }
-.atomeve .layer-detail::after { content: 'E'; font-weight: 900; color: #f06292; font-size: 1.5rem; }
+.atomeve .layer-detail::after { content: 'E'; font-weight: 900; color: #f06292; font-size: 2rem; font-family: var(--font-mono); }
 
-/* Monster Girl: Large green silhouette */
-.monstergirl .layer-body {
-    width: 260px; height: 420px; background: linear-gradient(135deg, #4caf50, #1b5e20);
-    clip-path: polygon(20% 0, 80% 0, 100% 30%, 100% 100%, 0 100%, 0 30%);
+/* Dupli-Kate: Blue/White pattern suit */
+.duplikate .layer-body { 
+    width: 170px; height: 380px; background: linear-gradient(135deg, #1e88e5, #0d47a1);
+    border-radius: 40% 40% 0 0; border: 4px solid #000; z-index: 5;
 }
-
-/* --- TIER 3: ELITE / BOSS --- */
-
-/* Battle Beast: Fierce dark shape */
-.battlebeast .layer-body {
-    width: 260px; height: 440px; background: linear-gradient(135deg, #455a64, #263238);
-    clip-path: polygon(50% 0, 100% 15%, 100% 100%, 0 100%, 0 15%);
+.duplikate .layer-detail {
+    width: 100%; height: 100%; background: #fff; opacity: 0.9;
+    clip-path: polygon(48% 0, 52% 0, 52% 100%, 48% 100%, 0 52%, 0 48%, 100% 48%, 100% 52%); z-index: 6;
 }
 
-/* Omni-Man: Red/White imperial */
+/* Rex Splode: Orange technical suit */
+.rexsplode .layer-body { 
+    width: 180px; height: 380px; background: linear-gradient(135deg, #fb8c00, #bf360c);
+    border-radius: 20px 20px 0 0; border: 4px solid #000; z-index: 5;
+}
+.rexsplode .layer-detail {
+    width: 100%; height: 120px; background: #ffeb3b; top: 10%; opacity: 0.7;
+    clip-path: polygon(0 20%, 100% 20%, 100% 25%, 0 25%, 0 45%, 100% 45%, 100% 50%, 0 50%); z-index: 6;
+}
+
+/* Omni-Man: Imperial Red/White */
 .omniman .layer-body { 
-    width: 220px; height: 420px; background: linear-gradient(135deg, #ffffff, #e2e8f0);
-    border-radius: 20px 20px 0 0; border: 6px solid #b91c1c;
+    width: 220px; height: 420px; background: linear-gradient(135deg, #ffffff, #f1f5f9);
+    border: 6px solid #b91c1c; border-radius: 20px 20px 0 0; z-index: 5;
 }
 .omniman .layer-accessory { 
-    width: 120px; height: 30px; background: #1a1a1a; top: 32%;
+    width: 130px; height: 35px; background: #1a1a1a; top: 32%; z-index: 7;
     clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 60%, 50% 100%, 20% 60%, 0% 100%);
 }
 
-/* Thragg: Heavy metallic red */
-.thragg .layer-body { 
-    width: 300px; height: 460px; background: linear-gradient(135deg, #b91c1c, #450a0a);
-    border: 8px solid #fff; border-radius: 5px;
+/* --- v3.2.8 UI/UX Polish: Augment Buttons --- */
+.choice-list { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; width: 100%; }
+.augment-btn {
+    background: var(--slate); border: 2px solid var(--amber); padding: 20px;
+    text-align: left; cursor: pointer; pointer-events: auto; display: flex;
+    justify-content: space-between; align-items: center; transition: all 0.2s;
 }
+.augment-btn:hover { background: var(--amber); color: #000; transform: scale(1.02); }
+.augment-btn:hover b, .augment-btn:hover span { color: #000 !important; }
+.augment-info b { display: block; font-size: 1.1rem; color: var(--amber); margin-bottom: 5px; text-transform: uppercase; }
+.augment-info span { font-size: 0.8rem; color: rgba(255,255,255,0.7); font-family: var(--font-mono); }
+.augment-cost { font-weight: 900; font-family: var(--font-mono); font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px; color: var(--amber); }
 
-/* Common Animations */
-@keyframes tentacleWave { 
-    0%, 100% { transform: scaleY(1) rotate(var(--rot)); } 
-    50% { transform: scaleY(1.2) rotate(calc(var(--rot) + 10deg)); } 
-}
+/* Overlays */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+.hidden { display: none !important; }
+.glass-panel { background: var(--glass); border: 2px solid var(--amber); padding: 40px; width: 500px; text-align: center; }
+.amber-header { font-size: 1.5rem; color: var(--amber); margin-bottom: 10px; font-weight: 800; }
+.choice-subtitle { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(255,255,255,0.5); letter-spacing: 2px; }
 
-/* Arena & Combat */
-#arena { position: absolute; inset: 0; transform-style: preserve-3d; background: radial-gradient(circle at center, #1a1a1a 0%, #050608 100%); }
-#environment { position: absolute; width: 200%; height: 200%; top: -50%; left: -50%; background-image: linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px); background-size: 100px 100px; transform: rotateX(60deg); }
-#enemy-target-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; width: 400px; height: 600px; display: flex; justify-content: center; align-items: center; }
+/* Animations & Combat */
+@keyframes wave { 0%, 100% { transform: scaleY(1) rotate(var(--rot)); } 50% { transform: scaleY(1.3) rotate(calc(var(--rot) + 15deg)); } }
 #target-hud { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 300; pointer-events: none; }
 .target-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--crimson); letter-spacing: 2px; font-weight: 800; margin-bottom: 6px; }
 .target-bar-container { width: 300px; height: 6px; background: #000; border: 1px solid rgba(255,255,255,0.1); }
@@ -148,7 +128,5 @@ body { background-color: var(--obsidian); font-family: 'Plus Jakarta Sans', sans
 .arm { width: 300px; height: 600px; background: linear-gradient(to top, #000, #1a1a1a 30%, #444 100%); border: 5px solid #000; border-radius: 80px 80px 0 0; transform: translateY(150px); transition: transform 0.1s; }
 .arm-left { transform: rotate(15deg) translateY(150px); }
 .arm-right { transform: rotate(-15deg) translateY(150px); }
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-.hidden { display: none !important; }
 #interaction-layer { position: absolute; inset: 0; z-index: 400; }
 #combat-log-overlay { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.7rem; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); z-index: 300; }
