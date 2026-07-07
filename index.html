@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sovereign: Perfected (v3.2.8)</title>
+    <title>Sovereign: Perfected (v3.3.0)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -43,21 +43,17 @@
         </header>
 
         <div id="arena">
-            <div id="environment" class="skyline"></div>
             <div id="enemy-target-container">
                 <div id="enemy-character" class="enemy-character">
+                    <!-- v3.3.0 Stick-Man Sprite Model -->
                     <div id="enemy-visual" class="enemy-sprite">
-                        <div class="layer layer-body"></div>
-                        <div class="layer layer-detail"></div>
-                        <div class="layer layer-eyes"></div>
-                        <div class="layer layer-accessory"></div>
-                        <!-- Tentacles explicitly defined -->
-                        <div class="tentacle t1"></div>
-                        <div class="tentacle t2"></div>
-                        <div class="tentacle t3"></div>
-                        <div class="tentacle t4"></div>
+                        <div class="stick-head"></div>
+                        <div class="stick-body"></div>
+                        <div class="stick-arm left"></div>
+                        <div class="stick-arm right"></div>
+                        <div class="stick-leg left"></div>
+                        <div class="stick-leg right"></div>
                     </div>
-                    <div id="enemy-aura" class="enemy-aura"></div>
                 </div>
             </div>
         </div>
@@ -67,7 +63,6 @@
             <div class="arm arm-right"></div>
         </div>
 
-        <!-- Target HUD -->
         <div id="target-hud">
             <div id="enemy-name" class="target-label">TARGET: ???</div>
             <div class="target-bar-container">
@@ -75,10 +70,9 @@
             </div>
         </div>
 
-        <div id="combat-log-overlay">VILTRUMITE LOGIC PERFECTED...</div>
+        <div id="combat-log-overlay">VILTRUMITE LOGIC INITIALIZED...</div>
         <div id="interaction-layer"></div>
 
-        <!-- v3.2.8 Polish: Redesigned Choice Overlay -->
         <div id="choice-overlay" class="overlay hidden">
             <div class="choice-content glass-panel">
                 <h2 class="amber-header">VICTORY SECURED</h2>
