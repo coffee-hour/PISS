@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.8.0: 'ENGINE REBIRTH'
- * 1. Lighting: Re-implemented with a simplified, safe Ambient + Directional array (no env maps).
- * 2. Rigs: Restored Omni-Man (Uncle Man), Conquest, and Civilians using stable beveled proxies.
- * 3. Mechanics: Ground-slam physics, Specials (X, N, Z), and XP/Leveling system fully restored.
- * 4. UI: Amber HUD and Radar initialized after scene-graph verification.
- * 5. Stability: Static initialization to prevent reload/resize loops.
+ * SOVEREIGN v5.8.1: 'FORCE MOUNT & SYNC'
+ * 1. Mounting Fix: Explicitly creating/targeting a #game-container div to ensure DOM sync.
+ * 2. Resize Sync: Forced a 100ms deferred resize event to snap the canvas to window bounds.
+ * 3. Diagnostic: Rendering a 'SYSTEM_ONLINE' text tag directly into the DOM to verify JS execution.
+ * 4. Engine: Restored stable v5.8.0 beveled-proxy logic.
  */
 
 const Sovereign = (() => {
@@ -47,37 +46,44 @@ const Sovereign = (() => {
         if (state.initialized) return;
         state.initialized = true;
 
-        console.log('Sovereign: Initializing Engine Rebirth...');
+        console.log('Sovereign: Initializing v5.8.1 Force Mount...');
         
-        // 1. CORE SCENE SETUP
+        // 1. DOM READY CHECK / DIAGNOSTIC
+        let container = document.getElementById('game-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'game-container';
+            container.style = 'position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; overflow:hidden; background:#000;';
+            document.body.appendChild(container);
+        }
+
+        const diag = document.createElement('div');
+        diag.id = 'sovereign-diag';
+        diag.style = 'position:fixed; bottom:10px; right:10px; color:#ffbf00; font-family:monospace; font-size:10px; z-index:10000; pointer-events:none;';
+        diag.innerText = 'SYSTEM_ONLINE // v5.8.1';
+        document.body.appendChild(diag);
+
+        // 2. SCENE
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 100, 5000);
 
-        // 2. SAFE LIGHTING ARRAY (Fixes Black Screen)
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
         sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
         sunLight.position.set(100, 300, 100);
-        sunLight.castShadow = true;
         scene.add(sunLight);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
         camera.position.set(0, state.player.height, 100);
 
-        // 3. RENDERER MOUNT
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        // 3. RENDERER
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        
-        renderer.domElement.style.position = 'fixed';
-        renderer.domElement.style.top = '0';
-        renderer.domElement.style.left = '0';
-        renderer.domElement.style.zIndex = '0';
-        document.body.appendChild(renderer.domElement);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
 
-        // 4. RADAR / MINIMAP
+        // 4. RADAR
         const mapSize = 200;
         mapCamera = new THREE.OrthographicCamera(-2000, 2000, 2000, -2000, 1, 1000);
         mapCamera.position.set(0, 500, 0);
@@ -98,20 +104,21 @@ const Sovereign = (() => {
 
         clock = new THREE.Clock();
 
-        // 5. WORLD & RIGS
+        // 5. WORLD DATA
         createWorld();
         createBeveledHands();
         bloodSystem = new BloodParticleSystem(scene);
-        
         spawnBoss('Omni-Man', 0xffffff, state.zones[0]);
         spawnBoss('Conquest', 0xdddddd, state.zones[1]);
         spawnCivilians(40);
-        
-        // UI MOUNTS LAST
         deployRPG_HUD();
 
         setupInput();
         window.addEventListener('resize', onWindowResize, false);
+        
+        // FORCED RESIZE DEFER
+        setTimeout(() => onWindowResize(), 100);
+
         animate();
     };
 
@@ -146,12 +153,10 @@ const Sovereign = (() => {
     const createWorld = () => {
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshLambertMaterial({ color: 0x333333 }));
         ground.rotation.x = -Math.PI / 2; scene.add(ground);
-        
         state.zones.forEach(z => {
             const ring = new THREE.Mesh(new THREE.TorusGeometry(z.radius, 2, 8, 64), new THREE.MeshBasicMaterial({ color: z.color, transparent: true, opacity: 0.5 }));
             ring.rotation.x = Math.PI / 2; ring.position.copy(z.center); scene.add(ring);
         });
-
         for (let i = 0; i < 400; i++) {
             const h = 100 + Math.random() * 600;
             const b = createBeveledBox(80, h, 80, 0xcccccc);
@@ -302,10 +307,12 @@ const Sovereign = (() => {
     };
 
     const onWindowResize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        camera.aspect = w / h;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        mapRenderer.setSize(200, 200);
+        renderer.setSize(w, h);
+        if (mapRenderer) mapRenderer.setSize(200, 200);
     };
 
     const animate = () => {
