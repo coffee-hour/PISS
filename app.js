@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v6.0.5: 'DAYTIME OVERHAUL'
- * 1. Lighting: Full sun intensity with overhead DirectionalLight and noon-day HemisphereLight.
- * 2. Atmosphere: Bright sky-blue background with pushed-back fog for maximum visibility.
- * 3. Targets: Neon-bright emissive targets for instant identification.
- * 4. UI: Maintained the 'UI Purge' minimalist sniper interface.
+ * SOVEREIGN v6.0.6: 'BALLISTICS & RAGDOLLS'
+ * 1. Projectiles: Switched from raycasts to physical bullet entities with gravity drop.
+ * 2. Tracers: Glowing light trails that persist and fade after impact.
+ * 3. Decals: Impact marks are placed on building facades.
+ * 4. Ragdolls: Targets now fall with gravity upon impact instead of vanishing.
+ * 5. Daytime: Maintained full-sun intensity and sky-blue atmosphere.
  */
 
 const SniperElite = (() => {
@@ -20,6 +21,9 @@ const SniperElite = (() => {
         targetZoom: 15,
         score: 0,
         targets: [],
+        bullets: [],
+        tracers: [],
+        decals: [],
         pitch: 0,
         yaw: 0
     };
@@ -28,11 +32,8 @@ const SniperElite = (() => {
         if (state.initialized) return;
         state.initialized = true;
 
-        console.log('Sovereign: Initializing v6.0.5 Daytime Overhaul...');
-        
-        // 1. ATMOSPHERE
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // Bright Sky Blue
+        scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 1500, 6000);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
@@ -44,12 +45,10 @@ const SniperElite = (() => {
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // 2. NOON-DAY LIGHTING SPECTRUM
         hemiLight = new THREE.HemisphereLight(0xddeeff, 0x444444, 1.5);
         scene.add(hemiLight);
-
-        sunLight = new THREE.DirectionalLight(0xffffff, 2.0); // Full sun intensity
-        sunLight.position.set(50, 1000, 50); // Directly overhead for edge highlights
+        sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        sunLight.position.set(50, 1000, 50);
         scene.add(sunLight);
 
         createCityscape();
@@ -64,7 +63,6 @@ const SniperElite = (() => {
     const deploySniperHUD = () => {
         const hudId = 'sniper-hud';
         if(document.getElementById(hudId)) document.getElementById(hudId).remove();
-        
         const style = document.createElement('style');
         style.innerHTML = `
             #sniper-hud { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; font-family: 'Courier New', monospace; text-transform: uppercase; }
@@ -79,100 +77,59 @@ const SniperElite = (() => {
             #system-alert { position: fixed; bottom: 40px; width: 100%; text-align: center; color: #ffbf00; font-size: 12px; text-shadow: 1px 1px 0px rgba(0,0,0,0.5); }
         `;
         document.head.appendChild(style);
-
         const hud = document.createElement('div');
         hud.id = hudId;
         hud.innerHTML = `
-            <div id="reticle">
-                <div id="cross-h"></div>
-                <div id="cross-v"></div>
-            </div>
-            <div class="sniper-stats">
-                KILLS: <span id="kill-count">0</span><br>
-                STATUS: <span id="scope-status">UNSCOPED</span>
-            </div>
-            <div id="system-alert">CLICK TO LOCK MOUSE // HOLD RIGHT-CLICK TO SCOPE // ESC TO UNLOCK</div>
+            <div id="reticle"><div id="cross-h"></div><div id="cross-v"></div></div>
+            <div class="sniper-stats">KILLS: <span id="kill-count">0</span><br>STATUS: <span id="scope-status">UNSCOPED</span></div>
+            <div id="system-alert">CLICK TO LOCK // HOLD RIGHT-CLICK TO SCOPE // PROJECTILE PHYSICS ACTIVE</div>
         `;
         document.body.appendChild(hud);
     };
 
     const createCityscape = () => {
-        // Concrete ground
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshLambertMaterial({ color: 0x555555 }));
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
-
         const nest = new THREE.Mesh(new THREE.BoxGeometry(40, 300, 40), new THREE.MeshLambertMaterial({ color: 0x333333 }));
         nest.position.set(0, 140, 20);
         scene.add(nest);
-
         for(let i=0; i<20; i++) {
             const h = 400 + Math.random() * 500;
             const w = 120 + Math.random() * 80;
             const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 150), new THREE.MeshLambertMaterial({ color: 0x222222 }));
             b.position.set((Math.random()-0.5)*1500, h/2, -600 - Math.random() * 800);
-            b.userData.isBuilding = true;
-            b.userData.height = h;
-            b.userData.width = w;
+            b.userData.isBuilding = true; b.userData.height = h; b.userData.width = w;
             scene.add(b);
         }
     };
 
     const spawnTarget = () => {
-        if(state.targets.length > 10) return;
+        if(state.targets.filter(t => !t.userData.isDead).length > 10) return;
         const buildings = scene.children.filter(c => c.userData.isBuilding);
         const b = buildings[Math.floor(Math.random() * buildings.length)];
         const target = new THREE.Group();
-        
-        // NEON-BRIGHT EMISSIVE TARGETS
-        const body = new THREE.Mesh(
-            new THREE.BoxGeometry(3, 6, 1.5), 
-            new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.0 })
-        );
+        const body = new THREE.Mesh(new THREE.BoxGeometry(3, 6, 1.5), new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.0 }));
         target.add(body);
-        
         const xOff = (Math.random()-0.5) * (b.userData.width - 20);
         const yOff = (Math.random() * b.userData.height) - (b.userData.height / 2);
         target.position.copy(b.position);
-        target.position.x += xOff;
-        target.position.y = Math.max(10, b.position.y + yOff);
-        target.position.z += 76; // Just in front of building face
+        target.position.x += xOff; target.position.y = Math.max(10, b.position.y + yOff); target.position.z += 76;
+        target.userData = { isDead: false, velocity: new THREE.Vector3() };
         scene.add(target);
         state.targets.push(target);
-        
-        setTimeout(() => {
-            scene.remove(target);
-            state.targets = state.targets.filter(t => t !== target);
-        }, 7000);
     };
 
     const setupInput = () => {
-        const raycaster = new THREE.Raycaster();
-        const center = new THREE.Vector2(0, 0);
-
         document.addEventListener('mousedown', (e) => {
-            if (!state.isLocked) {
-                renderer.domElement.requestPointerLock();
-                return;
-            }
+            if (!state.isLocked) { renderer.domElement.requestPointerLock(); return; }
             if(e.button === 2) {
                 state.isScoped = true;
                 document.getElementById('reticle').style.display = 'block';
                 document.getElementById('scope-status').innerText = 'SCOPED';
             }
-            if(e.button === 0) {
-                raycaster.setFromCamera(center, camera);
-                const intersects = raycaster.intersectObjects(state.targets, true);
-                if(intersects.length > 0) {
-                    const hit = intersects[0].object.parent;
-                    scene.remove(hit);
-                    state.targets = state.targets.filter(t => t !== hit);
-                    state.score++;
-                    document.getElementById('kill-count').innerText = state.score;
-                }
-            }
+            if(e.button === 0) fireBullet();
         });
-
         document.addEventListener('mouseup', (e) => {
             if(e.button === 2) {
                 state.isScoped = false;
@@ -180,11 +137,7 @@ const SniperElite = (() => {
                 document.getElementById('scope-status').innerText = 'UNSCOPED';
             }
         });
-
-        document.addEventListener('pointerlockchange', () => {
-            state.isLocked = document.pointerLockElement === renderer.domElement;
-        });
-
+        document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === renderer.domElement; });
         document.addEventListener('mousemove', (e) => {
             if (state.isLocked) {
                 const sensitivity = state.isScoped ? 0.0002 : 0.002;
@@ -194,19 +147,88 @@ const SniperElite = (() => {
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
-
         document.addEventListener('contextmenu', e => e.preventDefault());
+    };
+
+    const fireBullet = () => {
+        const bullet = {
+            position: camera.position.clone(),
+            velocity: new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(500),
+            gravity: new THREE.Vector3(0, -9.8, 0),
+            path: [camera.position.clone()]
+        };
+        state.bullets.push(bullet);
+
+        // Initial Tracer
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([bullet.position, bullet.position]);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+        const line = new THREE.Line(lineGeo, lineMat);
+        scene.add(line);
+        state.tracers.push({ mesh: line, points: [bullet.position.clone()], life: 1.0 });
     };
 
     const animate = () => {
         requestAnimationFrame(animate);
-        const zoomSpeed = 0.15;
-        if(state.isScoped) {
-            camera.fov = THREE.MathUtils.lerp(camera.fov, state.targetZoom, zoomSpeed);
-        } else {
-            camera.fov = THREE.MathUtils.lerp(camera.fov, 75, zoomSpeed);
-        }
+        const dt = clock.getDelta();
+        
+        // FOV Zoom
+        camera.fov = THREE.MathUtils.lerp(camera.fov, state.isScoped ? state.targetZoom : 75, 0.15);
         camera.updateProjectionMatrix();
+
+        // Bullet Physics
+        for (let i = state.bullets.length - 1; i >= 0; i--) {
+            const b = state.bullets[i];
+            const prevPos = b.position.clone();
+            
+            b.velocity.add(b.gravity.clone().multiplyScalar(dt));
+            b.position.add(b.velocity.clone().multiplyScalar(dt));
+
+            const ray = new THREE.Raycaster(prevPos, b.velocity.clone().normalize(), 0, prevPos.distanceTo(b.position));
+            
+            // Check Buildings
+            const bIntersects = ray.intersectObjects(scene.children.filter(c => c.userData.isBuilding));
+            if (bIntersects.length > 0) {
+                const p = bIntersects[0].point;
+                const decal = new THREE.Mesh(new THREE.CircleGeometry(0.5, 8), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                decal.position.copy(p).add(bIntersects[0].face.normal.multiplyScalar(0.1));
+                decal.lookAt(p.clone().add(bIntersects[0].face.normal));
+                scene.add(decal);
+                state.bullets.splice(i, 1);
+                continue;
+            }
+
+            // Check Targets
+            const tIntersects = ray.intersectObjects(state.targets.filter(t => !t.userData.isDead), true);
+            if (tIntersects.length > 0) {
+                const target = tIntersects[0].object.parent;
+                target.userData.isDead = true;
+                target.userData.velocity = b.velocity.clone().multiplyScalar(0.01);
+                state.score++;
+                document.getElementById('kill-count').innerText = state.score;
+                state.bullets.splice(i, 1);
+                continue;
+            }
+
+            if (b.position.length() > 10000 || b.position.y < 0) state.bullets.splice(i, 1);
+        }
+
+        // Tracers
+        state.tracers.forEach((t, i) => {
+            t.life -= dt;
+            t.mesh.material.opacity = t.life;
+            if (t.life <= 0) { scene.remove(t.mesh); state.tracers.splice(i, 1); }
+        });
+
+        // Ragdolls
+        state.targets.forEach((t, i) => {
+            if (t.userData.isDead) {
+                t.userData.velocity.y -= 0.5;
+                t.position.add(t.userData.velocity);
+                t.rotation.x += 0.1;
+                if (t.position.y < -100) { scene.remove(t); state.targets.splice(i, 1); }
+            }
+        });
+
         renderer.render(scene, camera);
     };
 
