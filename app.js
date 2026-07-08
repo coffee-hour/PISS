@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v6.0.2: 'VISIBILITY PATCH'
- * 1. Lighting: Significantly increased AmbientLight intensity for clearer cityscape visibility.
- * 2. Target Visibility: Added emissive glow to R6 targets to make them 'pop' against dark buildings.
- * 3. Mechanics: Maintained Pointer Lock and Forensic Scope from v6.0.1.
+ * SOVEREIGN v6.0.3: 'UI PURGE'
+ * 1. Cleanup: Explicitly removed all lingering DOM elements from previous v5.x builds (rpg-hud, amber-bar, etc).
+ * 2. Scene: Pure sniper-elite core with zero residual progression UI.
+ * 3. Scope: Forensic reticle remains the primary UI element.
  */
 
 const SniperElite = (() => {
@@ -27,8 +27,22 @@ const SniperElite = (() => {
         if (state.initialized) return;
         state.initialized = true;
 
-        console.log('Sovereign: Initializing v6.0.2 Visibility Patch...');
+        console.log('Sovereign: Initializing v6.0.3 UI Purge...');
         
+        // 1. HARD PURGE OF LEGACY UI
+        const legacyIds = [
+            'rpg-master-hud', 'amber-master-hud', 'rpg-master-hud-v571', 
+            'rpg-master-hud-v572', 'amber-master-hud-v580', 'sovereign-diag'
+        ];
+        legacyIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        });
+        // Remove any lingering style tags from v5
+        document.querySelectorAll('style').forEach(s => {
+            if (s.innerHTML.includes('rpg-hud') || s.innerHTML.includes('amber-bar')) s.remove();
+        });
+
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a0a);
         scene.fog = new THREE.Fog(0x0a0a0a, 800, 4000);
@@ -42,7 +56,6 @@ const SniperElite = (() => {
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // INCREASED AMBIENT LIGHTING
         ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
         scene.add(ambientLight);
         sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -119,14 +132,11 @@ const SniperElite = (() => {
         const buildings = scene.children.filter(c => c.userData.isBuilding);
         const b = buildings[Math.floor(Math.random() * buildings.length)];
         const target = new THREE.Group();
-        
-        // EMISSIVE MATERIAL FOR TARGET VISIBILITY
         const body = new THREE.Mesh(
             new THREE.BoxGeometry(2, 4, 1), 
             new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 })
         );
         target.add(body);
-        
         const xOff = (Math.random()-0.5) * (b.userData.width - 10);
         const yOff = (Math.random() * b.userData.height) - (b.userData.height / 2);
         target.position.copy(b.position);
@@ -150,7 +160,6 @@ const SniperElite = (() => {
                 renderer.domElement.requestPointerLock();
                 return;
             }
-
             if(e.button === 2) {
                 state.isScoped = true;
                 document.getElementById('reticle').style.display = 'block';
