@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign AAA (v4.7.2)
- * Features: Full 3D NPC Model, Red Gore System, Dual-Hand Animation Fix,
+ * Sovereign AAA (v4.7.3)
+ * Features: 3D Omni-Man Boss, 3D Invincible Gauntlets, Red Gore,
  * Amber Core Aesthetic, 1-NPC Limit, Expanded Combat Radius.
  */
 
@@ -28,7 +28,7 @@ const Fighter = (() => {
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0d0d0d);
-        scene.fog = new THREE.Fog(0x0d0d0d, 100, 700);
+        scene.fog = new THREE.Fog(0x0d0d0d, 120, 750);
 
         camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2500);
         camera.position.set(0, state.player.height, 0);
@@ -40,18 +40,18 @@ const Fighter = (() => {
 
         raycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xff8c00, 0.5);
+        ambientLight = new THREE.AmbientLight(0xff8c00, 0.6);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xff8c00, 1.3);
-        sunLight.position.set(200, 500, 200);
+        sunLight = new THREE.DirectionalLight(0xff8c00, 1.4);
+        sunLight.position.set(300, 600, 300);
         scene.add(sunLight);
 
         createAmberCity();
         setupControls();
         
-        // v4.7.2: 1-NPC Limit
-        spawn3DEnemy();
+        // v4.7.3: Spawn Omni-Man 3D
+        spawnOmniMan();
 
         animate();
     };
@@ -66,15 +66,15 @@ const Fighter = (() => {
         const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
         const buildingMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
         
-        let seed = 888;
+        let seed = 999;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
         for (let i = 0; i < 400; i++) {
-            const h = 50 + random() * 100;
-            const w = 25 + random() * 35;
-            const d = 25 + random() * 35;
+            const h = 60 + random() * 120;
+            const w = 30 + random() * 40;
+            const d = 30 + random() * 40;
             const x = (random() - 0.5) * 2000;
             const z = (random() - 0.5) * 2000;
-            if (Math.abs(x) < 60 && Math.abs(z) < 60) continue;
+            if (Math.abs(x) < 80 && Math.abs(z) < 80) continue;
             
             const b = new THREE.Mesh(buildingGeo, buildingMat);
             b.scale.set(w, h, d);
@@ -82,7 +82,7 @@ const Fighter = (() => {
             scene.add(b);
             
             const edges = new THREE.EdgesGeometry(buildingGeo);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0.6 }));
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0.5 }));
             line.scale.set(w, h, d);
             line.position.copy(b.position);
             scene.add(line);
@@ -113,54 +113,67 @@ const Fighter = (() => {
         });
     };
 
-    const spawn3DEnemy = () => {
+    const spawnOmniMan = () => {
         if (currentEnemy) return;
 
-        // v4.7.2: FULL 3D GEOMETRY MODEL
-        const group = new THREE.Group();
+        // v4.7.3: 3D OMNI-MAN MODEL (Amber Core Palette)
+        const omni = new THREE.Group();
         
-        // Head
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), new THREE.MeshStandardMaterial({ color: 0xff8c00 }));
-        head.position.y = 8;
-        group.add(head);
+        // Head (with hair/mustache cues)
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        head.position.y = 8.5;
+        omni.add(head);
+        
+        // Hair (Gray/Black mix)
+        const hair = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 1.2), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        hair.position.y = 9.2;
+        omni.add(hair);
 
-        // Torso
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4, 1), new THREE.MeshStandardMaterial({ color: 0x222222 }));
-        torso.position.y = 5;
-        group.add(torso);
+        // Mustache (Iconic cue)
+        const mustache = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+        mustache.position.set(0, 8.2, 0.95);
+        omni.add(mustache);
+
+        // Torso (White/Red Viltrumite suit)
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(2, 4.5, 1.2), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        torso.position.y = 5.2;
+        omni.add(torso);
+
+        // Cape (Red - Amber Glow)
+        const cape = new THREE.Mesh(new THREE.BoxGeometry(2.2, 6, 0.1), new THREE.MeshStandardMaterial({ color: 0xb71c1c }));
+        cape.position.set(0, 5, -0.65);
+        omni.add(cape);
 
         // Arms
-        const armGeo = new THREE.BoxGeometry(0.5, 3.5, 0.5);
-        const leftArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xff8c00 }));
-        leftArm.position.set(-1.2, 5.5, 0);
-        group.add(leftArm);
+        const armGeo = new THREE.BoxGeometry(0.6, 4, 0.6);
+        const lArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        lArm.position.set(-1.4, 5.5, 0);
+        omni.add(lArm);
 
-        const rightArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xff8c00 }));
-        rightArm.position.set(1.2, 5.5, 0);
-        group.add(rightArm);
+        const rArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        rArm.position.set(1.4, 5.5, 0);
+        omni.add(rArm);
 
         // Legs
-        const legGeo = new THREE.BoxGeometry(0.6, 4, 0.6);
-        const leftLeg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
-        leftLeg.position.set(-0.5, 2, 0);
-        group.add(leftLeg);
+        const legGeo = new THREE.BoxGeometry(0.7, 4.5, 0.7);
+        const lLeg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({ color: 0xb71c1c }));
+        lLeg.position.set(-0.6, 2.2, 0);
+        omni.add(lLeg);
 
-        const rightLeg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
-        rightLeg.position.set(0.5, 2, 0);
-        group.add(rightLeg);
+        const rLeg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({ color: 0xb71c1c }));
+        rLeg.position.set(0.6, 2.2, 0);
+        omni.add(rLeg);
 
-        group.position.set((Math.random()-0.5)*150, 0, (Math.random()-0.5)*150);
-        scene.add(group);
+        omni.position.set((Math.random()-0.5)*200, 0, (Math.random()-0.5)*200);
+        scene.add(omni);
 
-        currentEnemy = { mesh: group, hp: 1000 };
+        currentEnemy = { mesh: omni, hp: 5000, maxHp: 5000, name: 'OMNI-MAN' };
     };
 
     const performStrike = () => {
         state.timeDilation = 1.0;
-        
-        // v4.7.2: Debugged Dual-Hand Behavior
         state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
-        animateFist(state.lastArmUsed);
+        animate3DFist(state.lastArmUsed);
         
         if (currentEnemy) {
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
@@ -168,7 +181,7 @@ const Fighter = (() => {
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             const dot = dirToEnemy.dot(forward);
 
-            if (dist <= state.player.punchRange && dot > 0.7) {
+            if (dist <= state.player.punchRange && dot > 0.65) {
                 hitEnemy();
             }
         }
@@ -176,25 +189,25 @@ const Fighter = (() => {
 
     const hitEnemy = () => {
         currentEnemy.hp -= 250;
-        // v4.7.2: RED GORE SYSTEM
         spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 5, 0)));
+        updateBossUI();
         
         if (currentEnemy.hp <= 0) {
             scene.remove(currentEnemy.mesh);
             currentEnemy = null;
             state.run.kills++;
-            setTimeout(spawn3DEnemy, 800);
+            setTimeout(spawnOmniMan, 1000);
         }
     };
 
     const spawnGore = (pos) => {
         const geo = new THREE.SphereGeometry(0.4, 4, 4);
-        const mat = new THREE.MeshBasicMaterial({ color: 0x990000 }); // Deep Red
-        for (let i = 0; i < 40; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: 0x990000 });
+        for (let i = 0; i < 50; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
             p.userData = { 
-                vel: new THREE.Vector3((Math.random()-0.5)*1.8, Math.random()*1.5, (Math.random()-0.5)*1.8), 
+                vel: new THREE.Vector3((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2), 
                 life: 1.0 
             };
             scene.add(p); 
@@ -202,11 +215,18 @@ const Fighter = (() => {
         }
     };
 
-    const animateFist = (side) => {
+    const animate3DFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if (fist) {
-            fist.style.transform = `translateY(-220px) scale(1.3) rotate(${side === 'left' ? 25 : -25}deg)`;
+            fist.style.transform = `translateY(-240px) scale(1.3) rotate(${side === 'left' ? 28 : -28}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
+        }
+    };
+
+    const updateBossUI = () => {
+        const hpBar = document.getElementById('boss-hp-fill');
+        if (hpBar && currentEnemy) {
+            hpBar.style.width = `${(currentEnemy.hp / currentEnemy.maxHp) * 100}%`;
         }
     };
 
@@ -216,7 +236,7 @@ const Fighter = (() => {
         let moving = state.keys.w || state.keys.a || state.keys.s || state.keys.d;
         if (moving) {
             state.timeDilation = state.keys[' '] ? 0.12 : 1.0; 
-            const speed = (state.keys[' '] ? 3.2 : 0.95);
+            const speed = (state.keys[' '] ? 3.4 : 1.0);
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
             if (state.keys.s) moveDir.z += 1;
@@ -225,8 +245,8 @@ const Fighter = (() => {
             moveDir.normalize().applyQuaternion(camera.quaternion);
             camera.position.add(moveDir.multiplyScalar(speed));
             
-            if (state.player.isFlying) camera.position.y = Math.min(400, camera.position.y + 1.1);
-            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.3);
+            if (state.player.isFlying) camera.position.y = Math.min(500, camera.position.y + 1.2);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.4);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
@@ -235,17 +255,18 @@ const Fighter = (() => {
         
         if (currentEnemy) {
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
-            // Dynamic rotation to face player
-            currentEnemy.mesh.lookAt(camera.position.x, 0, camera.position.z);
+            currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             
-            if (dist < 450 && dist > 8) {
-                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.22 * dt));
+            if (dist < 500 && dist > 10) {
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.25 * dt));
+                // Hovering
+                currentEnemy.mesh.position.y = 5 + Math.sin(Date.now() * 0.003) * 2;
             }
         }
 
         bloodParticles.forEach((p, i) => {
             p.position.add(p.userData.vel.clone().multiplyScalar(dt));
-            p.userData.vel.y -= 0.018 * dt; 
+            p.userData.vel.y -= 0.02 * dt; 
             p.userData.life -= 0.02 * dt;
             p.scale.setScalar(p.userData.life);
             if (p.userData.life <= 0) { 
