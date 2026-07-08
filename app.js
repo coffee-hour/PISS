@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.1: 'SLOW-TIME & SEQUIDS'
+ * SOVEREIGN v5.5.2: 'STABILITY & PERFORMANCE'
  * 1. Animation: Full arm "sideways chop" for Knife Hand move (X key), gated by Level 10.
  * 2. XP System: Level 10 unlock threshold maintained.
  * 3. Feature: Random "Sequid Area" for XP grinding with weak Sequid enemies.
  * 4. Mechanic: Slow-time effect on Space bar, gated by Level 20.
  * 5. Player: Increased base movement speed (Invincible Speed).
+ * 6. Fix: Reduced particle count and optimized WebGL calls for Chromebook stability.
  */
 
 const Sovereign = (() => {
@@ -48,7 +49,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.1 Slow-Time & Sequids...');
+        console.log('Sovereign: Initializing v5.5.2 Stability & Performance...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -60,11 +61,19 @@ const Sovereign = (() => {
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
         camera.position.set(0, 50, 150);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+        // Fallback for WebGL context creation failure
+        try {
+            renderer = new THREE.WebGLRenderer({ antialias: false }); // Disable antialias for performance
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Cap pixel ratio
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.BasicShadowMap; // Faster shadow maps
+            document.body.appendChild(renderer.domElement);
+        } catch (e) {
+            console.error('WebGL Initialization Failed:', e);
+            document.body.innerHTML = '<div style="color:white; padding:20px; font-family:monospace;">FATAL ERROR: WEBGL_CONTEXT_CRASH. PLEASE RESTART BROWSER.</div>';
+            return;
+        }
 
         clock = new THREE.Clock();
 
@@ -84,7 +93,7 @@ const Sovereign = (() => {
         grid.position.y = 0.05;
         scene.add(grid);
 
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 60; i++) { // Reduced building count
             const h = 50 + Math.random() * 400;
             const b = createBlock(60, h, 60, 0x555555);
             b.position.set((Math.random()-0.5)*4000, h/2, (Math.random()-0.5)*4000);
@@ -108,7 +117,7 @@ const Sovereign = (() => {
         sequidZone.center.set(Math.cos(ang) * dist, 5, Math.sin(ang) * dist);
         
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(sequidZone.radius - 5, sequidZone.radius, 64),
+            new THREE.RingGeometry(sequidZone.radius - 5, sequidZone.radius, 32), // Reduced segments
             new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide, transparent: true, opacity: 0.3 })
         );
         ring.rotation.x = -Math.PI / 2;
@@ -266,13 +275,13 @@ const Sovereign = (() => {
         }
     };
 
-    const emitBlood = (pos, count = 50, color = 0xb71c1c) => {
+    const emitBlood = (pos, count = 30, color = 0xb71c1c) => { // Reduced particle count
         for(let i=0; i<count; i++) {
             const p = createBlock(0.2, 0.2, 0.2, color);
             p.position.copy(pos);
             const vel = new THREE.Vector3((Math.random()-0.5)*0.8, Math.random()*0.8, (Math.random()-0.5)*0.8);
             scene.add(p);
-            particles.push({ mesh: p, vel, life: 1.5 });
+            particles.push({ mesh: p, vel, life: 1.0 }); // Reduced life
         }
     };
 
@@ -336,7 +345,7 @@ const Sovereign = (() => {
     const checkCollisions = (damage, range, isKnife = false) => {
         if (bossGroup && !state.boss.isDead && camera.position.distanceTo(bossGroup.position) < range) {
             const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp); wp.y += 5;
-            emitBlood(wp, isKnife ? 150 : 50);
+            emitBlood(wp, isKnife ? 80 : 30); // Reduced counts
             state.boss.vel.add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(isKnife ? 4.0 : 1.5));
             state.boss.hp -= damage;
             gainXP(damage);
@@ -352,7 +361,7 @@ const Sovereign = (() => {
         for(let i = sequids.length - 1; i >= 0; i--) {
             const s = sequids[i];
             if (camera.position.distanceTo(s.group.position) < range) {
-                emitBlood(s.group.position, 20, 0xff00ff);
+                emitBlood(s.group.position, 15, 0xff00ff);
                 s.hp -= damage;
                 if (s.hp <= 0) {
                     scene.remove(s.group);
@@ -376,7 +385,7 @@ const Sovereign = (() => {
             if(state.keys.hasOwnProperty(k)) state.keys[k] = false;
             if(e.code === 'Space') {
                 state.timeScale = 1.0;
-                if (!state.player.timeSlowUnlocked) state.keys[' '] = false; // Fallback for jumping/flying
+                if (!state.player.timeSlowUnlocked) state.keys[' '] = false;
             }
             if(e.code === 'ControlLeft') state.keys.control = false;
         });
@@ -389,6 +398,11 @@ const Sovereign = (() => {
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
+    };
+
+    const onWindowResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
     };
 
     const animate = () => {
@@ -407,7 +421,7 @@ const Sovereign = (() => {
             camera.position.y = Math.max(5, camera.position.y);
         }
 
-        if (camera.position.distanceTo(sequidZone.center) < sequidZone.radius && sequids.length < 15) {
+        if (camera.position.distanceTo(sequidZone.center) < sequidZone.radius && sequids.length < 10) { // Reduced max sequids
             if (Math.random() < 0.02 * state.timeScale) spawnSequid();
         }
 
@@ -423,7 +437,7 @@ const Sovereign = (() => {
                 bossParts.cape.position.z -= speed * 3;
                 bossParts.torso.scale.multiplyScalar(0.98);
                 const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp);
-                emitBlood(wp, 10);
+                if (Math.random() < 0.3) emitBlood(wp, 5); // Reduced rip particles
                 if (state.boss.ripTimer <= 0) {
                     state.boss.isRipping = false;
                     scene.remove(bossGroup);
