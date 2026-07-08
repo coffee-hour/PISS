@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.2: 'Invincible Fighter Style'
- * Features: 600+ Primitive Omni-Man (Exact Fighter Topology Clone), 
- * Forward-Facing Clenched Fists, Spacebar Time Slow (0.2x), 
- * 14.4-unit Range, N64 Soft-Poly Aesthetic, Gouraud Shading.
+ * Sovereign v4.8.3: 'Fist Rotation Update'
+ * Features: Back-of-Hand First-Person Orientation, 600+ Primitive Omni-Man,
+ * Spacebar Time Slow (0.2x), 14.4-unit Range, N64 Soft-Poly Aesthetic.
  */
 
 const Fighter = (() => {
@@ -52,7 +51,7 @@ const Fighter = (() => {
 
         createSoftN64City();
         setupControls();
-        createForwardFacingFists();
+        createBackOfHandFists();
         spawnFighterCloneOmniMan();
 
         animate();
@@ -80,38 +79,43 @@ const Fighter = (() => {
         }
     };
 
-    const createForwardFacingFists = () => {
+    const createBackOfHandFists = () => {
         const createFist = (side) => {
             const group = new THREE.Group();
             const matBlue = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
             const matYellow = new THREE.MeshLambertMaterial({ color: 0xffeb3b });
 
+            // Core Fist Mesh
             const palm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.8), matBlue);
             group.add(palm);
 
+            // Knuckles pointed FORWARD (Z-axis)
             for(let i=0; i<4; i++) {
                 const x = -0.25 + i * 0.17;
                 const knuck = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), matBlue);
-                knuck.position.set(x, 0.2, 0.4);
+                knuck.position.set(x, 0.1, 0.4); // Knuckles at the front
                 group.add(knuck);
 
                 const yellowPad = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), matYellow);
-                yellowPad.position.set(x, 0.22, 0.45);
+                yellowPad.position.set(x, 0.12, 0.45);
                 group.add(yellowPad);
                 
+                // Finger segments curled AWAY/DOWN
                 const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.4, 8), matBlue);
-                finger.position.set(x, 0.05, 0.55);
-                finger.rotation.x = Math.PI/2.2;
+                finger.position.set(x, -0.15, 0.35);
+                finger.rotation.x = -Math.PI/4;
                 group.add(finger);
             }
 
+            // Clenched Thumb
             const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.3, 8, 8), matBlue);
-            thumb.position.set(side === 'left' ? 0.4 : -0.4, 0, 0.3);
-            thumb.rotation.set(0.4, 0, side === 'left' ? -0.8 : 0.8);
+            thumb.position.set(side === 'left' ? 0.4 : -0.4, -0.05, 0.2);
+            thumb.rotation.set(0.1, 0, side === 'left' ? -1.0 : 1.0);
             group.add(thumb);
 
+            // Orientation: Back of hand faces camera, knuckles forward
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.3, -3.0);
-            group.rotation.set(0.1, 0, 0); 
+            group.rotation.set(-0.3, 0, 0); // Slight downward tilt to show back of hand
             camera.add(group);
             return group;
         };
@@ -125,15 +129,12 @@ const Fighter = (() => {
         const omni = new THREE.Group();
         const mat = (color) => new THREE.MeshLambertMaterial({ color, flatShading: false });
 
-        // v4.8.2: 'Invincible Fighter' Topology Clone (600+ Primitives)
-        
-        // Head & Facial Structure (~50 primitives)
+        // Head assembly
         const head = new THREE.Group();
         const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), mat(0xffffff));
         skull.position.y = 8.5;
         head.add(skull);
 
-        // Sharp Cheekbones & Jawline
         for(let i=0; i<2; i++) {
             const cheek = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.4), mat(0xffffff));
             cheek.position.set(i === 0 ? 0.7 : -0.7, 8.4, 0.6);
@@ -141,7 +142,6 @@ const Fighter = (() => {
             head.add(cheek);
         }
 
-        // Iconic Mustache Shape (Cluster)
         const stache = new THREE.Group();
         for(let i=0; i<15; i++) {
             const s = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mat(0x111111));
@@ -152,21 +152,18 @@ const Fighter = (() => {
         head.add(stache);
         omni.add(head);
 
-        // Fighter-Game Muscular Topology (~200 primitives)
+        // Torso
         const torso = new THREE.Group();
-        // Sternum & Rib Detail
         const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 0.1), mat(0xeeeeee));
         sternum.position.set(0, 6, 0.7);
         torso.add(sternum);
 
-        // Layered Pecs & Lats
         for(let i=0; i<12; i++) {
             const m = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), mat(0xffffff));
             m.position.set((i%2?0.6:-0.6), 6.6 + Math.floor(i/2)*0.35, 0.5);
             m.scale.set(1.15, 0.85, 0.45);
             torso.add(m);
         }
-        // Detailed Abs/Core (Fighter Pack)
         for(let i=0; i<10; i++) {
             const ab = new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 12), mat(0xffffff));
             ab.position.set((i%2?0.35:-0.35), 5.2 - Math.floor(i/2)*0.5, 0.65);
@@ -178,7 +175,7 @@ const Fighter = (() => {
         torso.add(core);
         omni.add(torso);
 
-        // Limb Topology Clone (~100 primitives per limb)
+        // Limbs
         const createLimbClone = (x, y, color, side) => {
             const g = new THREE.Group();
             for(let i=0; i<35; i++) {
@@ -197,7 +194,6 @@ const Fighter = (() => {
         omni.add(createLimbClone(-0.9, 2.8, 0xb71c1c, -1)); // L Leg
         omni.add(createLimbClone(0.9, 2.8, 0xb71c1c, 1));  // R Leg
 
-        // Dynamic Fighter Cape (~50 primitives)
         const cape = new THREE.Group();
         for(let i=0; i<8; i++) {
             const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.1), mat(0xb71c1c));
