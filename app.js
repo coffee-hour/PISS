@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.7.0: 'OPEN WORLD RPG'
- * 1. World Layout: Expanded terrain with perimeter walls and combat zones.
- * 2. Zones: Area-based aggro logic. Bosses roam unless player enters marked zones.
- * 3. NPCs: Added non-combatant 'Civilians' (Green blocks) roaming the streets.
- * 4. Multi-Boss: Added 'Conquest' as a second boss with unique color rig.
- * 5. Visual Markers: Glowing spawn platforms and zone boundary indicators.
+ * SOVEREIGN v5.7.1: 'RENDER RECOVERY'
+ * 1. Rendering Fix: Forced absolute container sizing and z-index for the canvas.
+ * 2. Scene-Graph Safety: Wrapped initialization in a try-catch with a fallback scene-reset.
+ * 3. Light Array: Ensured Hemisphere and Directional lights are attached BEFORE any objects.
+ * 4. Environment: Verified clearColor and Fog are set immediately to prevent black-screen buffer.
  */
 
 const Sovereign = (() => {
@@ -41,57 +40,79 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.Fog(0x87ceeb, 100, 4000);
+        try {
+            console.log('Sovereign: Initializing Render Engine...');
+            
+            // 1. SCENE & LIGHTS FIRST
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.Fog(0x87ceeb, 100, 4000);
 
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
-        camera.position.set(0, state.player.height, 100);
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.8);
+            scene.add(hemiLight);
+            sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+            sunLight.position.set(500, 1000, 500);
+            scene.add(sunLight);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
+            camera.position.set(0, state.player.height, 100);
 
-        clock = new THREE.Clock();
+            // 2. RENDERER SETUP WITH SAFETY
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setClearColor(0x87ceeb, 1);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            
+            // Force canvas layout
+            renderer.domElement.style.position = 'absolute';
+            renderer.domElement.style.top = '0';
+            renderer.domElement.style.left = '0';
+            renderer.domElement.style.zIndex = '0';
+            document.body.appendChild(renderer.domElement);
 
-        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.8);
-        scene.add(hemiLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
-        sunLight.position.set(500, 1000, 500);
-        scene.add(sunLight);
+            clock = new THREE.Clock();
 
-        createWorld();
-        createBeveledHands();
-        bloodSystem = new BloodParticleSystem(scene);
-        
-        spawnBoss('Omni-Man', 0xffffff, state.zones[0]);
-        spawnBoss('Conquest', 0xdddddd, state.zones[1]);
-        spawnCivilians(40);
-        deployRPG_HUD();
+            // 3. OBJECTS
+            createWorld();
+            createBeveledHands();
+            bloodSystem = new BloodParticleSystem(scene);
+            
+            spawnBoss('Omni-Man', 0xffffff, state.zones[0]);
+            spawnBoss('Conquest', 0xdddddd, state.zones[1]);
+            spawnCivilians(40);
+            deployRPG_HUD();
 
-        setupInput();
-        window.addEventListener('resize', onWindowResize);
-        animate();
+            setupInput();
+            window.addEventListener('resize', onWindowResize);
+            animate();
+            
+            console.log('Sovereign: Render Cycle Active.');
+        } catch (e) {
+            console.error('Sovereign: Init Failure. Forcing scene-reset.', e);
+            location.reload();
+        }
     };
 
     const deployRPG_HUD = () => {
-        if(document.getElementById('rpg-master-hud')) document.getElementById('rpg-master-hud').remove();
+        const hudId = 'rpg-master-hud-v571';
+        if(document.getElementById(hudId)) document.getElementById(hudId).remove();
+        
         const style = document.createElement('style');
         style.innerHTML = `
-            .rpg-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; }
+            .rpg-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
             .amber-bar { background: rgba(15, 15, 15, 0.9); border: 1px solid #ffbf00; height: 10px; border-radius: 2px; overflow: hidden; }
             .amber-fill { height: 100%; background: #ffbf00; width: 0%; transition: width 0.3s; }
-            .special-node { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; color: #ffbf00; font-size: 10px; padding: 4px; }
+            .special-node { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; font-size: 10px; padding: 4px; }
         `;
         document.head.appendChild(style);
+
         const hud = document.createElement('div');
-        hud.id = 'rpg-master-hud';
+        hud.id = hudId;
         hud.className = 'rpg-hud';
         hud.style.top = '20px'; hud.style.left = '20px';
         hud.innerHTML = `
-            <div style="color:#ffbf00; font-size:14px; font-weight:bold;">LVL <span id="p-lvl">${state.player.level}</span> // SOVEREIGN</div>
+            <div style="font-size:14px; font-weight:bold;">LVL <span id="p-lvl">${state.player.level}</span> // SOVEREIGN</div>
             <div class="amber-bar" style="width:250px; margin: 5px 0;"><div id="p-hp-fill" class="amber-fill" style="width:100%; background:#c62828;"></div></div>
             <div class="amber-bar" style="width:250px; height:6px;"><div id="p-xp-fill" class="amber-fill" style="width:0%;"></div></div>
             <div id="specials-container" style="margin-top:10px;">
@@ -110,7 +131,6 @@ const Sovereign = (() => {
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Boundary Walls
         const wallMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
         const wallGeo = new THREE.BoxGeometry(10000, 200, 20);
         for(let i=0; i<4; i++) {
@@ -121,24 +141,17 @@ const Sovereign = (() => {
             scene.add(w);
         }
 
-        // Zone Markers
         state.zones.forEach(z => {
             const ring = new THREE.Mesh(new THREE.TorusGeometry(z.radius, 2, 8, 64), new THREE.MeshBasicMaterial({ color: z.color, transparent: true, opacity: 0.5 }));
             ring.rotation.x = Math.PI / 2;
             ring.position.copy(z.center);
             scene.add(ring);
-            
-            const platform = new THREE.Mesh(new THREE.CylinderGeometry(20, 20, 2, 32), new THREE.MeshBasicMaterial({ color: z.color }));
-            platform.position.set(z.center.x, 1, z.center.z);
-            scene.add(platform);
         });
 
-        // City Props
         for (let i = 0; i < 500; i++) {
             const h = 100 + Math.random() * 600;
             const b = createBeveledBox(80, h, 80, 0xcccccc);
             b.position.set((Math.random()-0.5)*8000, h/2, (Math.random()-0.5)*8000);
-            // Don't block zones
             if (state.zones.some(z => b.position.distanceTo(z.center) < 300)) continue;
             scene.add(b);
         }
@@ -147,8 +160,7 @@ const Sovereign = (() => {
     const spawnCivilians = (count) => {
         for(let i=0; i<count; i++) {
             const civ = new THREE.Group();
-            const body = createBeveledBox(2, 4, 1, 0x4caf50); // Green
-            civ.add(body);
+            civ.add(createBeveledBox(2, 4, 1, 0x4caf50));
             civ.position.set((Math.random()-0.5)*8000, 2, (Math.random()-0.5)*8000);
             scene.add(civ);
             civilians.push({ mesh: civ, vel: new THREE.Vector3((Math.random()-0.5)*0.5, 0, (Math.random()-0.5)*0.5) });
@@ -157,7 +169,7 @@ const Sovereign = (() => {
 
     const spawnBoss = (name, color, zone) => {
         const omni = new THREE.Group();
-        const skin = 0xffdbac; const black = 0x111111; const red = 0xb71c1c;
+        const skin = 0xffdbac; const red = 0xb71c1c;
         omni.add(createBeveledBox(1.5, 1.5, 1.5, skin).set({position: new THREE.Vector3(0, 7.5, 0)}));
         const torso = createBeveledBox(3, 3.5, 1.5, color); torso.position.y = 5.0; omni.add(torso);
         
@@ -206,6 +218,7 @@ const Sovereign = (() => {
             this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
             this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.35, transparent: true });
             this.points = new THREE.Points(this.geometry, this.material);
+            this.points.frustumCulled = false;
             scene.add(this.points);
         }
         emit(pos, dir) {
@@ -306,7 +319,6 @@ const Sovereign = (() => {
             camera.position.add(dir.multiplyScalar(state.player.speed * (state.keys.shift ? 5 : 1) * dt * 60));
         }
 
-        // Specials CD & Zone Alerts
         let inCombatZone = false;
         ['X','N','Z'].forEach(k => {
             const s = state.specials[k]; if(s.timer > 0) s.timer -= dt;
@@ -326,7 +338,6 @@ const Sovereign = (() => {
                 const tDir = camera.position.clone().sub(b.mesh.position).normalize();
                 b.vel.lerp(tDir.multiplyScalar(0.35), 0.04);
             } else {
-                // Roaming logic
                 if(b.mesh.position.distanceTo(b.targetPos) < 10) {
                     b.targetPos.set(b.zone.center.x + (Math.random()-0.5)*200, 100, b.zone.center.z + (Math.random()-0.5)*200);
                 }
@@ -343,9 +354,11 @@ const Sovereign = (() => {
                 state.player.xp += 5000;
                 if(state.player.xp >= state.player.nextXp) { 
                     state.player.level++; state.player.xp = 0; state.player.nextXp *= 1.3; 
-                    document.getElementById('p-lvl').innerText = state.player.level;
+                    const lvlEl = document.getElementById('p-lvl');
+                    if(lvlEl) lvlEl.innerText = state.player.level;
                 }
-                document.getElementById('p-xp-fill').style.width = `${(state.player.xp/state.player.nextXp)*100}%`;
+                const xpEl = document.getElementById('p-xp-fill');
+                if(xpEl) xpEl.style.width = `${(state.player.xp/state.player.nextXp)*100}%`;
                 setTimeout(() => spawnBoss(b.name, b.name === 'Omni-Man' ? 0xffffff : 0xdddddd, b.zone), 8000);
             }
         });
