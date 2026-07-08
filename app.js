@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.6: 'Muscle & Cape Overhaul'
- * Features: Primitive Muscle Contouring (Pecs/Delts/Calves), 
- * Multi-Segmented Draping Cape, Refined Head Definition, 
- * Back-of-Hand Fists, Spacebar Time Slow (0.2x), 
+ * Sovereign v4.8.7: 'Fidelity Overhaul'
+ * Features: High-Density Muscle Topology (Fighter Style), 
+ * Fluid High-Poly Cape, Sharp Facial Definition, 
+ * Forward-Facing Fists, Spacebar Time Slow (0.2x), 
  * N64 Soft-Poly Aesthetic, Gouraud Shading.
  */
 
@@ -33,7 +33,7 @@ const Fighter = (() => {
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a0a);
-        scene.fog = new THREE.Fog(0x0a0a0a, 150, 900);
+        scene.fog = new THREE.Fog(0x0a0a0a, 150, 950);
 
         camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2500);
         camera.position.set(0, state.player.height, 0);
@@ -44,17 +44,17 @@ const Fighter = (() => {
 
         raycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xff8c00, 1.8);
-        sunLight.position.set(300, 800, 300);
+        sunLight = new THREE.DirectionalLight(0xff8c00, 2.0);
+        sunLight.position.set(400, 800, 400);
         scene.add(sunLight);
 
         createSoftN64City();
         setupControls();
-        createBackOfHandFists();
-        spawnPrimitiveOmniMan();
+        createForwardFacingFists();
+        spawnHighFidelityOmniMan();
 
         animate();
     };
@@ -81,7 +81,7 @@ const Fighter = (() => {
         }
     };
 
-    const createBackOfHandFists = () => {
+    const createForwardFacingFists = () => {
         const createFist = (side) => {
             const group = new THREE.Group();
             const matBlue = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
@@ -93,26 +93,26 @@ const Fighter = (() => {
             for(let i=0; i<4; i++) {
                 const x = -0.25 + i * 0.17;
                 const knuck = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), matBlue);
-                knuck.position.set(x, 0.1, 0.4);
+                knuck.position.set(x, 0.15, 0.4);
                 group.add(knuck);
 
                 const yellowPad = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), matYellow);
-                yellowPad.position.set(x, 0.12, 0.45);
+                yellowPad.position.set(x, 0.18, 0.45);
                 group.add(yellowPad);
                 
                 const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.4, 8), matBlue);
-                finger.position.set(x, -0.15, 0.35);
-                finger.rotation.x = -Math.PI/4;
+                finger.position.set(x, 0.05, 0.55);
+                finger.rotation.x = Math.PI/2.2;
                 group.add(finger);
             }
 
             const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.3, 8, 8), matBlue);
-            thumb.position.set(side === 'left' ? 0.4 : -0.4, -0.05, 0.2);
-            thumb.rotation.set(0.1, 0, side === 'left' ? -1.0 : 1.0);
+            thumb.position.set(side === 'left' ? 0.4 : -0.4, 0, 0.3);
+            thumb.rotation.set(0.4, 0, side === 'left' ? -0.8 : 0.8);
             group.add(thumb);
 
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.3, -3.0);
-            group.rotation.set(-0.3, 0, 0); 
+            group.rotation.set(0.1, 0, 0); 
             camera.add(group);
             return group;
         };
@@ -121,7 +121,7 @@ const Fighter = (() => {
         playerHands.right = createFist('right');
     };
 
-    const spawnPrimitiveOmniMan = () => {
+    const spawnHighFidelityOmniMan = () => {
         if (currentEnemy) return;
         const omni = new THREE.Group();
         const mat = (color) => new THREE.MeshLambertMaterial({ color, flatShading: false });
@@ -129,125 +129,103 @@ const Fighter = (() => {
         const redMat = mat(0xb71c1c);
         const darkMat = mat(0x111111);
 
-        // 1. Torso: Primitive-Fit with Muscle Detail (Pecs/Abs)
-        const torsoGroup = new THREE.Group();
-        const core = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.0, 4.5, 12), whiteMat);
-        torsoGroup.add(core);
-
-        // Defined Pecs (Geometric Spheres)
-        const pecL = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 8), whiteMat);
-        pecL.position.set(-0.5, 1.5, 0.5);
-        pecL.scale.set(1, 0.8, 0.4);
-        torsoGroup.add(pecL);
-        const pecR = pecL.clone(); pecR.position.x = 0.5;
-        torsoGroup.add(pecR);
-
-        torsoGroup.position.y = 5.2;
-        omni.add(torsoGroup);
-
-        // 2. Refined Head (Jaw, Mustache, Eyes)
+        // 1. Sharp Facial Definition (Fighter Style)
         const headGroup = new THREE.Group();
-        headGroup.position.y = 8.2;
-        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.85, 24, 24), whiteMat);
+        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), whiteMat);
         headGroup.add(skull);
-        const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.6, 0.6, 8), whiteMat);
-        jaw.position.y = -0.4;
-        headGroup.add(jaw);
+        
+        // Jawline & Cheekbones
+        for(let i=0; i<2; i++) {
+            const cheek = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 0.4), whiteMat);
+            cheek.position.set(i === 0 ? 0.65 : -0.65, -0.1, 0.6);
+            cheek.rotation.y = i === 0 ? 0.5 : -0.5;
+            headGroup.add(cheek);
+        }
 
-        const eyeGeo = new THREE.BoxGeometry(0.3, 0.08, 0.1);
-        const eyeL = new THREE.Mesh(eyeGeo, darkMat);
-        eyeL.position.set(-0.35, 0.15, 0.75);
+        // Mustache Cluster
+        const stache = new THREE.Group();
+        for(let i=0; i<15; i++) {
+            const s = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), darkMat);
+            const angle = (i/14) * Math.PI;
+            s.position.set(Math.cos(angle)*0.65, -0.35 - Math.abs(Math.sin(angle))*0.15, 0.9);
+            stache.add(s);
+        }
+        headGroup.add(stache);
+        
+        // Eye Slits
+        const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.08, 0.1), darkMat);
+        eyeL.position.set(-0.35, 0.2, 0.85);
         eyeL.rotation.z = 0.15;
         headGroup.add(eyeL);
         const eyeR = eyeL.clone(); eyeR.position.x = 0.35; eyeR.rotation.z = -0.15;
         headGroup.add(eyeR);
 
-        const moustache = new THREE.Group();
-        for(let i=0; i<12; i++) {
-            const s = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), darkMat);
-            const angle = (i/11) * Math.PI;
-            s.position.set(Math.cos(angle)*0.55, -0.2 - Math.abs(Math.sin(angle))*0.12, 0.85);
-            moustache.add(s);
-        }
-        headGroup.add(moustache);
+        headGroup.position.y = 8.5;
         omni.add(headGroup);
 
-        // 3. Arms: Cylinders with Deltoid Contouring
-        const createArm = (side) => {
-            const armGroup = new THREE.Group();
-            
-            // Deltoid (Sphere Joint)
-            const delt = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), whiteMat);
-            armGroup.add(delt);
+        // 2. High-Density Muscle Torso (Sternum & 10-Pack)
+        const torso = new THREE.Group();
+        const mainCore = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.1, 5.5, 64), whiteMat);
+        torso.add(mainCore);
 
-            const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 8), whiteMat);
-            upper.position.y = -1;
-            armGroup.add(upper);
+        // Sternum Line
+        const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.5, 0.1), mat(0xdddddd));
+        sternum.position.set(0, 1.5, 0.7);
+        torso.add(sternum);
 
-            const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), whiteMat);
-            elbow.position.y = -2;
-            armGroup.add(elbow);
+        // Detailed Pecs & Lats
+        for(let i=0; i<12; i++) {
+            const pec = new THREE.Mesh(new THREE.SphereGeometry(0.75, 16, 16), whiteMat);
+            pec.position.set((i%2?0.6:-0.6), 1.8 + Math.floor(i/2)*0.4, 0.5);
+            pec.scale.set(1.2, 0.9, 0.45);
+            torso.add(pec);
+        }
 
-            const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 2, 8), whiteMat);
-            lower.position.y = -3;
-            armGroup.add(lower);
+        // 10-Pack Abdominal Core
+        for(let i=0; i<10; i++) {
+            const ab = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), whiteMat);
+            ab.position.set((i%2?0.35:-0.35), 0.5 - Math.floor(i/2)*0.6, 0.65);
+            ab.scale.set(1.1, 0.75, 0.5);
+            torso.add(ab);
+        }
 
-            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), whiteMat);
-            hand.position.y = -4;
-            armGroup.add(hand);
+        torso.position.y = 5.2;
+        omni.add(torso);
 
-            armGroup.position.set(side * 1.7, 7.2, 0);
-            return armGroup;
+        // 3. High-Density Muscular Limbs
+        const createHighFidelityLimb = (x, y, color, side) => {
+            const g = new THREE.Group();
+            // Muscle groups (Biceps, Delts, Forearms, Quads, Calves)
+            for(let i=0; i<40; i++) {
+                const seg = new THREE.Mesh(new THREE.SphereGeometry(0.55 - i*0.012, 16, 16), mat(color));
+                seg.position.y = -i * 0.22;
+                seg.position.x = Math.sin(i*0.2) * 0.15 * side;
+                seg.scale.set(1.15, 1, 0.85);
+                g.add(seg);
+            }
+            g.position.set(x, y, 0);
+            return g;
         };
-        omni.add(createArm(-1));
-        omni.add(createArm(1));
 
-        // 4. Legs: Cylinders with Calf Contouring
-        const createLeg = (side) => {
-            const legGroup = new THREE.Group();
-            const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 2.5, 8), redMat);
-            upper.position.y = -1.25;
-            legGroup.add(upper);
+        omni.add(createHighFidelityLimb(-2.0, 7.0, 0xffffff, -1)); // L Arm
+        omni.add(createHighFidelityLimb(2.0, 7.0, 0xffffff, 1));  // R Arm
+        omni.add(createHighFidelityLimb(-0.9, 2.8, 0xb71c1c, -1)); // L Leg
+        omni.add(createHighFidelityLimb(0.9, 2.8, 0xb71c1c, 1));  // R Leg
 
-            const knee = new THREE.Mesh(new THREE.SphereGeometry(0.48, 8, 8), redMat);
-            knee.position.y = -2.5;
-            legGroup.add(knee);
-
-            // Calf Contouring (Sphere addition)
-            const calf = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), redMat);
-            calf.scale.set(1, 1.2, 0.8);
-            calf.position.set(0, -3.5, -0.1);
-            legGroup.add(calf);
-
-            const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2.5, 8), redMat);
-            lower.position.y = -3.75;
-            legGroup.add(lower);
-
-            const foot = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), redMat);
-            foot.scale.set(1, 0.5, 1.5);
-            foot.position.set(0, -5, 0.3);
-            legGroup.add(foot);
-
-            legGroup.position.set(side * 0.6, 3.2, 0);
-            return legGroup;
-        };
-        omni.add(createLeg(-1));
-        omni.add(createLeg(1));
-
-        // 5. Overhauled Draping Cape (Multi-Segmented)
+        // 4. Expandable High-Density Fluid Cape
         const capeGroup = new THREE.Group();
-        const segments = 5;
+        const segments = 10;
         for(let i = 0; i < segments; i++) {
-            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, 0.1), redMat);
-            flap.position.set(-1.2 + i * 0.6, 4.5, -0.8 - Math.sin(i)*0.1);
-            flap.rotation.y = Math.sin(i*0.4)*0.2;
+            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.1), redMat);
+            flap.position.set(-2.25 + i * 0.5, 4.5, -1.0 - Math.sin(i*0.4)*0.2);
+            flap.rotation.y = Math.sin(i*0.3)*0.25;
             capeGroup.add(flap);
         }
         omni.add(capeGroup);
 
         omni.position.set((Math.random()-0.5)*180, 0, (Math.random()-0.5)*180);
         scene.add(omni);
-        currentEnemy = { mesh: omni, hp: 12000, maxHp: 12000, cape: capeGroup };
+        currentEnemy = { mesh: omni, hp: 25000, maxHp: 25000, cape: capeGroup };
     };
 
     const setupControls = () => {
@@ -288,13 +266,13 @@ const Fighter = (() => {
             const dir = currentEnemy.mesh.position.clone().sub(camera.position).normalize();
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist <= state.player.punchRange && dir.dot(forward) > 0.45) {
-                currentEnemy.hp -= 800;
-                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6.5, 0)));
+                currentEnemy.hp -= 600;
+                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6.8, 0)));
                 updateUI();
                 if (currentEnemy.hp <= 0) {
                     scene.remove(currentEnemy.mesh);
                     currentEnemy = null; state.run.kills++;
-                    setTimeout(spawnPrimitiveOmniMan, 1200);
+                    setTimeout(spawnHighFidelityOmniMan, 1200);
                 }
             }
         }
@@ -303,10 +281,10 @@ const Fighter = (() => {
     const spawnGore = (pos) => {
         const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const mat = new THREE.MeshBasicMaterial({ color: 0xaa0000 });
-        for (let i = 0; i < 65; i++) {
+        for (let i = 0; i < 80; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
-            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*4.5, Math.random()*4.5, (Math.random()-0.5)*4.5), life: 1.0 };
+            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*5.0, Math.random()*5.0, (Math.random()-0.5)*5.0), life: 1.0 };
             scene.add(p); bloodParticles.push(p);
         }
     };
@@ -336,21 +314,21 @@ const Fighter = (() => {
             currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
             
-            // Dynamic Cape Draping Logic
+            // High-Density Cape Draping
             currentEnemy.cape.children.forEach((flap, i) => {
-                flap.rotation.x = Math.sin(Date.now() * 0.003 + i) * 0.1;
-                flap.position.z = -0.9 - Math.sin(Date.now() * 0.002 + i) * 0.05;
+                flap.rotation.x = Math.sin(Date.now() * 0.0035 + i) * 0.15;
+                flap.position.z = -1.0 - Math.sin(Date.now() * 0.0025 + i) * 0.08;
             });
 
             if (dist < 850 && dist > 15) {
-                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.42 * dt));
-                currentEnemy.mesh.position.y = 12 + Math.sin(Date.now() * 0.002) * 6;
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.45 * dt));
+                currentEnemy.mesh.position.y = 14 + Math.sin(Date.now() * 0.002) * 6;
             }
         }
 
         bloodParticles.forEach((p, i) => {
             p.position.add(p.userData.vel.clone().multiplyScalar(dt));
-            p.userData.vel.y -= 0.03 * dt; p.userData.life -= 0.02 * dt; p.scale.setScalar(p.userData.life);
+            p.userData.vel.y -= 0.035 * dt; p.userData.life -= 0.02 * dt; p.scale.setScalar(p.userData.life);
             if (p.userData.life <= 0) { scene.remove(p); bloodParticles.splice(i, 1); }
         });
         renderer.render(scene, camera);
