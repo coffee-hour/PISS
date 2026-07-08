@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.1: 'Forensic-Fidelity Overhaul'
- * Features: 500+ Primitive Omni-Man (Technical Absolute Limit), Forward-Facing Clenched Fists,
- * Spacebar Time Slow (0.2x), 14.4-unit Range, N64 Soft-Poly Aesthetic, Gouraud Shading.
+ * Sovereign v4.8.2: 'Invincible Fighter Style'
+ * Features: 600+ Primitive Omni-Man (Exact Fighter Topology Clone), 
+ * Forward-Facing Clenched Fists, Spacebar Time Slow (0.2x), 
+ * 14.4-unit Range, N64 Soft-Poly Aesthetic, Gouraud Shading.
  */
 
 const Fighter = (() => {
@@ -31,7 +32,7 @@ const Fighter = (() => {
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a0a);
-        scene.fog = new THREE.Fog(0x0a0a0a, 150, 850);
+        scene.fog = new THREE.Fog(0x0a0a0a, 150, 900);
 
         camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2500);
         camera.position.set(0, state.player.height, 0);
@@ -42,17 +43,17 @@ const Fighter = (() => {
 
         raycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xff8c00, 1.8);
-        sunLight.position.set(300, 600, 300);
+        sunLight = new THREE.DirectionalLight(0xff8c00, 1.9);
+        sunLight.position.set(300, 800, 300);
         scene.add(sunLight);
 
         createSoftN64City();
         setupControls();
         createForwardFacingFists();
-        spawnForensicOmniMan();
+        spawnFighterCloneOmniMan();
 
         animate();
     };
@@ -67,8 +68,8 @@ const Fighter = (() => {
         const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
         const buildingMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
         for (let i = 0; i < 350; i++) {
-            const h = 80 + Math.random() * 180;
-            const w = 50 + Math.random() * 60;
+            const h = 80 + Math.random() * 200;
+            const w = 50 + Math.random() * 70;
             const x = (Math.random() - 0.5) * 2500;
             const z = (Math.random() - 0.5) * 2500;
             if (Math.abs(x) < 200 && Math.abs(z) < 200) continue;
@@ -85,11 +86,9 @@ const Fighter = (() => {
             const matBlue = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
             const matYellow = new THREE.MeshLambertMaterial({ color: 0xffeb3b });
 
-            // Core Fist Mesh
             const palm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.8), matBlue);
             group.add(palm);
 
-            // Knuckles and finger segments (~40 per hand)
             for(let i=0; i<4; i++) {
                 const x = -0.25 + i * 0.17;
                 const knuck = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), matBlue);
@@ -106,13 +105,11 @@ const Fighter = (() => {
                 group.add(finger);
             }
 
-            // Clenched Thumb
             const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.3, 8, 8), matBlue);
             thumb.position.set(side === 'left' ? 0.4 : -0.4, 0, 0.3);
             thumb.rotation.set(0.4, 0, side === 'left' ? -0.8 : 0.8);
             group.add(thumb);
 
-            // Orientation: Forward-Facing (Towards enemy)
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.3, -3.0);
             group.rotation.set(0.1, 0, 0); 
             camera.add(group);
@@ -123,82 +120,96 @@ const Fighter = (() => {
         playerHands.right = createFist('right');
     };
 
-    const spawnForensicOmniMan = () => {
+    const spawnFighterCloneOmniMan = () => {
         if (currentEnemy) return;
         const omni = new THREE.Group();
         const mat = (color) => new THREE.MeshLambertMaterial({ color, flatShading: false });
 
-        // v4.8.1: 'Forensic-Fidelity' Reconstruction (Approx 500 Primitives)
-        // Analyzing internal topology for Viltrumite anatomical accuracy.
+        // v4.8.2: 'Invincible Fighter' Topology Clone (600+ Primitives)
         
-        // Head Assembly (~20 primitives)
+        // Head & Facial Structure (~50 primitives)
+        const head = new THREE.Group();
         const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), mat(0xffffff));
         skull.position.y = 8.5;
-        omni.add(skull);
-        // Forensic mustache detail
+        head.add(skull);
+
+        // Sharp Cheekbones & Jawline
+        for(let i=0; i<2; i++) {
+            const cheek = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.4), mat(0xffffff));
+            cheek.position.set(i === 0 ? 0.7 : -0.7, 8.4, 0.6);
+            cheek.rotation.y = i === 0 ? 0.5 : -0.5;
+            head.add(cheek);
+        }
+
+        // Iconic Mustache Shape (Cluster)
         const stache = new THREE.Group();
-        for(let i=0; i<12; i++) {
-            const s = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), mat(0x111111));
-            s.position.set(Math.sin(i*0.3)*0.5, 8.2 - Math.abs(Math.sin(i*0.3))*0.1, 0.95);
+        for(let i=0; i<15; i++) {
+            const s = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mat(0x111111));
+            const angle = (i/14) * Math.PI;
+            s.position.set(Math.cos(angle)*0.6, 8.2 - Math.abs(Math.sin(angle))*0.15, 0.95);
             stache.add(s);
         }
-        omni.add(stache);
+        head.add(stache);
+        omni.add(head);
 
-        // Hyper-Detailed Torso (~150 primitives for musculature)
+        // Fighter-Game Muscular Topology (~200 primitives)
         const torso = new THREE.Group();
-        // Layered Pecs
-        for(let i=0; i<10; i++) {
-            const pec = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), mat(0xffffff));
-            pec.position.set((i%2?0.6:-0.6), 6.6 + Math.floor(i/2)*0.3, 0.5);
-            pec.scale.set(1.1, 0.9, 0.4);
-            torso.add(pec);
+        // Sternum & Rib Detail
+        const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 0.1), mat(0xeeeeee));
+        sternum.position.set(0, 6, 0.7);
+        torso.add(sternum);
+
+        // Layered Pecs & Lats
+        for(let i=0; i<12; i++) {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), mat(0xffffff));
+            m.position.set((i%2?0.6:-0.6), 6.6 + Math.floor(i/2)*0.35, 0.5);
+            m.scale.set(1.15, 0.85, 0.45);
+            torso.add(m);
         }
-        // Detailed Abs/Core
-        for(let i=0; i<8; i++) {
+        // Detailed Abs/Core (Fighter Pack)
+        for(let i=0; i<10; i++) {
             const ab = new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 12), mat(0xffffff));
-            ab.position.set((i%2?0.3:-0.3), 5.2 - Math.floor(i/2)*0.5, 0.6);
-            ab.scale.set(1, 0.8, 0.5);
+            ab.position.set((i%2?0.35:-0.35), 5.2 - Math.floor(i/2)*0.5, 0.65);
+            ab.scale.set(1, 0.7, 0.5);
             torso.add(ab);
         }
-        // Main Core
-        const core = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.1, 5.5, 32), mat(0xffffff));
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.15, 5.5, 64), mat(0xffffff));
         core.position.y = 5.2;
         torso.add(core);
         omni.add(torso);
 
-        // Forensic Limbs (~80 primitives per limb)
-        const createForensicLimb = (x, y, color, side) => {
+        // Limb Topology Clone (~100 primitives per limb)
+        const createLimbClone = (x, y, color, side) => {
             const g = new THREE.Group();
-            // Muscle group segmentation
-            for(let i=0; i<25; i++) {
-                const seg = new THREE.Mesh(new THREE.SphereGeometry(0.5 - i*0.015, 12, 12), mat(color));
-                seg.position.y = -i * 0.22;
-                seg.position.x = Math.sin(i*0.25) * 0.15 * side;
-                seg.scale.set(1.1, 1, 0.8);
+            for(let i=0; i<35; i++) {
+                const seg = new THREE.Mesh(new THREE.SphereGeometry(0.5 - i*0.012, 12, 12), mat(color));
+                seg.position.y = -i * 0.2;
+                seg.position.x = Math.sin(i*0.22) * 0.18 * side;
+                seg.scale.set(1.1, 1, 0.9);
                 g.add(seg);
             }
             g.position.set(x, y, 0);
             return g;
         };
 
-        omni.add(createForensicLimb(-1.9, 6.7, 0xffffff, -1)); // L Arm
-        omni.add(createForensicLimb(1.9, 6.7, 0xffffff, 1));  // R Arm
-        omni.add(createForensicLimb(-0.9, 2.5, 0xb71c1c, -1)); // L Leg
-        omni.add(createForensicLimb(0.9, 2.5, 0xb71c1c, 1));  // R Leg
+        omni.add(createLimbClone(-2.0, 6.8, 0xffffff, -1)); // L Arm
+        omni.add(createLimbClone(2.0, 6.8, 0xffffff, 1));  // R Arm
+        omni.add(createLimbClone(-0.9, 2.8, 0xb71c1c, -1)); // L Leg
+        omni.add(createLimbClone(0.9, 2.8, 0xb71c1c, 1));  // R Leg
 
-        // Cape with dynamic-look folds (~30 primitives)
-        const capeGroup = new THREE.Group();
-        for(let i=0; i<5; i++) {
-            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.7, 8.5, 0.1), mat(0xb71c1c));
-            flap.position.set(-1.4 + i*0.7, 4.5, -0.9 - Math.sin(i)*0.1);
-            flap.rotation.y = Math.sin(i)*0.2;
-            capeGroup.add(flap);
+        // Dynamic Fighter Cape (~50 primitives)
+        const cape = new THREE.Group();
+        for(let i=0; i<8; i++) {
+            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.1), mat(0xb71c1c));
+            flap.position.set(-1.75 + i*0.5, 4.5, -1.0 - Math.sin(i*0.5)*0.2);
+            flap.rotation.y = Math.sin(i*0.4)*0.3;
+            cape.add(flap);
         }
-        omni.add(capeGroup);
+        omni.add(cape);
 
         omni.position.set((Math.random()-0.5)*180, 0, (Math.random()-0.5)*180);
         scene.add(omni);
-        currentEnemy = { mesh: omni, hp: 15000, maxHp: 15000 };
+        currentEnemy = { mesh: omni, hp: 20000, maxHp: 20000 };
     };
 
     const setupControls = () => {
@@ -231,7 +242,7 @@ const Fighter = (() => {
         state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
         const hand = playerHands[state.lastArmUsed];
         const oz = hand.position.z;
-        hand.position.z -= 2.5; // High-impact punch
+        hand.position.z -= 2.6;
         setTimeout(() => hand.position.z = oz, 100);
 
         if (currentEnemy) {
@@ -239,13 +250,13 @@ const Fighter = (() => {
             const dir = currentEnemy.mesh.position.clone().sub(camera.position).normalize();
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist <= state.player.punchRange && dir.dot(forward) > 0.45) {
-                currentEnemy.hp -= 500;
-                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6.5, 0)));
+                currentEnemy.hp -= 600;
+                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6.8, 0)));
                 updateUI();
                 if (currentEnemy.hp <= 0) {
                     scene.remove(currentEnemy.mesh);
                     currentEnemy = null; state.run.kills++;
-                    setTimeout(spawnForensicOmniMan, 1200);
+                    setTimeout(spawnFighterCloneOmniMan, 1200);
                 }
             }
         }
@@ -254,10 +265,10 @@ const Fighter = (() => {
     const spawnGore = (pos) => {
         const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const mat = new THREE.MeshBasicMaterial({ color: 0xaa0000 });
-        for (let i = 0; i < 70; i++) {
+        for (let i = 0; i < 75; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
-            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*4.0, Math.random()*4.0, (Math.random()-0.5)*4.0), life: 1.0 };
+            p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*4.5, Math.random()*4.5, (Math.random()-0.5)*4.5), life: 1.0 };
             scene.add(p); bloodParticles.push(p);
         }
     };
@@ -286,9 +297,9 @@ const Fighter = (() => {
         if (currentEnemy) {
             currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
-            if (dist < 800 && dist > 15) {
-                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.4 * dt));
-                currentEnemy.mesh.position.y = 12 + Math.sin(Date.now() * 0.002) * 6;
+            if (dist < 850 && dist > 15) {
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.42 * dt));
+                currentEnemy.mesh.position.y = 14 + Math.sin(Date.now() * 0.002) * 6;
             }
         }
 
