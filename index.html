@@ -1,205 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>SOVEREIGN v5.5.2 [SAFE_MODE]</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>SOVEREIGN v5.6.1 [CLEAN_SLATE]</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; color: #ffbf00; font-family: 'Courier New', monospace; overflow: hidden; text-transform: uppercase; }
-        #canvas { display: block; background: #080808; border: 1px solid #333; margin: auto; }
-        #hud { position: fixed; top: 20px; right: 20px; text-align: right; pointer-events: none; }
-        .bar-container { background: #111; border: 1px solid #ffbf00; width: 200px; height: 10px; margin-top: 5px; }
-        .bar-fill { background: #c62828; height: 100%; width: 100%; transition: width 0.3s; }
-        #status { position: fixed; bottom: 20px; left: 20px; font-size: 10px; color: #888; }
-        #controls { position: fixed; bottom: 20px; right: 20px; font-size: 10px; }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        #overlay h1 { font-size: 48px; color: #c62828; }
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+        #game-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
+        #hud { position: fixed; top: 20px; right: 20px; font-family: monospace; color: #ffbf00; text-align: right; z-index: 100; pointer-events: none; }
+        .bar { background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; height: 10px; margin: 4px 0; overflow: hidden; width: 250px; }
+        .fill { height: 100%; float: right; background: #c62828; width: 100%; }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    
+    <div id="game-container"></div>
     <div id="hud">
-        <div style="font-weight: bold; font-size: 18px;" id="sector-name">CENTRAL PLAZA</div>
-        <div style="margin-top: 15px; font-size: 10px;">BIO_INTEGRITY [PLAYER]</div>
-        <div class="bar-container"><div id="p-hp" class="bar-fill"></div></div>
-        
-        <div style="margin-top: 15px; font-size: 10px;">REPUTATION_XP</div>
-        <div class="bar-container"><div id="p-xp" class="bar-fill" style="background: #ffbf00; width: 0%;"></div></div>
-        
-        <div id="target-ui" style="display: none; margin-top: 20px;">
-            <div style="font-size: 10px;">TARGET_SIGNAL [ACTIVE]</div>
-            <div class="bar-container"><div id="o-hp" class="bar-fill" style="background: #ffbf00;"></div></div>
-        </div>
+        <div style="font-weight: bold; font-size: 18px;">SOVEREIGN v5.6.1</div>
+        <div style="font-size: 10px; margin-top: 5px;">3D_ENGINE_ACTIVE // SINGLE_TARGET_MODE</div>
+        <div style="font-size: 10px; margin-top: 10px;">BIO_STATUS</div>
+        <div class="bar"><div id="p-fill" class="fill"></div></div>
     </div>
-
-    <div id="status">SOVEREIGN_OS v5.5.2 // SAFE_MODE_ACTIVE // 2D_PRIMITIVE_RENDERER</div>
-    <div id="controls">WASD: MOVE | CLICK: PUNCH | SPACE: ASCEND | CTRL: DESCEND</div>
-
-    <div id="overlay">
-        <h1>MISSION FAILED</h1>
-        <div style="cursor: pointer; margin-top: 20px;" onclick="location.reload()">RELOAD SIMULATION</div>
-    </div>
-
-    <script>
-        /**
-         * SOVEREIGN v5.5.2: 'SAFE MODE' TACTICAL UI
-         * - 2D Canvas Renderer (Zero WebGL dependency)
-         * - Top-down Tactical Perspective
-         * - Maintains all v5.5.x logic, containment, and aggro.
-         */
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        const state = {
-            player: { x: 0, y: 0, z: 10, hp: 100, xp: 0, speed: 5 },
-            keys: {},
-            lastTime: 0
-        };
-
-        const sectors = [
-            { name: 'OMNI-MAN VOID', x: 500, y: 0, color: '#ffffff', radius: 250, type: 'omni', entities: [] },
-            { name: 'CONQUEST COURT', x: -500, y: 0, color: '#888888', radius: 250, type: 'conquest', entities: [] },
-            { name: 'FLAXAN SECTOR', x: 0, y: 500, color: '#eed202', radius: 250, type: 'mob', entities: [] },
-            { name: 'SEQUID HIVE', x: 0, y: -500, color: '#e91e63', radius: 250, type: 'mob', entities: [] }
-        ];
-
-        function init() {
-            window.addEventListener('resize', resize);
-            resize();
-            
-            // Spawn Entities
-            sectors.forEach(s => {
-                const count = s.type === 'omni' ? 1 : 6;
-                for(let i=0; i<count; i++) {
-                    s.entities.push({
-                        x: s.x + (Math.random()-0.5)*150,
-                        y: s.y + (Math.random()-0.5)*150,
-                        z: 20,
-                        hp: 1000,
-                        state: 'passive',
-                        anim: Math.random() * 10
-                    });
-                }
-            });
-
-            document.addEventListener('keydown', e => state.keys[e.key.toLowerCase()] = true);
-            document.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
-            document.addEventListener('mousedown', performAttack);
-
-            requestAnimationFrame(update);
-        }
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        function performAttack() {
-            sectors.forEach(s => {
-                s.entities.forEach(e => {
-                    const d = Math.hypot(state.player.x - e.x, state.player.y - e.y);
-                    if(d < 50 && Math.abs(state.player.z - e.z) < 15) {
-                        e.hp -= 100;
-                        state.player.xp += 10;
-                    }
-                });
-            });
-        }
-
-        function update(time) {
-            const dt = (time - state.lastTime) / 16.66 || 1;
-            state.lastTime = time;
-
-            // Player Movement
-            if(state.keys['w']) state.player.y -= state.player.speed * dt;
-            if(state.keys['s']) state.player.y += state.player.speed * dt;
-            if(state.keys['a']) state.player.x -= state.player.speed * dt;
-            if(state.keys['d']) state.player.x += state.player.speed * dt;
-            if(state.keys[' ']) state.player.z += 2 * dt;
-            if(state.keys['control']) state.player.z = Math.max(0, state.player.z - 2 * dt);
-
-            draw();
-            requestAnimationFrame(update);
-        }
-
-        function draw() {
-            ctx.fillStyle = '#080808';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            const camX = canvas.width/2 - state.player.x;
-            const camY = canvas.height/2 - state.player.y;
-
-            // Draw Grid
-            ctx.strokeStyle = '#1a1a1a';
-            ctx.lineWidth = 1;
-            for(let x = -3000; x <= 3000; x += 100) {
-                ctx.beginPath();
-                ctx.moveTo(x + camX, -3000 + camY);
-                ctx.lineTo(x + camX, 3000 + camY);
-                ctx.stroke();
-            }
-            for(let y = -3000; y <= 3000; y += 100) {
-                ctx.beginPath();
-                ctx.moveTo(-3000 + camX, y + camY);
-                ctx.lineTo(3000 + camX, y + camY);
-                ctx.stroke();
-            }
-
-            let activeSector = "CENTRAL PLAZA";
-            let inCombat = false;
-
-            // Draw Sectors & Entities
-            sectors.forEach(s => {
-                const distToPlayer = Math.hypot(state.player.x - s.x, state.player.y - s.y);
-                const playerInside = distToPlayer < s.radius;
-                if(playerInside) activeSector = s.name;
-
-                // Containment Circle
-                ctx.strokeStyle = s.color;
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.arc(s.x + camX, s.y + camY, s.radius, 0, Math.PI*2);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                s.entities.forEach(e => {
-                    if(e.hp <= 0) return;
-                    e.anim += 0.05;
-
-                    if(playerInside) {
-                        inCombat = true;
-                        const angle = Math.atan2(state.player.y - e.y, state.player.x - e.x);
-                        e.x += Math.cos(angle) * 3;
-                        e.y += Math.sin(angle) * 3;
-                        if(distToPlayer < 40) state.player.hp -= 0.1;
-                    }
-
-                    const size = 10 + (e.z * 0.5);
-                    ctx.fillStyle = s.color;
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = s.color;
-                    ctx.fillRect(e.x + camX - size/2, e.y + camY - size/2 + Math.sin(e.anim)*5, size, size);
-                    ctx.shadowBlur = 0;
-                });
-            });
-
-            // Draw Player
-            const pSize = 12 + (state.player.z * 0.5);
-            ctx.fillStyle = '#1e88e5';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#1e88e5';
-            ctx.fillRect(canvas.width/2 - pSize/2, canvas.height/2 - pSize/2, pSize, pSize);
-            ctx.shadowBlur = 0;
-
-            // Update HUD
-            document.getElementById('sector-name').innerText = activeSector;
-            document.getElementById('p-hp').style.width = state.player.hp + '%';
-            document.getElementById('p-xp').style.width = (state.player.xp % 100) + '%';
-            document.getElementById('target-ui').style.display = inCombat ? 'block' : 'none';
-
-            if(state.player.hp <= 0) document.getElementById('overlay').style.display = 'flex';
-        }
-
-        init();
-    </script>
+    <script type="module" src="app.js?v=561"></script>
 </body>
 </html>
