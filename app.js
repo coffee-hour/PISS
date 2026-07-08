@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.3: 'Fist Rotation Update'
- * Features: Back-of-Hand First-Person Orientation, 600+ Primitive Omni-Man,
- * Spacebar Time Slow (0.2x), 14.4-unit Range, N64 Soft-Poly Aesthetic.
+ * Sovereign v4.8.4: 'Primitive-Fit Omni-Man'
+ * Features: Geometric Primitive Omni-Man (Xavier-Spec), 
+ * Sphere Joints, Back-of-Hand Fists, Spacebar Time Slow (0.2x), 
+ * N64 Soft-Poly Aesthetic, Gouraud Shading.
  */
 
 const Fighter = (() => {
@@ -45,14 +46,14 @@ const Fighter = (() => {
         ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xff8c00, 1.9);
+        sunLight = new THREE.DirectionalLight(0xff8c00, 1.8);
         sunLight.position.set(300, 800, 300);
         scene.add(sunLight);
 
         createSoftN64City();
         setupControls();
         createBackOfHandFists();
-        spawnFighterCloneOmniMan();
+        spawnPrimitiveOmniMan();
 
         animate();
     };
@@ -85,37 +86,32 @@ const Fighter = (() => {
             const matBlue = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
             const matYellow = new THREE.MeshLambertMaterial({ color: 0xffeb3b });
 
-            // Core Fist Mesh
             const palm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.8), matBlue);
             group.add(palm);
 
-            // Knuckles pointed FORWARD (Z-axis)
             for(let i=0; i<4; i++) {
                 const x = -0.25 + i * 0.17;
                 const knuck = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), matBlue);
-                knuck.position.set(x, 0.1, 0.4); // Knuckles at the front
+                knuck.position.set(x, 0.1, 0.4);
                 group.add(knuck);
 
                 const yellowPad = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 12), matYellow);
                 yellowPad.position.set(x, 0.12, 0.45);
                 group.add(yellowPad);
                 
-                // Finger segments curled AWAY/DOWN
                 const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.4, 8), matBlue);
                 finger.position.set(x, -0.15, 0.35);
                 finger.rotation.x = -Math.PI/4;
                 group.add(finger);
             }
 
-            // Clenched Thumb
             const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.3, 8, 8), matBlue);
             thumb.position.set(side === 'left' ? 0.4 : -0.4, -0.05, 0.2);
             thumb.rotation.set(0.1, 0, side === 'left' ? -1.0 : 1.0);
             group.add(thumb);
 
-            // Orientation: Back of hand faces camera, knuckles forward
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.3, -3.0);
-            group.rotation.set(-0.3, 0, 0); // Slight downward tilt to show back of hand
+            group.rotation.set(-0.3, 0, 0); 
             camera.add(group);
             return group;
         };
@@ -124,88 +120,87 @@ const Fighter = (() => {
         playerHands.right = createFist('right');
     };
 
-    const spawnFighterCloneOmniMan = () => {
+    const spawnPrimitiveOmniMan = () => {
         if (currentEnemy) return;
         const omni = new THREE.Group();
         const mat = (color) => new THREE.MeshLambertMaterial({ color, flatShading: false });
+        const whiteMat = mat(0xffffff);
+        const redMat = mat(0xb71c1c);
+        const darkMat = mat(0x111111);
 
-        // Head assembly
-        const head = new THREE.Group();
-        const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), mat(0xffffff));
-        skull.position.y = 8.5;
-        head.add(skull);
-
-        for(let i=0; i<2; i++) {
-            const cheek = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.4), mat(0xffffff));
-            cheek.position.set(i === 0 ? 0.7 : -0.7, 8.4, 0.6);
-            cheek.rotation.y = i === 0 ? 0.5 : -0.5;
-            head.add(cheek);
-        }
-
-        const stache = new THREE.Group();
-        for(let i=0; i<15; i++) {
-            const s = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mat(0x111111));
-            const angle = (i/14) * Math.PI;
-            s.position.set(Math.cos(angle)*0.6, 8.2 - Math.abs(Math.sin(angle))*0.15, 0.95);
-            stache.add(s);
-        }
-        head.add(stache);
-        omni.add(head);
-
-        // Torso
-        const torso = new THREE.Group();
-        const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 0.1), mat(0xeeeeee));
-        sternum.position.set(0, 6, 0.7);
-        torso.add(sternum);
-
-        for(let i=0; i<12; i++) {
-            const m = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), mat(0xffffff));
-            m.position.set((i%2?0.6:-0.6), 6.6 + Math.floor(i/2)*0.35, 0.5);
-            m.scale.set(1.15, 0.85, 0.45);
-            torso.add(m);
-        }
-        for(let i=0; i<10; i++) {
-            const ab = new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 12), mat(0xffffff));
-            ab.position.set((i%2?0.35:-0.35), 5.2 - Math.floor(i/2)*0.5, 0.65);
-            ab.scale.set(1, 0.7, 0.5);
-            torso.add(ab);
-        }
-        const core = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.15, 5.5, 64), mat(0xffffff));
-        core.position.y = 5.2;
-        torso.add(core);
+        // 1. Torso: Simple cylinder/block structure
+        const torso = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.0, 4.5, 12), whiteMat);
+        torso.position.y = 5.2;
         omni.add(torso);
 
-        // Limbs
-        const createLimbClone = (x, y, color, side) => {
-            const g = new THREE.Group();
-            for(let i=0; i<35; i++) {
-                const seg = new THREE.Mesh(new THREE.SphereGeometry(0.5 - i*0.012, 12, 12), mat(color));
-                seg.position.y = -i * 0.2;
-                seg.position.x = Math.sin(i*0.22) * 0.18 * side;
-                seg.scale.set(1.1, 1, 0.9);
-                g.add(seg);
-            }
-            g.position.set(x, y, 0);
-            return g;
+        // 2. Head: Sphere head with mustache detail
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), whiteMat);
+        head.position.y = 8.2;
+        omni.add(head);
+        
+        const moustache = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.12, 8, 16, Math.PI), darkMat);
+        moustache.rotation.z = Math.PI; moustache.position.set(0, 7.9, 0.85);
+        omni.add(moustache);
+
+        // 3. Arms: Cylindrical upper/lower arms connected by sphere joints
+        const createArm = (side) => {
+            const armGroup = new THREE.Group();
+            const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 8), whiteMat);
+            upper.position.y = -1;
+            armGroup.add(upper);
+
+            const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), whiteMat);
+            elbow.position.y = -2;
+            armGroup.add(elbow);
+
+            const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 2, 8), whiteMat);
+            lower.position.y = -3;
+            armGroup.add(lower);
+
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), whiteMat);
+            hand.position.y = -4;
+            armGroup.add(hand);
+
+            armGroup.position.set(side * 1.6, 7.2, 0);
+            return armGroup;
         };
+        omni.add(createArm(-1)); // Left
+        omni.add(createArm(1));  // Right
 
-        omni.add(createLimbClone(-2.0, 6.8, 0xffffff, -1)); // L Arm
-        omni.add(createLimbClone(2.0, 6.8, 0xffffff, 1));  // R Arm
-        omni.add(createLimbClone(-0.9, 2.8, 0xb71c1c, -1)); // L Leg
-        omni.add(createLimbClone(0.9, 2.8, 0xb71c1c, 1));  // R Leg
+        // 4. Legs: Cylindrical torso-to-knee joints, sphere knee joints, cylindrical lower legs, oval feet
+        const createLeg = (side) => {
+            const legGroup = new THREE.Group();
+            const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 2.5, 8), redMat);
+            upper.position.y = -1.25;
+            legGroup.add(upper);
 
-        const cape = new THREE.Group();
-        for(let i=0; i<8; i++) {
-            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.1), mat(0xb71c1c));
-            flap.position.set(-1.75 + i*0.5, 4.5, -1.0 - Math.sin(i*0.5)*0.2);
-            flap.rotation.y = Math.sin(i*0.4)*0.3;
-            cape.add(flap);
-        }
+            const knee = new THREE.Mesh(new THREE.SphereGeometry(0.48, 8, 8), redMat);
+            knee.position.y = -2.5;
+            legGroup.add(knee);
+
+            const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2.5, 8), redMat);
+            lower.position.y = -3.75;
+            legGroup.add(lower);
+
+            const foot = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), redMat);
+            foot.scale.set(1, 0.5, 1.5);
+            foot.position.set(0, -5, 0.3);
+            legGroup.add(foot);
+
+            legGroup.position.set(side * 0.6, 3.2, 0);
+            return legGroup;
+        };
+        omni.add(createLeg(-1));
+        omni.add(createLeg(1));
+
+        // 5. Cape: Simple geometric cape
+        const cape = new THREE.Mesh(new THREE.BoxGeometry(2.5, 7, 0.1), redMat);
+        cape.position.set(0, 4.5, -0.6);
         omni.add(cape);
 
         omni.position.set((Math.random()-0.5)*180, 0, (Math.random()-0.5)*180);
         scene.add(omni);
-        currentEnemy = { mesh: omni, hp: 20000, maxHp: 20000 };
+        currentEnemy = { mesh: omni, hp: 10000, maxHp: 10000 };
     };
 
     const setupControls = () => {
@@ -246,13 +241,13 @@ const Fighter = (() => {
             const dir = currentEnemy.mesh.position.clone().sub(camera.position).normalize();
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist <= state.player.punchRange && dir.dot(forward) > 0.45) {
-                currentEnemy.hp -= 600;
-                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6.8, 0)));
+                currentEnemy.hp -= 800;
+                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6, 0)));
                 updateUI();
                 if (currentEnemy.hp <= 0) {
                     scene.remove(currentEnemy.mesh);
                     currentEnemy = null; state.run.kills++;
-                    setTimeout(spawnFighterCloneOmniMan, 1200);
+                    setTimeout(spawnPrimitiveOmniMan, 1200);
                 }
             }
         }
@@ -261,7 +256,7 @@ const Fighter = (() => {
     const spawnGore = (pos) => {
         const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const mat = new THREE.MeshBasicMaterial({ color: 0xaa0000 });
-        for (let i = 0; i < 75; i++) {
+        for (let i = 0; i < 60; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
             p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*4.5, Math.random()*4.5, (Math.random()-0.5)*4.5), life: 1.0 };
@@ -294,8 +289,8 @@ const Fighter = (() => {
             currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
             if (dist < 850 && dist > 15) {
-                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.42 * dt));
-                currentEnemy.mesh.position.y = 14 + Math.sin(Date.now() * 0.002) * 6;
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.45 * dt));
+                currentEnemy.mesh.position.y = 12 + Math.sin(Date.now() * 0.002) * 6;
             }
         }
 
