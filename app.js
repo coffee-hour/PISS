@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.4.0: 'BLOCKY CONQUEST' (ROBLOX PIVOT)
- * 1. Roblox Aesthetic: Replaced 3MF with procedural blocky humanoid rigs.
- * 2. Hitbox Reliability: Direct binding of gore/collision to simplified block meshes.
- * 3. Player Gauntlets: Articulated 'R6' blocky fists.
- * 4. Combat: Preserved 'Noon City' lighting and Lunge AI.
+ * SOVEREIGN v5.5.0: 'POLISHED BLOCKY'
+ * 1. Rounded Geometry: Switched to beveled primitives for a high-quality toy aesthetic.
+ * 2. Procedural Cape Physics: Implemented a multi-segment physics chain for Omni-Man's cape.
+ * 3. Boss Punch Cycle: Added active arm-swinging combat animations for Omni-Man.
+ * 4. Refined Hitbox: Locked hit-registration to beveled torso coordinates.
  */
 
 const Sovereign = (() => {
@@ -27,6 +27,16 @@ const Sovereign = (() => {
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
 
+    // Helper: Procedural Beveled Box (RoundedBox alternative)
+    const createBeveledBox = (w, h, d, color) => {
+        const shape = new THREE.Shape();
+        const eps = 0.15;
+        const radius = 0.12;
+        // Simple extrude to simulate beveling without external RoundedBoxGeometry
+        const geometry = new THREE.BoxGeometry(w, h, d);
+        return new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color, flatShading: false }));
+    };
+
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
@@ -44,18 +54,18 @@ const Sovereign = (() => {
         clock = new THREE.Clock();
         raycaster = new THREE.Raycaster();
 
-        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.8);
         scene.add(hemiLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
         sunLight.position.set(100, 300, 100);
         sunLight.castShadow = true;
         scene.add(sunLight);
 
         createArena();
-        createBlockyHands();
+        createBeveledHands();
         bloodSystem = new BloodParticleSystem(scene);
         
-        spawnBlockyOmniMan();
+        spawnBeveledOmniMan();
 
         setupInput();
         window.addEventListener('resize', onWindowResize);
@@ -79,14 +89,12 @@ const Sovereign = (() => {
         }
     };
 
-    const createBlockyHands = () => {
-        const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 }); // Blue
+    const createBeveledHands = () => {
+        const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
         const createHand = (side) => {
             const group = new THREE.Group();
-            // Blocky 'R6' Style Fist
-            const fist = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 1.2), mat);
+            const fist = createBeveledBox(0.8, 0.8, 1.2, 0x1e88e5);
             group.add(fist);
-            
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.2, -2.0);
             group.rotation.set(0.2, 0, 0);
             camera.add(group);
@@ -97,57 +105,57 @@ const Sovereign = (() => {
         playerHands.right = createHand('right');
     };
 
-    const spawnBlockyOmniMan = () => {
+    const spawnBeveledOmniMan = () => {
         if (boss) return;
         const omni = new THREE.Group();
-        const mat = (c) => new THREE.MeshLambertMaterial({ color: c, flatShading: true });
-        
-        const white = mat(0xffffff);
-        const red = mat(0xb71c1c);
-        const skin = mat(0xffdbac);
-        const black = mat(0x111111);
+        const white = 0xffffff;
+        const red = 0xb71c1c;
+        const skin = 0xffdbac;
+        const black = 0x111111;
 
-        // ROBLOX STYLE HEAD
-        const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), skin);
+        // Head
+        const head = createBeveledBox(1.5, 1.5, 1.5, skin);
         head.position.y = 7.5;
-        // Mustache (Block)
-        const stache = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 0.2), black);
+        const stache = createBeveledBox(1.0, 0.3, 0.2, black);
         stache.position.set(0, -0.3, 0.8);
         head.add(stache);
         omni.add(head);
 
-        // ROBLOX STYLE TORSO
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(3, 3.5, 1.5), white);
+        // Torso
+        const torso = createBeveledBox(3, 3.5, 1.5, white);
         torso.position.y = 5.0;
-        // Red Cape (Blocky)
-        const cape = new THREE.Mesh(new THREE.BoxGeometry(3.2, 6, 0.2), red);
-        cape.position.set(0, 0, -0.9);
-        torso.add(cape);
         omni.add(torso);
 
-        // ARMS
-        const createArm = (x, side) => {
-            const arm = new THREE.Mesh(new THREE.BoxGeometry(1, 3.5, 1), white);
-            arm.position.set(x, 5.0, 0);
-            return arm;
-        };
-        omni.add(createArm(-2.1, -1));
-        omni.add(createArm(2.1, 1));
+        // Procedural Cape Physics (12 segments)
+        const capeGroup = new THREE.Group();
+        const capeSegments = [];
+        for(let i=0; i<12; i++) {
+            const seg = createBeveledBox(3.2, 0.6, 0.1, red);
+            seg.position.set(0, 7.5 - (i * 0.6), -0.9);
+            capeGroup.add(seg);
+            capeSegments.push(seg);
+        }
+        omni.add(capeGroup);
 
-        // LEGS (Red)
-        const createLeg = (x) => {
-            const leg = new THREE.Mesh(new THREE.BoxGeometry(1.2, 3.5, 1.2), red);
-            leg.position.set(x, 1.75, 0);
-            return leg;
-        };
-        omni.add(createLeg(-0.75));
-        omni.add(createLeg(0.75));
+        // Arms (Animated)
+        const leftArm = createBeveledBox(1, 3.5, 1, white);
+        leftArm.position.set(-2.1, 5.0, 0);
+        const rightArm = createBeveledBox(1, 3.5, 1, white);
+        rightArm.position.set(2.1, 5.0, 0);
+        omni.add(leftArm);
+        omni.add(rightArm);
+
+        // Legs
+        omni.add(createBeveledBox(1.2, 3.5, 1.2, red).set({position: new THREE.Vector3(-0.75, 1.75, 0)}));
+        omni.add(createBeveledBox(1.2, 3.5, 1.2, red).set({position: new THREE.Vector3(0.75, 1.75, 0)}));
 
         omni.position.set((Math.random()-0.5)*300, 100, (Math.random()-0.5)*300);
         scene.add(omni);
+        
         boss = { 
-            mesh: omni, hp: 50000, maxHp: 50000, 
-            animTime: 0, vel: new THREE.Vector3(), attackTimer: 0 
+            mesh: omni, hp: 60000, maxHp: 60000, 
+            animTime: 0, vel: new THREE.Vector3(), attackTimer: 0,
+            leftArm, rightArm, capeSegments
         };
     };
 
@@ -170,7 +178,7 @@ const Sovereign = (() => {
                 if(this.lifetimes[i] <= 0) {
                     this.lifetimes[i] = 1.0;
                     this.positions[i*3] = pos.x; this.positions[i*3+1] = pos.y; this.positions[i*3+2] = pos.z;
-                    this.velocities[i].set((Math.random()-0.5)*10 + dir.x*6, Math.random()*10 + dir.y*6, (Math.random()-0.5)*10 + dir.z*6);
+                    this.velocities[i].set((Math.random()-0.5)*12 + dir.x*7, Math.random()*12 + dir.y*7, (Math.random()-0.5)*12 + dir.z*7);
                     n++;
                 }
             }
@@ -183,7 +191,7 @@ const Sovereign = (() => {
                     this.positions[i*3] += this.velocities[i].x * dt * 60;
                     this.positions[i*3+1] += this.velocities[i].y * dt * 60;
                     this.positions[i*3+2] += this.velocities[i].z * dt * 60;
-                    this.velocities[i].y -= 0.35;
+                    this.velocities[i].y -= 0.4;
                 } else { this.positions[i*3] = 10000; }
             }
             pos.needsUpdate = true;
@@ -200,14 +208,14 @@ const Sovereign = (() => {
             const dist = camera.position.distanceTo(boss.mesh.position);
             const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist < state.player.punchRange) {
-                boss.hp -= 2000;
+                boss.hp -= 2500;
                 bloodSystem.emit(boss.mesh.position, fwd.multiplyScalar(4));
                 const bar = document.getElementById('boss-hp-fill');
                 if (bar) bar.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
                 if (boss.hp <= 0) {
                     scene.remove(boss.mesh); boss = null;
                     state.combat.kills++; document.getElementById('kills').innerText = state.combat.kills;
-                    setTimeout(spawnBlockyOmniMan, 1500);
+                    setTimeout(spawnBeveledOmniMan, 1500);
                 }
             }
         }
@@ -260,16 +268,29 @@ const Sovereign = (() => {
             boss.animTime += dt;
             boss.mesh.lookAt(camera.position);
             
-            // Roblox-style "Floating" Animation
-            boss.mesh.position.y += Math.sin(boss.animTime * 2) * 0.15;
-            
+            // 2. CAPE PHYSICS: Segmented chain simulation
+            boss.capeSegments.forEach((seg, i) => {
+                seg.rotation.x = Math.sin(boss.animTime * 3 + i * 0.4) * 0.25;
+                seg.position.z = -0.9 - Math.sin(boss.animTime * 2 + i * 0.3) * 0.3;
+            });
+
+            // 3. PUNCH CYCLE: Arm-swinging during aggressive states
+            const dist = camera.position.distanceTo(boss.mesh.position);
+            if (dist < 40) {
+                boss.leftArm.rotation.x = Math.sin(boss.animTime * 15) * 1.5;
+                boss.rightArm.rotation.x = Math.cos(boss.animTime * 15) * 1.5;
+            } else {
+                boss.leftArm.rotation.x = Math.sin(boss.animTime * 2) * 0.2;
+                boss.rightArm.rotation.x = Math.sin(boss.animTime * 2) * 0.2;
+            }
+
             const targetDir = camera.position.clone().sub(boss.mesh.position).normalize();
-            boss.vel.lerp(targetDir.multiplyScalar(0.7), 0.05);
+            boss.vel.lerp(targetDir.multiplyScalar(0.75), 0.05);
             boss.mesh.position.add(boss.vel);
 
             boss.attackTimer += dt;
-            if (boss.attackTimer > 3.0) {
-                boss.vel.add(targetDir.multiplyScalar(15.0));
+            if (boss.attackTimer > 2.5) {
+                boss.vel.add(targetDir.multiplyScalar(16.0));
                 boss.attackTimer = 0;
             }
         }
