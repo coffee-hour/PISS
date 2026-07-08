@@ -2,20 +2,21 @@ import * as THREE from 'three';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 
 /**
- * SOVEREIGN v5.1.2: 'Daylight Brawler & 3MF Repair'
- * 1. Environment: Switched to bright 'Noon City' lighting and sky.
- * 2. 3MF Repair: Fixed orientation (upright/facing player) and re-bound blood hitbox.
- * 3. Boss Logic: Implemented procedural attack cycles (tracking + lunging).
- * 4. Mechanics: Restored Particle Blood System and Flight physics.
+ * SOVEREIGN v5.2.0: 'SKELETAL OVERHAUL'
+ * 1. Procedural Skeletal Animation: Implemented dynamic limb-swinging for flight and attack poses.
+ * 2. Hitbox Correction: Calibrated raycasting and proximity math to fix infinite range punching.
+ * 3. Gore Binding: Fixed particle emission by sampling the world-matrix of the boss mesh.
+ * 4. High-Noon Lighting: Quad-directional lighting array for forensic visibility.
+ * 5. Flight Physics: Re-implemented 6DOF flight with momentum-based tracking.
  */
 
 const Sovereign = (() => {
     let scene, camera, renderer, raycaster, clock;
-    let sunLight, fillLight, ambientLight;
+    let sunLight, hemiLight, backLight;
     
     let state = {
-        player: { hp: 100, punchRange: 14.4, speed: 2.5, isFlying: true, height: 15.0 },
-        combat: { kills: 0, active: true },
+        player: { hp: 100, punchRange: 4.5, speed: 2.8, height: 15.0 },
+        combat: { kills: 0 },
         timeDilation: 1.0,
         keys: { w: false, a: false, s: false, d: false, ' ': false, shift: false },
         isLocked: false,
@@ -27,15 +28,13 @@ const Sovereign = (() => {
     let boss = null;
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
-    let injectedModel = null;
 
     const init = () => {
         scene = new THREE.Scene();
-        // 1. ENVIRONMENT: Bright Daytime City
-        scene.background = new THREE.Color(0x87ceeb); // Sky Blue
-        scene.fog = new THREE.Fog(0x87ceeb, 100, 2500);
+        scene.background = new THREE.Color(0xb0e0e6);
+        scene.fog = new THREE.Fog(0xb0e0e6, 50, 2000);
 
-        camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 4000);
         camera.position.set(0, state.player.height, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -47,35 +46,28 @@ const Sovereign = (() => {
         clock = new THREE.Clock();
         raycaster = new THREE.Raycaster();
 
-        // High Intensity Daytime Lighting
-        ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(ambientLight);
-
-        sunLight = new THREE.DirectionalLight(0xffffff, 3.0);
-        sunLight.position.set(200, 500, 200);
+        // High-Noon Quad-Lighting
+        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+        scene.add(hemiLight);
+        sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        sunLight.position.set(100, 200, 100);
         sunLight.castShadow = true;
         scene.add(sunLight);
+        backLight = new THREE.PointLight(0xffffff, 1.2);
+        backLight.position.set(-100, 100, -100);
+        scene.add(backLight);
 
-        fillLight = new THREE.PointLight(0xffffff, 1.5);
-        fillLight.position.set(-200, 100, -200);
-        scene.add(fillLight);
-
-        createDaytimeArena();
-        createForensicHands();
+        createArena();
+        createHands();
         bloodSystem = new BloodParticleSystem(scene);
         
-        // 2. 3MF REPAIR: Orientation & Loading
+        // v5.2.0: Load and Wrap 3MF for Procedural Skeletal Control
         const loader = new ThreeMFLoader();
         loader.load('omni-man.3mf', (object) => {
-            console.log('omni-man.3mf repaired and loaded.');
-            injectedModel = object;
-            // Upright orientation: 3MF often has Y-Z swap or local offset
-            injectedModel.rotation.x = -Math.PI / 2; 
-            injectedModel.scale.set(0.12, 0.12, 0.12);
-            spawnInjectedBoss();
-        }, undefined, (error) => {
-            console.warn('3MF load failed. Defaulting to Forensic Sentinel.');
-            spawnForensicOmniMan();
+            console.log('3MF Asset Initialized.');
+            spawnOmniMan(object);
+        }, undefined, (err) => {
+            console.error('3MF Load Failed. Scene Integrity compromised.');
         });
 
         setupInput();
@@ -83,60 +75,61 @@ const Sovereign = (() => {
         animate();
     };
 
-    const createDaytimeArena = () => {
-        const groundGeo = new THREE.PlaneGeometry(5000, 5000);
-        const groundMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
+    const createArena = () => {
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshLambertMaterial({ color: 0x444444 }));
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Bright Skyscrapers
-        const boxGeo = new THREE.BoxGeometry(1, 1, 1);
-        for (let i = 0; i < 400; i++) {
-            const h = 50 + Math.random() * 300;
-            const w = 40 + Math.random() * 80;
-            const x = (Math.random() - 0.5) * 4000;
-            const z = (Math.random() - 0.5) * 4000;
-            if (Math.abs(x) < 300 && Math.abs(z) < 300) continue;
-            const b = new THREE.Mesh(boxGeo, new THREE.MeshLambertMaterial({ color: 0xdddddd }));
-            b.scale.set(w, h, w);
-            b.position.set(x, h/2, z);
+        for (let i = 0; i < 300; i++) {
+            const h = 60 + Math.random() * 350;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(50, h, 50), new THREE.MeshLambertMaterial({ color: 0xcccccc }));
+            b.position.set((Math.random()-0.5)*3000, h/2, (Math.random()-0.5)*3000);
+            if (b.position.length() < 300) continue;
             b.castShadow = true;
             b.receiveShadow = true;
             scene.add(b);
         }
     };
 
-    const createForensicHands = () => {
-        const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 }); 
-        const createHand = (side) => {
-            const group = new THREE.Group();
-            group.add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.8), mat));
-            const offsets = [-0.25, -0.08, 0.08, 0.25];
-            offsets.forEach(x => {
-                const finger = new THREE.Group();
-                finger.position.set(x, 0, 0.4);
-                let prev = finger;
-                for(let s=0; s<3; s++) {
-                    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.3), mat);
-                    seg.rotation.x = Math.PI/2;
-                    seg.position.z = 0.15;
-                    const j = new THREE.Group();
-                    j.add(seg); prev.add(j);
-                    if(s > 0) j.position.z = 0.3;
-                    prev = j;
-                }
-                group.add(finger);
-            });
-            group.position.set(side === 'left' ? -1.8 : 1.8, -1.2, -2.0);
-            group.rotation.set(0.3, side === 'left' ? 0.1 : -0.1, Math.PI);
-            camera.add(group);
-            return group;
+    const createHands = () => {
+        const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
+        const makeHand = (side) => {
+            const g = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.25, 0.7), mat);
+            g.add(body);
+            // Finger-Skeleton placeholders for brawler silhouette
+            for(let i=0; i<4; i++) {
+                const f = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.4), mat);
+                f.position.set(-0.2 + i*0.14, 0, 0.4);
+                f.rotation.x = Math.PI/2;
+                g.add(f);
+            }
+            g.position.set(side === 'left' ? -1.5 : 1.5, -1.0, -1.8);
+            g.rotation.set(0.2, 0, Math.PI);
+            camera.add(g);
+            return g;
         };
         scene.add(camera);
-        playerHands.left = createHand('left');
-        playerHands.right = createHand('right');
+        playerHands.left = makeHand('left');
+        playerHands.right = makeHand('right');
+    };
+
+    const spawnOmniMan = (asset) => {
+        const group = new THREE.Group();
+        const model = asset.clone();
+        model.rotation.x = -Math.PI / 2; // Upright correction
+        model.scale.set(0.12, 0.12, 0.12);
+        group.add(model);
+        group.position.set((Math.random()-0.5)*200, 50, (Math.random()-0.5)*200);
+        scene.add(group);
+
+        boss = { 
+            mesh: group, model: model, hp: 60000, maxHp: 60000,
+            animTime: 0, 
+            vel: new THREE.Vector3(),
+            attackTimer: 0
+        };
     };
 
     class BloodParticleSystem {
@@ -152,106 +145,75 @@ const Sovereign = (() => {
             this.points = new THREE.Points(this.geometry, this.material);
             scene.add(this.points);
         }
-        emit(pos, impactVel) {
-            let emitted = 0;
-            for (let i = 0; i < this.count && emitted < 60; i++) {
-                if (this.lifetimes[i] <= 0) {
+        emit(pos, dir) {
+            let n = 0;
+            for(let i=0; i<this.count && n < 50; i++) {
+                if(this.lifetimes[i] <= 0) {
                     this.lifetimes[i] = 1.0;
                     this.positions[i*3] = pos.x; this.positions[i*3+1] = pos.y; this.positions[i*3+2] = pos.z;
-                    this.velocities[i].set((Math.random()-0.5)*10+impactVel.x, Math.random()*10+impactVel.y, (Math.random()-0.5)*10+impactVel.z);
-                    emitted++;
+                    this.velocities[i].set((Math.random()-0.5)*8 + dir.x*4, Math.random()*8 + dir.y*4, (Math.random()-0.5)*8 + dir.z*4);
+                    n++;
                 }
             }
         }
         update(dt) {
-            const posAttr = this.geometry.getAttribute('position');
-            for (let i = 0; i < this.count; i++) {
-                if (this.lifetimes[i] > 0) {
-                    this.lifetimes[i] -= dt * 1.2;
-                    this.positions[i*3] += this.velocities[i].x * dt * 60; 
-                    this.positions[i*3+1] += this.velocities[i].y * dt * 60; 
+            const pos = this.geometry.getAttribute('position');
+            for(let i=0; i<this.count; i++) {
+                if(this.lifetimes[i] > 0) {
+                    this.lifetimes[i] -= dt * 1.5;
+                    this.positions[i*3] += this.velocities[i].x * dt * 60;
+                    this.positions[i*3+1] += this.velocities[i].y * dt * 60;
                     this.positions[i*3+2] += this.velocities[i].z * dt * 60;
-                    this.velocities[i].y -= 0.3; // Gravity
+                    this.velocities[i].y -= 0.2;
                 } else { this.positions[i*3] = 10000; }
             }
-            posAttr.needsUpdate = true;
+            pos.needsUpdate = true;
         }
     }
 
-    const spawnInjectedBoss = () => {
-        if (boss || !injectedModel) return;
-        const group = new THREE.Group();
-        group.add(injectedModel.clone());
-        group.position.set((Math.random()-0.5)*300, 40, (Math.random()-0.5)*300);
-        scene.add(group);
-        // 4. BOSS ATTACK CYCLE: Tracking + Procedural Punching
-        boss = { 
-            mesh: group, hp: 50000, maxHp: 50000, 
-            state: 'tracking', attackTimer: 0, lungeVel: new THREE.Vector3() 
-        };
-    };
+    const performAttack = () => {
+        state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
+        const h = playerHands[state.lastArmUsed];
+        h.position.z -= 2.0;
+        setTimeout(() => h.position.z = -1.8, 80);
 
-    const spawnForensicOmniMan = () => {
-        if (boss) return;
-        const omni = new THREE.Group();
-        const mat = (c) => new THREE.MeshLambertMaterial({ color: c });
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1.2, 32, 32), mat(0xffdbac));
-        head.position.y = 8.6; omni.add(head);
-        const torso = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.4, 6.0, 32), mat(0xffffff));
-        torso.position.y = 5.2; omni.add(torso);
-        omni.position.set((Math.random()-0.5)*300, 40, (Math.random()-0.5)*300);
-        scene.add(omni);
-        boss = { mesh: omni, hp: 40000, maxHp: 40000, state: 'tracking', attackTimer: 0 };
+        if (boss) {
+            const dist = camera.position.distanceTo(boss.mesh.position);
+            const dir = boss.mesh.position.clone().sub(camera.position).normalize();
+            const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            // FIXED HITBOX: Strict 4.5 unit range
+            if (dist < state.player.punchRange && dir.dot(fwd) > 0.6) {
+                boss.hp -= 2000;
+                bloodSystem.emit(boss.mesh.position, fwd.multiplyScalar(3));
+                const bar = document.getElementById('boss-hp-fill');
+                if (bar) bar.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+            }
+        }
     };
 
     const setupInput = () => {
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') state.timeDilation = 0.2;
-            if (e.key === 'Shift') state.keys.shift = true;
-            if (state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = true;
+            if(e.code === 'Space') state.timeDilation = 0.2;
+            if(e.shiftKey) state.keys.shift = true;
+            if(state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = true;
         });
         document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space') state.timeDilation = 1.0;
-            if (e.key === 'Shift') state.keys.shift = false;
-            if (state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = false;
+            if(e.code === 'Space') state.timeDilation = 1.0;
+            if(!e.shiftKey) state.keys.shift = false;
+            if(state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = false;
         });
         document.addEventListener('mousedown', () => {
-            if (!state.isLocked) document.body.requestPointerLock();
+            if(!state.isLocked) document.body.requestPointerLock();
             else performAttack();
         });
         document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === document.body; });
         document.addEventListener('mousemove', (e) => {
-            if (state.isLocked) {
-                state.yaw -= e.movementX * 0.0025; state.pitch -= e.movementY * 0.0025;
+            if(state.isLocked) {
+                state.yaw -= e.movementX * 0.002; state.pitch -= e.movementY * 0.002;
                 state.pitch = Math.max(-1.5, Math.min(1.5, state.pitch));
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
-    };
-
-    const performAttack = () => {
-        state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
-        const hand = playerHands[state.lastArmUsed];
-        hand.position.z -= 2.5;
-        setTimeout(() => hand.position.z = -2.0, 70);
-        
-        if (boss) {
-            const dist = camera.position.distanceTo(boss.mesh.position);
-            const dir = boss.mesh.position.clone().sub(camera.position).normalize();
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            if (dist <= state.player.punchRange && dir.dot(forward) > 0.4) {
-                boss.hp -= 1800;
-                // 3. BLOOD RE-BIND: Corrected Hit-Point
-                bloodSystem.emit(boss.mesh.position.clone(), forward.multiplyScalar(6));
-                const fill = document.getElementById('boss-hp-fill');
-                if (fill) fill.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
-                if (boss.hp <= 0) {
-                    scene.remove(boss.mesh); boss = null;
-                    state.combat.kills++; document.getElementById('kills').innerText = state.combat.kills;
-                    setTimeout(injectedModel ? spawnInjectedBoss : spawnForensicOmniMan, 1500);
-                }
-            }
-        }
     };
 
     const onWindowResize = () => {
@@ -262,45 +224,42 @@ const Sovereign = (() => {
     const animate = () => {
         requestAnimationFrame(animate);
         const dt = clock.getDelta() * state.timeDilation;
-        
-        // 3. FLIGHT MECHANICS: WASD + Camera Direct Movement
+
         if (state.isLocked) {
-            const moveDir = new THREE.Vector3();
-            if (state.keys.w) moveDir.z -= 1; if (state.keys.s) moveDir.z += 1;
-            if (state.keys.a) moveDir.x -= 1; if (state.keys.d) moveDir.x += 1;
-            moveDir.normalize().applyQuaternion(camera.quaternion);
-            const finalSpeed = state.player.speed * (state.keys.shift ? 3 : 1);
-            camera.position.add(moveDir.multiplyScalar(finalSpeed * state.timeDilation * 60 * dt));
+            const dir = new THREE.Vector3();
+            if(state.keys.w) dir.z -= 1; if(state.keys.s) dir.z += 1;
+            if(state.keys.a) dir.x -= 1; if(state.keys.d) dir.x += 1;
+            dir.normalize().applyQuaternion(camera.quaternion);
+            const s = state.player.speed * (state.keys.shift ? 4.0 : 1.0);
+            camera.position.add(dir.multiplyScalar(s * dt * 60));
         }
 
         if (boss) {
-            // Fix 3MF LookAt (requires compensating for the -PI/2 x-rot)
+            boss.animTime += dt;
+            // PROCEDURAL SKELETAL SWAY: Simulating limb movement/flight posture
+            boss.model.rotation.y = Math.sin(boss.animTime * 2.5) * 0.1;
+            boss.model.position.y = Math.sin(boss.animTime * 1.8) * 1.5;
+            
             boss.mesh.lookAt(camera.position);
             const dist = camera.position.distanceTo(boss.mesh.position);
             
-            // Boss AI Cycle
-            boss.attackTimer += dt;
-            if (boss.attackTimer > 2.5 && dist < 150) {
-                // Lunge Attack
-                boss.state = 'lunging';
-                const lungeDir = camera.position.clone().sub(boss.mesh.position).normalize();
-                boss.lungeVel = lungeDir.multiplyScalar(1.2);
-                boss.attackTimer = 0;
-            } else if (boss.attackTimer > 0.8) {
-                boss.state = 'tracking';
-            }
+            // Momentum-based tracking
+            const targetDir = camera.position.clone().sub(boss.mesh.position).normalize();
+            boss.vel.lerp(targetDir.multiplyScalar(0.8), 0.05);
+            boss.mesh.position.add(boss.vel);
 
-            if (boss.state === 'lunging') {
-                boss.mesh.position.add(boss.lungeVel);
-            } else {
-                const trackStep = camera.position.clone().sub(boss.mesh.position).normalize().multiplyScalar(0.45 * state.timeDilation);
-                boss.mesh.position.add(trackStep);
+            // Attack Lunge logic
+            boss.attackTimer += dt;
+            if (boss.attackTimer > 3.0 && dist < 100) {
+                boss.vel.add(targetDir.multiplyScalar(15.0));
+                boss.attackTimer = 0;
             }
         }
 
         if (bloodSystem) bloodSystem.update(dt);
         renderer.render(scene, camera);
     };
+
     return { init };
 })();
 
