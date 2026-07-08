@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.5: 'Head-Definition Update'
- * Features: High-Definition Primitive Head (Fighter Accuracy), 
- * Primitive-Fit Body, Back-of-Hand Fists, Spacebar Time Slow (0.2x), 
+ * Sovereign v4.8.6: 'Muscle & Cape Overhaul'
+ * Features: Primitive Muscle Contouring (Pecs/Delts/Calves), 
+ * Multi-Segmented Draping Cape, Refined Head Definition, 
+ * Back-of-Hand Fists, Spacebar Time Slow (0.2x), 
  * N64 Soft-Poly Aesthetic, Gouraud Shading.
  */
 
@@ -128,49 +129,57 @@ const Fighter = (() => {
         const redMat = mat(0xb71c1c);
         const darkMat = mat(0x111111);
 
-        // 1. Torso: Simple cylinder/block structure
-        const torso = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.0, 4.5, 12), whiteMat);
-        torso.position.y = 5.2;
-        omni.add(torso);
+        // 1. Torso: Primitive-Fit with Muscle Detail (Pecs/Abs)
+        const torsoGroup = new THREE.Group();
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.0, 4.5, 12), whiteMat);
+        torsoGroup.add(core);
 
-        // 2. Refined Head (v4.8.5 Upgrade)
+        // Defined Pecs (Geometric Spheres)
+        const pecL = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 8), whiteMat);
+        pecL.position.set(-0.5, 1.5, 0.5);
+        pecL.scale.set(1, 0.8, 0.4);
+        torsoGroup.add(pecL);
+        const pecR = pecL.clone(); pecR.position.x = 0.5;
+        torsoGroup.add(pecR);
+
+        torsoGroup.position.y = 5.2;
+        omni.add(torsoGroup);
+
+        // 2. Refined Head (Jaw, Mustache, Eyes)
         const headGroup = new THREE.Group();
         headGroup.position.y = 8.2;
-
-        // Skull & Jawline
         const skull = new THREE.Mesh(new THREE.SphereGeometry(0.85, 24, 24), whiteMat);
         headGroup.add(skull);
-        
         const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.6, 0.6, 8), whiteMat);
         jaw.position.y = -0.4;
         headGroup.add(jaw);
 
-        // Refined Facial Features
-        // Eyes (Sharp black slits)
         const eyeGeo = new THREE.BoxGeometry(0.3, 0.08, 0.1);
         const eyeL = new THREE.Mesh(eyeGeo, darkMat);
-        eyeL.position.set(-0.35, 0.15, 0.7);
+        eyeL.position.set(-0.35, 0.15, 0.75);
         eyeL.rotation.z = 0.15;
         headGroup.add(eyeL);
-        const eyeR = new THREE.Mesh(eyeGeo, darkMat);
-        eyeR.position.set(0.35, 0.15, 0.7);
-        eyeR.rotation.z = -0.15;
+        const eyeR = eyeL.clone(); eyeR.position.x = 0.35; eyeR.rotation.z = -0.15;
         headGroup.add(eyeR);
 
-        // Forensic Mustache (Cluster for fidelity)
         const moustache = new THREE.Group();
         for(let i=0; i<12; i++) {
             const s = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), darkMat);
             const angle = (i/11) * Math.PI;
-            s.position.set(Math.cos(angle)*0.55, -0.2 - Math.abs(Math.sin(angle))*0.12, 0.82);
+            s.position.set(Math.cos(angle)*0.55, -0.2 - Math.abs(Math.sin(angle))*0.12, 0.85);
             moustache.add(s);
         }
         headGroup.add(moustache);
         omni.add(headGroup);
 
-        // 3. Arms: Cylindrical upper/lower arms connected by sphere joints
+        // 3. Arms: Cylinders with Deltoid Contouring
         const createArm = (side) => {
             const armGroup = new THREE.Group();
+            
+            // Deltoid (Sphere Joint)
+            const delt = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 8), whiteMat);
+            armGroup.add(delt);
+
             const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2, 8), whiteMat);
             upper.position.y = -1;
             armGroup.add(upper);
@@ -187,13 +196,13 @@ const Fighter = (() => {
             hand.position.y = -4;
             armGroup.add(hand);
 
-            armGroup.position.set(side * 1.6, 7.2, 0);
+            armGroup.position.set(side * 1.7, 7.2, 0);
             return armGroup;
         };
-        omni.add(createArm(-1)); // Left
-        omni.add(createArm(1));  // Right
+        omni.add(createArm(-1));
+        omni.add(createArm(1));
 
-        // 4. Legs: Cylindrical torso-to-knee joints, sphere knee joints, cylindrical lower legs, oval feet
+        // 4. Legs: Cylinders with Calf Contouring
         const createLeg = (side) => {
             const legGroup = new THREE.Group();
             const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 2.5, 8), redMat);
@@ -203,6 +212,12 @@ const Fighter = (() => {
             const knee = new THREE.Mesh(new THREE.SphereGeometry(0.48, 8, 8), redMat);
             knee.position.y = -2.5;
             legGroup.add(knee);
+
+            // Calf Contouring (Sphere addition)
+            const calf = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), redMat);
+            calf.scale.set(1, 1.2, 0.8);
+            calf.position.set(0, -3.5, -0.1);
+            legGroup.add(calf);
 
             const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2.5, 8), redMat);
             lower.position.y = -3.75;
@@ -219,14 +234,20 @@ const Fighter = (() => {
         omni.add(createLeg(-1));
         omni.add(createLeg(1));
 
-        // 5. Cape: Simple geometric cape
-        const cape = new THREE.Mesh(new THREE.BoxGeometry(2.5, 7, 0.1), redMat);
-        cape.position.set(0, 4.5, -0.6);
-        omni.add(cape);
+        // 5. Overhauled Draping Cape (Multi-Segmented)
+        const capeGroup = new THREE.Group();
+        const segments = 5;
+        for(let i = 0; i < segments; i++) {
+            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, 0.1), redMat);
+            flap.position.set(-1.2 + i * 0.6, 4.5, -0.8 - Math.sin(i)*0.1);
+            flap.rotation.y = Math.sin(i*0.4)*0.2;
+            capeGroup.add(flap);
+        }
+        omni.add(capeGroup);
 
         omni.position.set((Math.random()-0.5)*180, 0, (Math.random()-0.5)*180);
         scene.add(omni);
-        currentEnemy = { mesh: omni, hp: 12000, maxHp: 12000 };
+        currentEnemy = { mesh: omni, hp: 12000, maxHp: 12000, cape: capeGroup };
     };
 
     const setupControls = () => {
@@ -268,7 +289,7 @@ const Fighter = (() => {
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist <= state.player.punchRange && dir.dot(forward) > 0.45) {
                 currentEnemy.hp -= 800;
-                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6, 0)));
+                spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6.5, 0)));
                 updateUI();
                 if (currentEnemy.hp <= 0) {
                     scene.remove(currentEnemy.mesh);
@@ -282,7 +303,7 @@ const Fighter = (() => {
     const spawnGore = (pos) => {
         const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const mat = new THREE.MeshBasicMaterial({ color: 0xaa0000 });
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 65; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
             p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*4.5, Math.random()*4.5, (Math.random()-0.5)*4.5), life: 1.0 };
@@ -314,8 +335,15 @@ const Fighter = (() => {
         if (currentEnemy) {
             currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
+            
+            // Dynamic Cape Draping Logic
+            currentEnemy.cape.children.forEach((flap, i) => {
+                flap.rotation.x = Math.sin(Date.now() * 0.003 + i) * 0.1;
+                flap.position.z = -0.9 - Math.sin(Date.now() * 0.002 + i) * 0.05;
+            });
+
             if (dist < 850 && dist > 15) {
-                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.45 * dt));
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.42 * dt));
                 currentEnemy.mesh.position.y = 12 + Math.sin(Date.now() * 0.002) * 6;
             }
         }
