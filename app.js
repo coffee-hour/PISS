@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 
 /**
- * SOVEREIGN v5.1.0: 'FORENSIC SENTINEL' REBUILD
- * 1. Zero External Assets: Full procedural indexed geometry reconstruction.
- * 2. Visual Spec: Barrel-chest, defined abs, gray temples, red/white suit blocks.
- * 3. Hand Fix: Knuckles to player, fingers pointing AWAY.
- * 4. Engine: 60 FPS Particle Buffer & Skeletal Rigs.
+ * SOVEREIGN v5.1.1: '3MF Asset Integration'
+ * 1. Integrated 'omni-man.3mf' from repository.
+ * 2. Implemented 3MFLoader for direct model injection.
+ * 3. Maintained v5.1.0 Forensic Fallback and Combat Engine.
  */
 
 const Sovereign = (() => {
@@ -26,6 +27,7 @@ const Sovereign = (() => {
     let boss = null;
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
+    let injectedModel = null;
 
     const init = () => {
         scene = new THREE.Scene();
@@ -55,7 +57,20 @@ const Sovereign = (() => {
         createArena();
         createForensicHands();
         bloodSystem = new BloodParticleSystem(scene);
-        spawnForensicOmniMan();
+        
+        // Load omni-man.3mf
+        const loader = new ThreeMFLoader();
+        loader.load('omni-man.3mf', (object) => {
+            console.log('omni-man.3mf successfully loaded.');
+            injectedModel = object;
+            injectedModel.scale.set(0.1, 0.1, 0.1); // Scaled for 3MF units
+            spawnInjectedBoss();
+        }, (xhr) => {
+            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        }, (error) => {
+            console.warn('omni-man.3mf load failed. Defaulting to Forensic Sentinel.');
+            spawnForensicOmniMan();
+        });
 
         setupInput();
         window.addEventListener('resize', onWindowResize);
@@ -88,22 +103,16 @@ const Sovereign = (() => {
     };
 
     const createForensicHands = () => {
-        const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 }); // Invincible Blue
+        const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 }); 
         const createHand = (side) => {
             const group = new THREE.Group();
-            
-            // Knuckles (Back of Hand) - Facing Player
             const handBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.8), mat);
             group.add(handBody);
-
-            // Knuckle Pads
             for(let i=0; i<4; i++) {
                 const k = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat);
                 k.position.set(-0.25 + i*0.17, 0.15, 0.4);
                 group.add(k);
             }
-
-            // Fingers pointing AWAY (-Z from camera view)
             const offsets = [-0.25, -0.08, 0.08, 0.25];
             offsets.forEach(x => {
                 const finger = new THREE.Group();
@@ -121,9 +130,7 @@ const Sovereign = (() => {
                 }
                 group.add(finger);
             });
-
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.2, -2.0);
-            // FIXED ROTATION: Fingers point away, knuckles/back-of-hand face camera
             group.rotation.set(0.3, side === 'left' ? 0.1 : -0.1, Math.PI);
             camera.add(group);
             return group;
@@ -133,91 +140,57 @@ const Sovereign = (() => {
         playerHands.right = createHand('right');
     };
 
+    const spawnInjectedBoss = () => {
+        if (boss || !injectedModel) return;
+        const group = injectedModel.clone();
+        group.position.set((Math.random()-0.5)*200, 10, (Math.random()-0.5)*200);
+        scene.add(group);
+        boss = { mesh: group, hp: 40000, maxHp: 40000 };
+    };
+
     const spawnForensicOmniMan = () => {
         if (boss) return;
         const omni = new THREE.Group();
-        const mat = (c) => new THREE.MeshLambertMaterial({ color: c, flatShading: false });
-        
-        const white = mat(0xffffff);
-        const red = mat(0xb71c1c);
-        const skin = mat(0xffdbac);
-        const black = mat(0x111111);
-        const grey = mat(0x888888);
-
-        // 1. Head (Forensic Face)
+        const mat = (c) => new THREE.MeshLambertMaterial({ color: c });
+        const white = mat(0xffffff); const red = mat(0xb71c1c); const skin = mat(0xffdbac); const black = mat(0x111111); const grey = mat(0x888888);
         const head = new THREE.Group();
-        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), skin);
-        head.add(skull);
-
-        // Mustache (Forensic Grooming)
+        head.add(new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), skin));
         const stache = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.1, 8, 20, Math.PI), black);
-        stache.position.set(0, -0.35, 0.75);
-        stache.rotation.x = Math.PI/2;
+        stache.position.set(0, -0.35, 0.75); stache.rotation.x = Math.PI/2;
         head.add(stache);
-
-        // Hair & Grey Temples
         const hair = new THREE.Mesh(new THREE.SphereGeometry(0.95, 24, 24, 0, Math.PI*2, 0, Math.PI/2), black);
-        hair.rotation.x = -0.2;
-        head.add(hair);
+        hair.rotation.x = -0.2; head.add(hair);
         for(let side of [-1, 1]) {
             const temple = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), grey);
-            temple.position.set(0.75 * side, 0.3, 0.2);
-            temple.scale.set(1, 1.5, 1);
+            temple.position.set(0.75 * side, 0.3, 0.2); temple.scale.set(1, 1.5, 1);
             head.add(temple);
         }
-
-        head.position.y = 8.6;
-        omni.add(head);
-
-        // 2. Torso (Barrel Chest & Suit Blocking)
+        head.position.y = 8.6; omni.add(head);
         const torso = new THREE.Group();
-        const core = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.2, 5.5, 32), white);
-        torso.add(core);
-
-        // Defined Pectorals (Red Sections)
+        torso.add(new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.2, 5.5, 32), white));
         for(let side of [-1, 1]) {
             const pec = new THREE.Mesh(new THREE.SphereGeometry(0.85, 24, 24), red);
-            pec.position.set(0.6 * side, 1.8, 0.55);
-            pec.scale.set(1.1, 0.9, 0.4);
+            pec.position.set(0.6 * side, 1.8, 0.55); pec.scale.set(1.1, 0.9, 0.4);
             torso.add(pec);
         }
-
-        // Segmented Abs
         for(let i=0; i<6; i++) {
             const ab = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), white);
-            ab.position.set((i%2?0.35:-0.35), 0.6 - Math.floor(i/2)*0.7, 0.7);
-            ab.scale.set(1.1, 0.7, 0.4);
+            ab.position.set((i%2?0.35:-0.35), 0.6 - Math.floor(i/2)*0.7, 0.7); ab.scale.set(1.1, 0.7, 0.4);
             torso.add(ab);
         }
-
-        torso.position.y = 5.2;
-        omni.add(torso);
-
-        // 3. Limbs (Solid Red/White Blocks)
+        torso.position.y = 5.2; omni.add(torso);
         const createLimb = (x, y, color, side) => {
             const g = new THREE.Group();
-            const segments = 40;
-            for(let i=0; i<segments; i++) {
+            for(let i=0; i<40; i++) {
                 const s = new THREE.Mesh(new THREE.SphereGeometry(0.55 - i*0.01, 16, 16), mat(color));
-                s.position.y = -i * 0.2;
-                s.position.x = Math.sin(i*0.15) * 0.15 * side;
-                g.add(s);
+                s.position.y = -i * 0.2; s.position.x = Math.sin(i*0.15) * 0.15 * side; g.add(s);
             }
-            g.position.set(x, y, 0);
-            return g;
+            g.position.set(x, y, 0); return g;
         };
-
-        omni.add(createLimb(-2.1, 7.2, 0xffffff, -1)); // Arms White
-        omni.add(createLimb(2.1, 7.2, 0xffffff, 1));
-        omni.add(createLimb(-1.0, 3.0, 0xb71c1c, -1)); // Legs Red
-        omni.add(createLimb(1.0, 3.0, 0xb71c1c, 1));
-
-        // 4. Cape (Solid Red Plane)
+        omni.add(createLimb(-2.1, 7.2, 0xffffff, -1)); omni.add(createLimb(2.1, 7.2, 0xffffff, 1));
+        omni.add(createLimb(-1.0, 3.0, 0xb71c1c, -1)); omni.add(createLimb(1.0, 3.0, 0xb71c1c, 1));
         const cape = new THREE.Mesh(new THREE.PlaneGeometry(5, 9.5), red);
-        cape.position.set(0, 4.5, -1.2);
-        cape.rotation.x = 0.1;
-        omni.add(cape);
-
+        cape.position.set(0, 4.5, -1.2); cape.rotation.x = 0.1; omni.add(cape);
         omni.position.set((Math.random()-0.5)*200, 0, (Math.random()-0.5)*200);
         scene.add(omni);
         boss = { mesh: omni, hp: 30000, maxHp: 30000, cape: cape };
@@ -225,16 +198,12 @@ const Sovereign = (() => {
 
     class BloodParticleSystem {
         constructor(scene) {
-            this.count = 2000;
-            this.geometry = new THREE.BufferGeometry();
-            this.positions = new Float32Array(this.count * 3);
-            this.velocities = Array.from({length: this.count}, () => new THREE.Vector3());
-            this.lifetimes = new Float32Array(this.count);
-            for(let i=0; i<this.count; i++) this.positions[i*3] = 10000;
+            this.count = 2000; this.geometry = new THREE.BufferGeometry();
+            this.positions = new Float32Array(this.count * 3); this.velocities = Array.from({length: this.count}, () => new THREE.Vector3());
+            this.lifetimes = new Float32Array(this.count); for(let i=0; i<this.count; i++) this.positions[i*3] = 10000;
             this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
             this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.12, transparent: true });
-            this.points = new THREE.Points(this.geometry, this.material);
-            scene.add(this.points);
+            this.points = new THREE.Points(this.geometry, this.material); scene.add(this.points);
         }
         emit(pos, impactVel) {
             let emitted = 0;
@@ -252,9 +221,7 @@ const Sovereign = (() => {
             for (let i = 0; i < this.count; i++) {
                 if (this.lifetimes[i] > 0) {
                     this.lifetimes[i] -= dt * 1.5;
-                    this.positions[i*3] += this.velocities[i].x * dt * 60;
-                    this.positions[i*3+1] += this.velocities[i].y * dt * 60;
-                    this.positions[i*3+2] += this.velocities[i].z * dt * 60;
+                    this.positions[i*3] += this.velocities[i].x * dt * 60; this.positions[i*3+1] += this.velocities[i].y * dt * 60; this.positions[i*3+2] += this.velocities[i].z * dt * 60;
                     this.velocities[i].y -= 0.25;
                 } else { this.positions[i*3] = 10000; }
             }
@@ -278,8 +245,7 @@ const Sovereign = (() => {
         document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === document.body; });
         document.addEventListener('mousemove', (e) => {
             if (state.isLocked) {
-                state.yaw -= e.movementX * 0.002;
-                state.pitch -= e.movementY * 0.002;
+                state.yaw -= e.movementX * 0.002; state.pitch -= e.movementY * 0.002;
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
@@ -301,19 +267,16 @@ const Sovereign = (() => {
                 const fill = document.getElementById('boss-hp-fill');
                 if (fill) fill.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
                 if (boss.hp <= 0) {
-                    scene.remove(boss.mesh);
-                    boss = null;
-                    state.combat.kills++;
-                    document.getElementById('kills').innerText = state.combat.kills;
-                    setTimeout(spawnForensicOmniMan, 1000);
+                    scene.remove(boss.mesh); boss = null;
+                    state.combat.kills++; document.getElementById('kills').innerText = state.combat.kills;
+                    setTimeout(injectedModel ? spawnInjectedBoss : spawnForensicOmniMan, 1000);
                 }
             }
         }
     };
 
     const onWindowResize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     };
 
@@ -322,10 +285,8 @@ const Sovereign = (() => {
         const dt = clock.getDelta() * state.timeDilation;
         if (state.isLocked) {
             const moveDir = new THREE.Vector3();
-            if (state.keys.w) moveDir.z -= 1; if (state.keys.s) moveDir.z += 1;
-            if (state.keys.a) moveDir.x -= 1; if (state.keys.d) moveDir.x += 1;
-            moveDir.normalize().applyQuaternion(camera.quaternion);
-            moveDir.y = 0;
+            if (state.keys.w) moveDir.z -= 1; if (state.keys.s) moveDir.z += 1; if (state.keys.a) moveDir.x -= 1; if (state.keys.d) moveDir.x += 1;
+            moveDir.normalize().applyQuaternion(camera.quaternion); moveDir.y = 0;
             camera.position.add(moveDir.multiplyScalar(state.player.speed * state.timeDilation * 50 * 0.016));
         }
         if (boss) {
@@ -333,8 +294,7 @@ const Sovereign = (() => {
             const dist = camera.position.distanceTo(boss.mesh.position);
             if (dist > 15 && dist < 1200) {
                 const step = boss.mesh.position.clone().sub(camera.position).normalize().multiplyScalar(-0.45 * state.timeDilation);
-                boss.mesh.position.add(step);
-                boss.mesh.position.y = 10 + Math.sin(Date.now() * 0.002) * 6;
+                boss.mesh.position.add(step); boss.mesh.position.y = 10 + Math.sin(Date.now() * 0.002) * 6;
             }
         }
         if (bloodSystem) bloodSystem.update(dt);
