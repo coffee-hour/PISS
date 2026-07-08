@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.7.1: 'RENDER RECOVERY & MINIMAP'
- * 1. Rendering Fix: Forced absolute container sizing and z-index for the canvas to fix black-screen.
- * 2. Minimap: Re-implemented top-right radar using an Orthographic camera.
- * 3. Scene-Graph Integrity: Scene, Lighting, and Camera established BEFORE R6 rigs.
- * 4. Cleanup: Removed references to deprecated 3MF assets.
+ * SOVEREIGN v5.7.2: 'STABILITY LOCK'
+ * 1. Infinite Loop Fix: Removed auto-reload on init failure. Replaced with static, single-pass initialization.
+ * 2. Renderer Mount: Forced a single-instance canvas mount to prevent resize-triggered re-init loops.
+ * 3. Minimap & HUD: Maintained forensic radar and Amber HUD.
+ * 4. Logic: Standardized state updates to prevent recursive frame-rate throttle triggers.
  */
 
 const Sovereign = (() => {
@@ -14,6 +14,7 @@ const Sovereign = (() => {
     let sunLight, hemiLight;
     
     let state = {
+        initialized: false,
         player: { hp: 100, maxHp: 100, punchRange: 5.5, speed: 2.8, height: 15.0, level: 1, xp: 0, nextXp: 5000 },
         combat: { kills: 0 },
         zones: [
@@ -42,77 +43,77 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        try {
-            // 1. SCENE & LIGHTS (CORE FIRST)
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.Fog(0x87ceeb, 100, 4000);
+        // PREVENTION: Ensure init only runs once to stop the reload loop
+        if (state.initialized) return;
+        state.initialized = true;
 
-            hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.8);
-            scene.add(hemiLight);
-            sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
-            sunLight.position.set(500, 1000, 500);
-            scene.add(sunLight);
+        console.log('Sovereign: Initializing Stability Lock...');
+        
+        // 1. SCENE & LIGHTS
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 100, 4000);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
-            camera.position.set(0, state.player.height, 100);
+        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.8);
+        scene.add(hemiLight);
+        sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        sunLight.position.set(500, 1000, 500);
+        scene.add(sunLight);
 
-            // 2. RENDERER SETUP (FIX BLACK SCREEN)
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-            renderer.setClearColor(0x87ceeb, 1);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
-            
-            renderer.domElement.style.position = 'absolute';
-            renderer.domElement.style.top = '0';
-            renderer.domElement.style.left = '0';
-            renderer.domElement.style.zIndex = '0';
-            document.body.appendChild(renderer.domElement);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
+        camera.position.set(0, state.player.height, 100);
 
-            // 3. MINIMAP SYSTEM
-            const mapSize = 200;
-            mapCamera = new THREE.OrthographicCamera(-2000, 2000, 2000, -2000, 1, 1000);
-            mapCamera.position.set(0, 500, 0);
-            mapCamera.lookAt(0, 0, 0);
+        // 2. RENDERER (STATIC MOUNT)
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setClearColor(0x87ceeb, 1);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Throttle pixel ratio for stability
+        renderer.shadowMap.enabled = true;
+        
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+        renderer.domElement.style.zIndex = '0';
+        document.body.appendChild(renderer.domElement);
 
-            const mapDiv = document.createElement('div');
-            mapDiv.style = `position:fixed; top:20px; right:20px; width:${mapSize}px; height:${mapSize}px; border:2px solid #ffbf00; z-index:9999; background:rgba(0,0,0,0.8); overflow:hidden;`;
-            document.body.appendChild(mapDiv);
+        // 3. MINIMAP
+        const mapSize = 200;
+        mapCamera = new THREE.OrthographicCamera(-2000, 2000, 2000, -2000, 1, 1000);
+        mapCamera.position.set(0, 500, 0);
+        mapCamera.lookAt(0, 0, 0);
 
-            mapRenderer = new THREE.WebGLRenderer({ antialias: true });
-            mapRenderer.setSize(mapSize, mapSize);
-            mapDiv.appendChild(mapRenderer.domElement);
+        const mapDiv = document.createElement('div');
+        mapDiv.style = `position:fixed; top:20px; right:20px; width:${mapSize}px; height:${mapSize}px; border:2px solid #ffbf00; z-index:9999; background:rgba(0,0,0,0.8); overflow:hidden;`;
+        document.body.appendChild(mapDiv);
 
-            playerMarker = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0x1e88e5 }));
-            playerMarker.rotation.x = -Math.PI / 2;
-            playerMarker.position.y = 10;
-            scene.add(playerMarker);
+        mapRenderer = new THREE.WebGLRenderer({ antialias: true });
+        mapRenderer.setSize(mapSize, mapSize);
+        mapDiv.appendChild(mapRenderer.domElement);
 
-            clock = new THREE.Clock();
+        playerMarker = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0x1e88e5 }));
+        playerMarker.rotation.x = -Math.PI / 2;
+        playerMarker.position.y = 10;
+        scene.add(playerMarker);
 
-            // 4. OBJECTS
-            createWorld();
-            createBeveledHands();
-            bloodSystem = new BloodParticleSystem(scene);
-            
-            spawnBoss('Omni-Man', 0xffffff, state.zones[0]);
-            spawnBoss('Conquest', 0xdddddd, state.zones[1]);
-            spawnCivilians(40);
-            deployRPG_HUD();
+        clock = new THREE.Clock();
 
-            setupInput();
-            window.addEventListener('resize', onWindowResize);
-            animate();
-        } catch (e) {
-            console.error('Sovereign: Init Failure.', e);
-            location.reload();
-        }
+        // 4. OBJECTS
+        createWorld();
+        createBeveledHands();
+        bloodSystem = new BloodParticleSystem(scene);
+        
+        spawnBoss('Omni-Man', 0xffffff, state.zones[0]);
+        spawnBoss('Conquest', 0xdddddd, state.zones[1]);
+        spawnCivilians(40);
+        deployRPG_HUD();
+
+        setupInput();
+        window.addEventListener('resize', onWindowResize, false);
+        animate();
     };
 
     const deployRPG_HUD = () => {
-        const hudId = 'rpg-master-hud-v571';
-        if(document.getElementById(hudId)) document.getElementById(hudId).remove();
+        const hudId = 'rpg-master-hud-v572';
         const style = document.createElement('style');
         style.innerHTML = `
             .rpg-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
@@ -121,6 +122,7 @@ const Sovereign = (() => {
             .special-node { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; font-size: 10px; padding: 4px; }
         `;
         document.head.appendChild(style);
+
         const hud = document.createElement('div');
         hud.id = hudId; hud.className = 'rpg-hud';
         hud.style.top = '20px'; hud.style.left = '20px';
@@ -140,7 +142,7 @@ const Sovereign = (() => {
 
     const createWorld = () => {
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshLambertMaterial({ color: 0x333333 }));
-        ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+        ground.rotation.x = -Math.PI / 2; scene.add(ground);
         const wallMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
         const wallGeo = new THREE.BoxGeometry(10000, 200, 20);
         for(let i=0; i<4; i++) {
@@ -153,7 +155,7 @@ const Sovereign = (() => {
             const ring = new THREE.Mesh(new THREE.TorusGeometry(z.radius, 2, 8, 64), new THREE.MeshBasicMaterial({ color: z.color, transparent: true, opacity: 0.5 }));
             ring.rotation.x = Math.PI / 2; ring.position.copy(z.center); scene.add(ring);
         });
-        for (let i = 0; i < 500; i++) {
+        for (let i = 0; i < 400; i++) {
             const h = 100 + Math.random() * 600;
             const b = createBeveledBox(80, h, 80, 0xcccccc);
             b.position.set((Math.random()-0.5)*8000, h/2, (Math.random()-0.5)*8000);
@@ -210,7 +212,7 @@ const Sovereign = (() => {
 
     class BloodParticleSystem {
         constructor(scene) {
-            this.count = 3000;
+            this.count = 2000;
             this.geometry = new THREE.BufferGeometry();
             this.positions = new Float32Array(this.count * 3);
             this.velocities = Array.from({length: this.count}, () => new THREE.Vector3());
@@ -223,7 +225,7 @@ const Sovereign = (() => {
         }
         emit(pos, dir) {
             let n = 0;
-            for(let i=0; i<this.count && n < 80; i++) {
+            for(let i=0; i<this.count && n < 60; i++) {
                 if(this.lifetimes[i] <= 0) {
                     this.lifetimes[i] = 1.0;
                     this.positions[i*3] = pos.x; this.positions[i*3+1] = pos.y; this.positions[i*3+2] = pos.z;
@@ -236,7 +238,7 @@ const Sovereign = (() => {
             const posAttr = this.geometry.getAttribute('position');
             for(let i=0; i<this.count; i++) {
                 if(this.lifetimes[i] > 0) {
-                    this.lifetimes[i] -= dt * 1.4;
+                    this.lifetimes[i] -= dt * 1.5;
                     this.positions[i*3] += this.velocities[i].x * dt * 60;
                     this.positions[i*3+1] += this.velocities[i].y * dt * 60;
                     this.positions[i*3+2] += this.velocities[i].z * dt * 60;
@@ -292,7 +294,6 @@ const Sovereign = (() => {
             if(!state.isLocked) document.body.requestPointerLock();
             else performAttack();
         });
-        document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === document.body; });
         document.addEventListener('mousemove', (e) => {
             if(state.isLocked) {
                 state.yaw -= e.movementX * 0.0025; state.pitch -= e.movementY * 0.0025;
@@ -300,11 +301,15 @@ const Sovereign = (() => {
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
+        document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === document.body; });
     };
 
     const onWindowResize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Map renderer resize
+        mapRenderer.setSize(200, 200);
     };
 
     const animate = () => {
@@ -318,8 +323,8 @@ const Sovereign = (() => {
             camera.position.add(dir.multiplyScalar(state.player.speed * (state.keys.shift ? 5 : 1) * dt * 60));
         }
 
-        playerMarker.position.set(camera.position.x, 10, camera.position.z);
-        mapCamera.position.set(camera.position.x, 500, camera.position.z);
+        if (playerMarker) playerMarker.position.set(camera.position.x, 10, camera.position.z);
+        if (mapCamera) mapCamera.position.set(camera.position.x, 500, camera.position.z);
 
         let inCombatZone = false;
         ['X','N','Z'].forEach(k => {
@@ -375,9 +380,10 @@ const Sovereign = (() => {
 
         if (bloodSystem) bloodSystem.update(dt);
         renderer.render(scene, camera);
-        mapRenderer.render(scene, mapCamera);
+        if (mapRenderer && mapCamera) mapRenderer.render(scene, mapCamera);
     };
     return { init };
 })();
 
+// STATIC START
 Sovereign.init();
