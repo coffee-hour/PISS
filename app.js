@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.8.1: 'FORCE MOUNT & SYNC' (RESTORATION)
- * 1. Mounting Fix: Explicitly creating/targeting a #game-container div to ensure DOM sync.
- * 2. Resize Sync: Forced a 100ms deferred resize event to snap the canvas to window bounds.
- * 3. Diagnostic: Rendering a 'SYSTEM_ONLINE' text tag directly into the DOM to verify JS execution.
- * 4. Engine: v5.8.0 beveled-proxy logic with two bosses (Omni-Man and Conquest).
+ * SOVEREIGN v5.7.2: 'OMNI-ZONE & CONQUEST'
+ * 1. World: Expanded 10,000-unit terrain with dual combat zones.
+ * 2. Bosses: Omni-Man and Conquest with roaming/aggro states.
+ * 3. RPG: Level 1-99 system with Amber HUD monitoring.
+ * 4. Special Attacks: X (Thunderclap), N (Sonic Dash), Z (Eye Beam).
+ * 5. HUD: Integrated Minimap and XP tracking.
  */
 
 const Sovereign = (() => {
     let scene, camera, renderer, clock;
     let mapScene, mapCamera, mapRenderer;
-    let sunLight, ambientLight;
+    let sunLight, hemiLight;
     
     let state = {
         initialized: false,
@@ -36,7 +37,6 @@ const Sovereign = (() => {
     let civilians = [];
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
-    let playerMarker = null;
 
     const createBeveledBox = (w, h, d, color) => {
         return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, flatShading: false }));
@@ -46,42 +46,19 @@ const Sovereign = (() => {
         if (state.initialized) return;
         state.initialized = true;
 
-        console.log('Sovereign: Restoring v5.8.1 Force Mount & Sync...');
+        console.log('Sovereign: Restoring v5.7.2 Omni-Zone & Conquest...');
         
-        // Hard cleanup of previous HUDs
-        document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('sniper')) div.remove(); });
-        
-        let container = document.getElementById('game-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'game-container';
-            container.style = 'position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; overflow:hidden; background:#000;';
-            document.body.appendChild(container);
-        }
-
-        const diag = document.createElement('div');
-        diag.id = 'sovereign-diag';
-        diag.style = 'position:fixed; bottom:10px; right:10px; color:#ffbf00; font-family:monospace; font-size:10px; z-index:10000; pointer-events:none;';
-        diag.innerText = 'SYSTEM_ONLINE // v5.8.1';
-        document.body.appendChild(diag);
-
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 100, 5000);
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambientLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        sunLight.position.set(100, 300, 100);
-        scene.add(sunLight);
-
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
         camera.position.set(0, state.player.height, 100);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+        document.body.appendChild(renderer.domElement);
 
         const mapSize = 200;
         mapCamera = new THREE.OrthographicCamera(-2000, 2000, 2000, -2000, 1, 1000);
@@ -89,18 +66,19 @@ const Sovereign = (() => {
         mapCamera.lookAt(0, 0, 0);
 
         const mapDiv = document.createElement('div');
-        mapDiv.id = 'radar-hud';
-        mapDiv.style = `position:fixed; top:20px; right:20px; width:${mapSize}px; height:${mapSize}px; border:2px solid #ffbf00; z-index:9999; background:rgba(0,0,0,0.8); overflow:hidden;`;
+        mapDiv.id = 'radar-hud-v572';
+        mapDiv.style = `position:fixed; top:20px; right:20px; width:${mapSize}px; height:${mapSize}px; border:2px solid #ffbf00; z-index:9999; background:rgba(0,0,0,0.8);`;
         document.body.appendChild(mapDiv);
 
         mapRenderer = new THREE.WebGLRenderer({ antialias: true });
         mapRenderer.setSize(mapSize, mapSize);
         mapDiv.appendChild(mapRenderer.domElement);
 
-        playerMarker = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0x1e88e5 }));
-        playerMarker.rotation.x = -Math.PI / 2;
-        playerMarker.position.y = 10;
-        scene.add(playerMarker);
+        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+        scene.add(hemiLight);
+        sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        sunLight.position.set(100, 300, 100);
+        scene.add(sunLight);
 
         clock = new THREE.Clock();
 
@@ -114,24 +92,20 @@ const Sovereign = (() => {
 
         setupInput();
         window.addEventListener('resize', onWindowResize, false);
-        setTimeout(() => onWindowResize(), 100);
-
         animate();
     };
 
     const deployRPG_HUD = () => {
-        const hudId = 'amber-master-hud';
-        if(document.getElementById(hudId)) return;
         const style = document.createElement('style');
         style.innerHTML = `
-            .amber-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
+            .rpg-hud-v572 { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
             .bar-bg { background: rgba(15, 15, 15, 0.9); border: 1px solid #ffbf00; height: 10px; border-radius: 2px; overflow: hidden; }
             .bar-fill { height: 100%; background: #ffbf00; width: 0%; transition: width 0.3s; }
             .cd-box { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; font-size: 10px; padding: 4px; }
         `;
         document.head.appendChild(style);
         const hud = document.createElement('div');
-        hud.id = hudId; hud.className = 'amber-hud';
+        hud.id = 'rpg-master-hud-v572'; hud.className = 'rpg-hud-v572';
         hud.style.top = '20px'; hud.style.left = '20px';
         hud.innerHTML = `
             <div style="font-size:14px; font-weight:bold;">LVL <span id="p-lvl">${state.player.level}</span> // SOVEREIGN</div>
@@ -181,17 +155,11 @@ const Sovereign = (() => {
             const seg = createBeveledBox(3.2, 0.62, 0.1, red);
             seg.position.set(0, 7.5 - (i * 0.6), -0.9); omni.add(seg);
         }
-        const lPivot = new THREE.Group(); lPivot.position.set(-2.1, 6.5, 0);
-        lPivot.add(createBeveledBox(1, 3.5, 1, color).set({position: new THREE.Vector3(0,-1.75,0)}));
-        const rPivot = new THREE.Group(); rPivot.position.set(2.1, 6.5, 0);
-        rPivot.add(createBeveledBox(1, 3.5, 1, color).set({position: new THREE.Vector3(0,-1.75,0)}));
-        omni.add(lPivot); omni.add(rPivot);
         omni.position.copy(zone.center).add(new THREE.Vector3(0, 150, 0));
         scene.add(omni);
         bosses.push({ 
             name, mesh: omni, torso, hp: 120000, maxHp: 120000, zone,
-            animTime: 0, vel: new THREE.Vector3(), gravity: 0,
-            leftArm: lPivot, rightArm: rPivot, state: 'roaming', targetPos: zone.center.clone()
+            animTime: 0, vel: new THREE.Vector3(), gravity: 0, state: 'roaming', targetPos: zone.center.clone()
         });
     };
 
@@ -303,12 +271,8 @@ const Sovereign = (() => {
     };
 
     const onWindowResize = () => {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
-        if (mapRenderer) mapRenderer.setSize(200, 200);
+        camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
     };
 
     const animate = () => {
@@ -322,7 +286,6 @@ const Sovereign = (() => {
             camera.position.add(dir.multiplyScalar(state.player.speed * (state.keys.shift ? 5 : 1) * dt * 60));
         }
 
-        if (playerMarker) playerMarker.position.set(camera.position.x, 10, camera.position.z);
         if (mapCamera) mapCamera.position.set(camera.position.x, 500, camera.position.z);
 
         let inCombatZone = false;
