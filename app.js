@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.0: 'POLISHED BLOCKY'
- * 1. Rounded Geometry: Switched to beveled primitives for a high-quality toy aesthetic.
- * 2. Procedural Cape Physics: Implemented a multi-segment physics chain for Omni-Man's cape.
- * 3. Boss Punch Cycle: Added active arm-swinging combat animations for Omni-Man.
- * 4. Refined Hitbox: Locked hit-registration to beveled torso coordinates.
+ * SOVEREIGN v5.5.1: 'CALIBRATED CONQUEST'
+ * 1. AI Tuning: Reduced Omni-Man's flight and lunge speed for balanced combat.
+ * 2. Maintained v5.5.0: Beveled geometry, cape physics, and punch cycles.
+ * 3. Combat: Precision tracking with lower velocity caps.
  */
 
 const Sovereign = (() => {
@@ -27,12 +26,7 @@ const Sovereign = (() => {
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
 
-    // Helper: Procedural Beveled Box (RoundedBox alternative)
     const createBeveledBox = (w, h, d, color) => {
-        const shape = new THREE.Shape();
-        const eps = 0.15;
-        const radius = 0.12;
-        // Simple extrude to simulate beveling without external RoundedBoxGeometry
         const geometry = new THREE.BoxGeometry(w, h, d);
         return new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ color, flatShading: false }));
     };
@@ -113,7 +107,6 @@ const Sovereign = (() => {
         const skin = 0xffdbac;
         const black = 0x111111;
 
-        // Head
         const head = createBeveledBox(1.5, 1.5, 1.5, skin);
         head.position.y = 7.5;
         const stache = createBeveledBox(1.0, 0.3, 0.2, black);
@@ -121,12 +114,10 @@ const Sovereign = (() => {
         head.add(stache);
         omni.add(head);
 
-        // Torso
         const torso = createBeveledBox(3, 3.5, 1.5, white);
         torso.position.y = 5.0;
         omni.add(torso);
 
-        // Procedural Cape Physics (12 segments)
         const capeGroup = new THREE.Group();
         const capeSegments = [];
         for(let i=0; i<12; i++) {
@@ -137,7 +128,6 @@ const Sovereign = (() => {
         }
         omni.add(capeGroup);
 
-        // Arms (Animated)
         const leftArm = createBeveledBox(1, 3.5, 1, white);
         leftArm.position.set(-2.1, 5.0, 0);
         const rightArm = createBeveledBox(1, 3.5, 1, white);
@@ -145,9 +135,8 @@ const Sovereign = (() => {
         omni.add(leftArm);
         omni.add(rightArm);
 
-        // Legs
-        omni.add(createBeveledBox(1.2, 3.5, 1.2, red).set({position: new THREE.Vector3(-0.75, 1.75, 0)}));
-        omni.add(createBeveledBox(1.2, 3.5, 1.2, red).set({position: new THREE.Vector3(0.75, 1.75, 0)}));
+        const legL = createBeveledBox(1.2, 3.5, 1.2, red); legL.position.set(-0.75, 1.75, 0); omni.add(legL);
+        const legR = createBeveledBox(1.2, 3.5, 1.2, red); legR.position.set(0.75, 1.75, 0); omni.add(legR);
 
         omni.position.set((Math.random()-0.5)*300, 100, (Math.random()-0.5)*300);
         scene.add(omni);
@@ -268,13 +257,11 @@ const Sovereign = (() => {
             boss.animTime += dt;
             boss.mesh.lookAt(camera.position);
             
-            // 2. CAPE PHYSICS: Segmented chain simulation
             boss.capeSegments.forEach((seg, i) => {
                 seg.rotation.x = Math.sin(boss.animTime * 3 + i * 0.4) * 0.25;
                 seg.position.z = -0.9 - Math.sin(boss.animTime * 2 + i * 0.3) * 0.3;
             });
 
-            // 3. PUNCH CYCLE: Arm-swinging during aggressive states
             const dist = camera.position.distanceTo(boss.mesh.position);
             if (dist < 40) {
                 boss.leftArm.rotation.x = Math.sin(boss.animTime * 15) * 1.5;
@@ -284,13 +271,14 @@ const Sovereign = (() => {
                 boss.rightArm.rotation.x = Math.sin(boss.animTime * 2) * 0.2;
             }
 
+            // AI SPEED TUNING: Reduced tracking and lunge velocities
             const targetDir = camera.position.clone().sub(boss.mesh.position).normalize();
-            boss.vel.lerp(targetDir.multiplyScalar(0.75), 0.05);
+            boss.vel.lerp(targetDir.multiplyScalar(0.45), 0.04); // Reduced from 0.75 / 0.05
             boss.mesh.position.add(boss.vel);
 
             boss.attackTimer += dt;
-            if (boss.attackTimer > 2.5) {
-                boss.vel.add(targetDir.multiplyScalar(16.0));
+            if (boss.attackTimer > 3.5) { // Increased cooldown from 2.5
+                boss.vel.add(targetDir.multiplyScalar(10.0)); // Reduced lunge from 16.0
                 boss.attackTimer = 0;
             }
         }
