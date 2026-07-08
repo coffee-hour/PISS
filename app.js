@@ -1,10 +1,12 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 /**
- * SOVEREIGN v5.0.2: 'Hand Orientation & Model Restoration'
- * 1. Fixed hand orientation: Fingers now point AWAY from camera, back of hands face player.
- * 2. Restored 'Invincible Fighter' high-density boss model (600+ primitives).
- * 3. Maintained v5.0.1 Particle Blood System and Skeletal Articulation.
+ * SOVEREIGN v5.0.3: 'Crimson Sentinel Integration'
+ * 1. Integrated real 3D model: Crimson Sentinel (Meshy ID: xm36143).
+ * 2. Replaced procedural 'wavy' primitive models with GLTF mesh.
+ * 3. Fixed hand orientation: Fingers point AWAY, back of hands face player.
+ * 4. Maintained v5 GPU Particle Blood and Skeletal Articulation.
  */
 
 const Sovereign = (() => {
@@ -25,6 +27,7 @@ const Sovereign = (() => {
     let boss = null;
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
+    let sentinelModel = null;
 
     const init = () => {
         scene = new THREE.Scene();
@@ -54,7 +57,18 @@ const Sovereign = (() => {
         createArena();
         createArticulatedHands();
         bloodSystem = new BloodParticleSystem(scene);
-        spawnFighterBoss();
+        
+        // Load Crimson Sentinel
+        const loader = new GLTFLoader();
+        loader.load('https://files.meshy.ai/v1/user/xm36143/generations/671354b7-24ad-59ba-98e6-349fb624d6ae/model.glb', (gltf) => {
+            sentinelModel = gltf.scene;
+            sentinelModel.scale.set(8, 8, 8); // Scaled for boss presence
+            spawnSentinelBoss();
+        }, undefined, (error) => {
+            console.error('Failed to load Crimson Sentinel, falling back to procedural.', error);
+            spawnFighterBoss(); // Fallback if Meshy link expires
+        });
+
         setupInput();
 
         window.addEventListener('resize', onWindowResize);
@@ -90,21 +104,17 @@ const Sovereign = (() => {
         const mat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
         const createHand = (side) => {
             const group = new THREE.Group();
-            
-            // Palm
             const palm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.25, 0.8), mat);
             group.add(palm);
 
-            // Fully Articulated Fingers (3-segment phalanges)
             const fingerOffsets = [-0.3, -0.1, 0.1, 0.3, 0.45]; 
             fingerOffsets.forEach((xOffset, i) => {
                 const fingerRoot = new THREE.Group();
                 fingerRoot.position.set(xOffset, 0, 0.4);
-                if (i === 4) { // Thumb positioning
+                if (i === 4) {
                     fingerRoot.position.set(side === 'left' ? 0.45 : -0.45, 0, 0.1);
                     fingerRoot.rotation.y = side === 'left' ? 0.6 : -0.6;
                 }
-
                 let prevSegment = fingerRoot;
                 for(let s=0; s<3; s++) {
                     const segGroup = new THREE.Group();
@@ -119,9 +129,8 @@ const Sovereign = (() => {
                 group.add(fingerRoot);
             });
 
-            // FIXED ORIENTATION: Fingers point AWAY (-Z), back of hand faces camera
             group.position.set(side === 'left' ? -1.8 : 1.8, -1.2, -1.8);
-            group.rotation.set(0.3, side === 'left' ? 0.1 : -0.1, Math.PI); // Rotate 180 on Z to flip back of hand to camera
+            group.rotation.set(0.3, side === 'left' ? 0.1 : -0.1, Math.PI);
             camera.add(group);
             return group;
         };
@@ -137,9 +146,7 @@ const Sovereign = (() => {
             this.positions = new Float32Array(this.count * 3);
             this.velocities = Array.from({length: this.count}, () => new THREE.Vector3());
             this.lifetimes = new Float32Array(this.count);
-
             for(let i=0; i<this.count; i++) this.positions[i*3] = 10000;
-
             this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
             this.material = new THREE.PointsMaterial({
                 color: 0xaa0000,
@@ -147,11 +154,9 @@ const Sovereign = (() => {
                 transparent: true,
                 blending: THREE.NormalBlending
             });
-
             this.points = new THREE.Points(this.geometry, this.material);
             scene.add(this.points);
         }
-
         emit(pos, impactVel) {
             let emitted = 0;
             for (let i = 0; i < this.count && emitted < 60; i++) {
@@ -160,16 +165,11 @@ const Sovereign = (() => {
                     this.positions[i*3] = pos.x;
                     this.positions[i*3+1] = pos.y;
                     this.positions[i*3+2] = pos.z;
-                    this.velocities[i].set(
-                        (Math.random() - 0.5) * 6 + impactVel.x * 0.4,
-                        Math.random() * 6 + impactVel.y * 0.4,
-                        (Math.random() - 0.5) * 6 + impactVel.z * 0.4
-                    );
+                    this.velocities[i].set((Math.random()-0.5)*6+impactVel.x*0.4, Math.random()*6+impactVel.y*0.4, (Math.random()-0.5)*6+impactVel.z*0.4);
                     emitted++;
                 }
             }
         }
-
         update(dt) {
             const posAttr = this.geometry.getAttribute('position');
             for (let i = 0; i < this.count; i++) {
@@ -187,6 +187,20 @@ const Sovereign = (() => {
         }
     }
 
+    const spawnSentinelBoss = () => {
+        if (boss || !sentinelModel) return;
+        const group = sentinelModel.clone();
+        group.traverse(child => {
+            if (child.isMesh) {
+                child.material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+                child.castShadow = true;
+            }
+        });
+        group.position.set((Math.random()-0.5)*200, 10, (Math.random()-0.5)*200);
+        scene.add(group);
+        boss = { mesh: group, hp: 30000, maxHp: 30000 };
+    };
+
     const spawnFighterBoss = () => {
         if (boss) return;
         const omni = new THREE.Group();
@@ -194,8 +208,6 @@ const Sovereign = (() => {
         const whiteMat = mat(0xffffff);
         const redMat = mat(0xb71c1c);
         const darkMat = mat(0x111111);
-
-        // RESTORED: Invincible Fighter 600+ Primitive Detail
         const headGroup = new THREE.Group();
         headGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), whiteMat));
         const stache = new THREE.Group();
@@ -208,11 +220,9 @@ const Sovereign = (() => {
         headGroup.add(stache);
         headGroup.position.y = 8.5;
         omni.add(headGroup);
-
         const torso = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.1, 5.5, 64), whiteMat);
         torso.position.y = 5.2;
         omni.add(torso);
-
         const createLimb = (x, y, color, side) => {
             const g = new THREE.Group();
             for(let i=0; i<35; i++) {
@@ -228,7 +238,6 @@ const Sovereign = (() => {
         omni.add(createLimb(2, 7, 0xffffff, 1));
         omni.add(createLimb(-0.9, 3, 0xb71c1c, -1));
         omni.add(createLimb(0.9, 3, 0xb71c1c, 1));
-
         const capeGroup = new THREE.Group();
         for(let i = 0; i < 10; i++) {
             const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9, 0.1), redMat);
@@ -236,7 +245,6 @@ const Sovereign = (() => {
             capeGroup.add(flap);
         }
         omni.add(capeGroup);
-
         omni.position.set((Math.random()-0.5)*200, 0, (Math.random()-0.5)*200);
         scene.add(omni);
         boss = { mesh: omni, hp: 20000, maxHp: 20000, cape: capeGroup };
@@ -271,7 +279,6 @@ const Sovereign = (() => {
         const initialZ = hand.position.z;
         hand.position.z -= 2.2;
         setTimeout(() => hand.position.z = initialZ, 80);
-
         if (boss) {
             const dist = camera.position.distanceTo(boss.mesh.position);
             const dir = boss.mesh.position.clone().sub(camera.position).normalize();
@@ -285,7 +292,7 @@ const Sovereign = (() => {
                     boss = null;
                     state.combat.kills++;
                     updateUI();
-                    setTimeout(spawnFighterBoss, 1000);
+                    setTimeout(sentinelModel ? spawnSentinelBoss : spawnFighterBoss, 1000);
                 }
             }
         }
@@ -306,7 +313,6 @@ const Sovereign = (() => {
     const animate = () => {
         requestAnimationFrame(animate);
         const dt = clock.getDelta() * state.timeDilation;
-
         if (state.isLocked) {
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
@@ -317,9 +323,8 @@ const Sovereign = (() => {
             moveDir.y = 0;
             camera.position.add(moveDir.multiplyScalar(state.player.speed * state.timeDilation * 50 * 0.016));
         }
-
         if (boss) {
-            boss.mesh.lookAt(camera.position.x, 0, camera.position.z);
+            boss.mesh.lookAt(camera.position.x, boss.mesh.position.y, camera.position.z);
             const dist = camera.position.distanceTo(boss.mesh.position);
             if (dist > 15 && dist < 1200) {
                 const step = boss.mesh.position.clone().sub(camera.position).normalize().multiplyScalar(-0.45 * state.timeDilation);
@@ -332,11 +337,9 @@ const Sovereign = (() => {
                 });
             }
         }
-
         if (bloodSystem) bloodSystem.update(dt);
         renderer.render(scene, camera);
     };
-
     return { init };
 })();
 
