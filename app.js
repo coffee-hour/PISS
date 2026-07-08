@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.0: 'CORE RIG BINDING'
- * 1. World: Standard 5,000-unit arena with city blocks and basic terrain.
- * 2. Boss: Single R6-style Omni-Man boss with basic patrol AI.
- * 3. Combat: Restored the core XNZ special attacks and melee punch logic.
- * 4. RPG: Basic Level 1-99 system with Amber HUD.
- * 5. Lighting: Stable Directional + Ambient light array.
+ * SOVEREIGN v5.4.0: 'INVINCIBLE INITIAL'
+ * 1. Origin: The first 3D Three.js "Invincible" fighter iteration.
+ * 2. World: 2000-unit square arena, clear blue sky, grey ground.
+ * 3. Combat: Basic melee punch logic (Left Click) and movement.
+ * 4. Rig: Initial R6 block-man rig for Omni-Man.
+ * 5. Lighting: High-contrast Directional light.
  */
 
 const Sovereign = (() => {
@@ -14,41 +14,26 @@ const Sovereign = (() => {
     let sunLight, ambientLight;
     
     let state = {
-        player: { hp: 100, maxHp: 100, punchRange: 5.5, speed: 2.8, height: 15.0, level: 1, xp: 0, nextXp: 5000 },
-        specials: {
-            X: { name: 'Thunderclap', cd: 8, timer: 0 },
-            N: { name: 'Sonic Dash', cd: 5, timer: 0 },
-            Z: { name: 'Eye Beam', cd: 12, timer: 0 }
-        },
-        timeDilation: 1.0,
-        keys: { w: false, a: false, s: false, d: false, ' ': false, shift: false, x: false, n: false, z: false },
+        player: { hp: 100, speed: 3.0, height: 10.0 },
+        keys: { w: false, a: false, s: false, d: false },
         isLocked: false,
         pitch: 0,
-        yaw: 0,
-        lastArmUsed: 'right'
+        yaw: 0
     };
 
     let boss = null;
-    let playerHands = { left: null, right: null };
-    let bloodSystem = null;
-
-    const createBeveledBox = (w, h, d, color) => {
-        return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, flatShading: false }));
-    };
 
     const init = () => {
-        console.log('Sovereign: Restoring v5.5.0 Core Rig Binding...');
+        console.log('Sovereign: Restoring v5.4.0 Invincible Initial...');
         
-        // CLEANUP PREVIOUS HUDs
+        // CLEANUP
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud')) div.remove(); });
-        document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud')) s.remove(); });
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.Fog(0x87ceeb, 50, 3000);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-        camera.position.set(0, state.player.height, 0);
+        camera.position.set(0, state.player.height, 50);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -57,188 +42,69 @@ const Sovereign = (() => {
 
         clock = new THREE.Clock();
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        sunLight.position.set(100, 300, 100);
+        sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        sunLight.position.set(50, 100, 50);
         scene.add(sunLight);
 
-        createArena();
-        createBeveledHands();
-        bloodSystem = new BloodParticleSystem(scene);
-        
-        spawnBeveledOmniMan();
-        deployRPG_HUD();
+        // Ground
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshLambertMaterial({ color: 0x888888 }));
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
 
+        // Simple City Blocks
+        for (let i = 0; i < 50; i++) {
+            const h = 50 + Math.random() * 200;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(40, h, 40), new THREE.MeshLambertMaterial({ color: 0x555555 }));
+            b.position.set((Math.random()-0.5)*1500, h/2, (Math.random()-0.5)*1500);
+            scene.add(b);
+        }
+
+        spawnInitialOmniMan();
         setupInput();
         window.addEventListener('resize', onWindowResize);
         animate();
     };
 
-    const deployRPG_HUD = () => {
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .rpg-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
-            .amber-bar { background: rgba(15, 15, 15, 0.9); border: 1px solid #ffbf00; height: 10px; border-radius: 2px; overflow: hidden; }
-            .amber-fill { height: 100%; background: #ffbf00; width: 0%; transition: width 0.3s; }
-            .special-node { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; font-size: 10px; padding: 4px; }
-        `;
-        document.head.appendChild(style);
+    const spawnInitialOmniMan = () => {
+        const group = new THREE.Group();
+        // Head
+        const head = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshLambertMaterial({ color: 0xffdbac }));
+        head.position.y = 8;
+        group.add(head);
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 2), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+        torso.position.y = 4.5;
+        group.add(torso);
+        // Cape
+        const cape = new THREE.Mesh(new THREE.BoxGeometry(4.2, 6, 0.2), new THREE.MeshLambertMaterial({ color: 0xb71c1c }));
+        cape.position.set(0, 4.5, -1.1);
+        group.add(cape);
 
-        const hud = document.createElement('div');
-        hud.id = 'rpg-master-hud';
-        hud.className = 'rpg-hud';
-        hud.style.top = '20px';
-        hud.style.left = '20px';
-        hud.innerHTML = `
-            <div style="font-size:14px; font-weight:bold;">LVL <span id="p-lvl">1</span> // SOVEREIGN</div>
-            <div class="amber-bar" style="width:250px; margin: 5px 0;">
-                <div id="p-hp-fill" class="amber-fill" style="width:100%; background:#c62828;"></div>
-            </div>
-            <div class="amber-bar" style="width:250px; height:6px;">
-                <div id="p-xp-fill" class="amber-fill" style="width:0%;"></div>
-            </div>
-            <div id="specials-container" style="margin-top:10px;">
-                <div class="special-node">X<br><span id="cd-x">READY</span></div>
-                <div class="special-node">N<br><span id="cd-n">READY</span></div>
-                <div class="special-node">Z<br><span id="cd-z">READY</span></div>
-            </div>
-        `;
-        document.body.appendChild(hud);
-    };
-
-    const createArena = () => {
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshLambertMaterial({ color: 0x333333 }));
-        ground.rotation.x = -Math.PI / 2;
-        scene.add(ground);
-        for (let i = 0; i < 300; i++) {
-            const h = 100 + Math.random() * 500;
-            const b = createBeveledBox(80, h, 80, 0xcccccc);
-            b.position.set((Math.random()-0.5)*4000, h/2, (Math.random()-0.5)*4000);
-            if (b.position.length() < 300) continue;
-            scene.add(b);
-        }
-    };
-
-    const createBeveledHands = () => {
-        const createHand = (side) => {
-            const group = new THREE.Group();
-            group.add(createBeveledBox(0.8, 0.8, 1.2, 0x1e88e5));
-            group.position.set(side === 'left' ? -1.8 : 1.8, -1.2, -2.0);
-            camera.add(group);
-            return group;
-        };
-        scene.add(camera);
-        playerHands.left = createHand('left');
-        playerHands.right = createHand('right');
-    };
-
-    const spawnBeveledOmniMan = () => {
-        if (boss) return;
-        const omni = new THREE.Group();
-        omni.add(createBeveledBox(1.5, 1.5, 1.5, 0xffdbac).set({position: new THREE.Vector3(0, 7.5, 0)}));
-        const torso = createBeveledBox(3, 3.5, 1.5, 0xffffff); torso.position.y = 5.0; omni.add(torso);
-        for(let i=0; i<12; i++) {
-            const seg = createBeveledBox(3.2, 0.62, 0.1, 0xb71c1c); 
-            seg.position.set(0, 7.5 - (i * 0.6), -0.9); omni.add(seg);
-        }
-        omni.position.set((Math.random()-0.5)*600, 150, (Math.random()-0.5)*600);
-        scene.add(omni);
-        boss = { mesh: omni, torso, hp: 100000, maxHp: 100000, vel: new THREE.Vector3(), gravity: 0 };
-    };
-
-    class BloodParticleSystem {
-        constructor(scene) {
-            this.count = 2000;
-            this.geometry = new THREE.BufferGeometry();
-            this.positions = new Float32Array(this.count * 3);
-            this.velocities = Array.from({length: this.count}, () => new THREE.Vector3());
-            this.lifetimes = new Float32Array(this.count);
-            for(let i=0; i<this.count; i++) this.positions[i*3] = 10000;
-            this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-            this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.3, transparent: true });
-            this.points = new THREE.Points(this.geometry, this.material);
-            this.points.frustumCulled = false; scene.add(this.points);
-        }
-        emit(pos, dir) {
-            let n = 0;
-            for(let i=0; i<this.count && n < 60; i++) {
-                if(this.lifetimes[i] <= 0) {
-                    this.lifetimes[i] = 1.0;
-                    this.positions[i*3] = pos.x; this.positions[i*3+1] = pos.y; this.positions[i*3+2] = pos.z;
-                    this.velocities[i].set((Math.random()-0.5)*15 + dir.x*10, Math.random()*15 + dir.y*10, (Math.random()-0.5)*15 + dir.z*10);
-                    n++;
-                }
-            }
-        }
-        update(dt) {
-            const posAttr = this.geometry.getAttribute('position');
-            for(let i=0; i<this.count; i++) {
-                if(this.lifetimes[i] > 0) {
-                    this.lifetimes[i] -= dt * 1.5;
-                    this.positions[i*3] += this.velocities[i].x * dt * 60;
-                    this.positions[i*3+1] += this.velocities[i].y * dt * 60;
-                    this.positions[i*3+2] += this.velocities[i].z * dt * 60;
-                    this.velocities[i].y -= 0.5;
-                } else { this.positions[i*3] = 10000; }
-            }
-            posAttr.needsUpdate = true;
-        }
-    }
-
-    const triggerSpecial = (key) => {
-        const spec = state.specials[key];
-        if (spec.timer > 0 || !boss) return;
-        spec.timer = spec.cd;
-        const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-        if (key === 'X') { boss.hp -= 20000; boss.gravity = -2.5; bloodSystem.emit(boss.mesh.position, fwd.clone().multiplyScalar(2)); }
-        else if (key === 'N') { camera.position.add(fwd.clone().multiplyScalar(50)); }
-        else if (key === 'Z') { boss.hp -= 35000; bloodSystem.emit(boss.mesh.position, fwd.clone().multiplyScalar(8)); }
-        checkBossDeath();
-    };
-
-    const checkBossDeath = () => {
-        if (boss && boss.hp <= 0) {
-            scene.remove(boss.mesh); boss = null;
-            state.player.xp += 2500;
-            if (state.player.xp >= state.player.nextXp) {
-                state.player.level++; state.player.xp = 0; state.player.nextXp *= 1.2;
-                const lvlEl = document.getElementById('p-lvl'); if(lvlEl) lvlEl.innerText = state.player.level;
-            }
-            const xpFill = document.getElementById('p-xp-fill'); if(xpFill) xpFill.style.width = `${(state.player.xp / state.player.nextXp) * 100}%`;
-            setTimeout(spawnBeveledOmniMan, 4000);
-        }
-    };
-
-    const performAttack = () => {
-        state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
-        const h = playerHands[state.lastArmUsed]; h.position.z -= 3.0; setTimeout(() => h.position.z = -2.0, 70);
-        if (boss && camera.position.distanceTo(boss.mesh.position) < state.player.punchRange) {
-            boss.hp -= 5000; boss.gravity = -1.5; 
-            const wp = new THREE.Vector3(); boss.torso.getWorldPosition(wp);
-            bloodSystem.emit(wp, new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).multiplyScalar(5));
-            checkBossDeath();
-        }
+        group.position.set(0, 0, -50);
+        scene.add(group);
+        boss = { mesh: group, hp: 100 };
     };
 
     const setupInput = () => {
         document.addEventListener('keydown', (e) => {
-            const k = e.key.toUpperCase();
-            if(k === ' ') state.timeDilation = 0.2;
-            if(e.shiftKey) state.keys.shift = true;
-            if(state.specials[k]) triggerSpecial(k);
             if(state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = true;
         });
         document.addEventListener('keyup', (e) => {
-            if(e.key === ' ') state.timeDilation = 1.0;
-            if(!e.shiftKey) state.keys.shift = false;
             if(state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = false;
         });
-        document.addEventListener('mousedown', () => { if(!state.isLocked) document.body.requestPointerLock(); else performAttack(); });
+        document.addEventListener('mousedown', () => { 
+            if(!state.isLocked) document.body.requestPointerLock();
+            else if(boss && camera.position.distanceTo(boss.mesh.position) < 10) {
+                console.log('HIT');
+                boss.mesh.position.z -= 2;
+            }
+        });
         document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === document.body; });
         document.addEventListener('mousemove', (e) => {
             if(state.isLocked) {
-                state.yaw -= e.movementX * 0.0025; state.pitch -= e.movementY * 0.0025;
+                state.yaw -= e.movementX * 0.003; state.pitch -= e.movementY * 0.003;
                 state.pitch = Math.max(-1.5, Math.min(1.5, state.pitch));
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
@@ -252,25 +118,14 @@ const Sovereign = (() => {
 
     const animate = () => {
         requestAnimationFrame(animate);
-        const dt = clock.getDelta() * state.timeDilation;
-        if (state.isLocked) {
+        const dt = clock.getDelta();
+        if(state.isLocked) {
             const dir = new THREE.Vector3();
             if(state.keys.w) dir.z -= 1; if(state.keys.s) dir.z += 1;
             if(state.keys.a) dir.x -= 1; if(state.keys.d) dir.x += 1;
             dir.normalize().applyQuaternion(camera.quaternion);
-            camera.position.add(dir.multiplyScalar(state.player.speed * (state.keys.shift ? 5 : 1) * dt * 60));
+            camera.position.add(dir.multiplyScalar(state.player.speed * dt * 60));
         }
-        if (boss) {
-            boss.mesh.lookAt(camera.position);
-            if (boss.mesh.position.y > 1) { boss.gravity += 0.05; boss.mesh.position.y -= boss.gravity; } else { boss.mesh.position.y = 1; boss.gravity = 0; }
-            ['X','N','Z'].forEach(k => {
-                const s = state.specials[k]; if(s.timer > 0) s.timer -= dt;
-                const el = document.getElementById(`cd-${k.toLowerCase()}`); if(el) el.innerText = s.timer > 0 ? Math.ceil(s.timer) + 's' : 'READY';
-            });
-            const tDir = camera.position.clone().sub(b.mesh.position).normalize();
-            boss.vel.lerp(tDir.multiplyScalar(0.3), 0.04); boss.mesh.position.add(boss.vel);
-        }
-        if (bloodSystem) bloodSystem.update(dt);
         renderer.render(scene, camera);
     };
     return { init };
