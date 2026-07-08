@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.4: 'Primitive-Fit Omni-Man'
- * Features: Geometric Primitive Omni-Man (Xavier-Spec), 
- * Sphere Joints, Back-of-Hand Fists, Spacebar Time Slow (0.2x), 
+ * Sovereign v4.8.5: 'Head-Definition Update'
+ * Features: High-Definition Primitive Head (Fighter Accuracy), 
+ * Primitive-Fit Body, Back-of-Hand Fists, Spacebar Time Slow (0.2x), 
  * N64 Soft-Poly Aesthetic, Gouraud Shading.
  */
 
@@ -133,14 +133,40 @@ const Fighter = (() => {
         torso.position.y = 5.2;
         omni.add(torso);
 
-        // 2. Head: Sphere head with mustache detail
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), whiteMat);
-        head.position.y = 8.2;
-        omni.add(head);
+        // 2. Refined Head (v4.8.5 Upgrade)
+        const headGroup = new THREE.Group();
+        headGroup.position.y = 8.2;
+
+        // Skull & Jawline
+        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.85, 24, 24), whiteMat);
+        headGroup.add(skull);
         
-        const moustache = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.12, 8, 16, Math.PI), darkMat);
-        moustache.rotation.z = Math.PI; moustache.position.set(0, 7.9, 0.85);
-        omni.add(moustache);
+        const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.6, 0.6, 8), whiteMat);
+        jaw.position.y = -0.4;
+        headGroup.add(jaw);
+
+        // Refined Facial Features
+        // Eyes (Sharp black slits)
+        const eyeGeo = new THREE.BoxGeometry(0.3, 0.08, 0.1);
+        const eyeL = new THREE.Mesh(eyeGeo, darkMat);
+        eyeL.position.set(-0.35, 0.15, 0.7);
+        eyeL.rotation.z = 0.15;
+        headGroup.add(eyeL);
+        const eyeR = new THREE.Mesh(eyeGeo, darkMat);
+        eyeR.position.set(0.35, 0.15, 0.7);
+        eyeR.rotation.z = -0.15;
+        headGroup.add(eyeR);
+
+        // Forensic Mustache (Cluster for fidelity)
+        const moustache = new THREE.Group();
+        for(let i=0; i<12; i++) {
+            const s = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), darkMat);
+            const angle = (i/11) * Math.PI;
+            s.position.set(Math.cos(angle)*0.55, -0.2 - Math.abs(Math.sin(angle))*0.12, 0.82);
+            moustache.add(s);
+        }
+        headGroup.add(moustache);
+        omni.add(headGroup);
 
         // 3. Arms: Cylindrical upper/lower arms connected by sphere joints
         const createArm = (side) => {
@@ -200,7 +226,7 @@ const Fighter = (() => {
 
         omni.position.set((Math.random()-0.5)*180, 0, (Math.random()-0.5)*180);
         scene.add(omni);
-        currentEnemy = { mesh: omni, hp: 10000, maxHp: 10000 };
+        currentEnemy = { mesh: omni, hp: 12000, maxHp: 12000 };
     };
 
     const setupControls = () => {
