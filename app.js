@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.4.8: 'EXTREME GORE & EXECUTION'
- * 1. Reversion: Restored clean boss build from v5.4.6.
- * 2. Extreme Gore: Increased particle density to 50 per hit (5x increase).
- * 3. Death Animation: Implemented "Rip Apart" logic for boss death.
+ * SOVEREIGN v5.4.9: 'FLIGHT, DAMAGE & PROGRESSION'
+ * 1. Boss AI: Periodic 'Superman' belly-first flight state.
+ * 2. Visuals: Dynamic battle damage (bruising/tears) based on HP thresholds.
+ * 3. Progression: XP system for damage. Unlock 'Knife Hand' (X key) specials.
+ * 4. Execution: Clean 'Rip Apart' death animation.
  */
 
 const Sovereign = (() => {
@@ -12,21 +13,27 @@ const Sovereign = (() => {
     let sunLight, ambientLight;
     
     let state = {
-        player: { hp: 100, maxHp: 100, speed: 4.5, height: 10.0, flightSpeed: 4.0, isDead: false },
+        player: { 
+            hp: 100, maxHp: 100, speed: 4.5, height: 10.0, flightSpeed: 4.0, isDead: false,
+            xp: 0, level: 1, knifeHandUnlocked: false 
+        },
         boss: { 
             hp: 1000, maxHp: 1000, animTime: 0, vel: new THREE.Vector3(), 
             isPunching: false, pursuitSpeed: 0.35, stopDist: 8.0, 
-            isDead: false, isRipping: false, ripTimer: 0, respawnTimer: 0, boundaryRadius: 1500 
+            isDead: false, isRipping: false, ripTimer: 0, respawnTimer: 0, 
+            boundaryRadius: 1500, flightState: 'hover', flightTimer: 0,
+            damageState: 0 // 0: Clean, 1: Bruised, 2: Torn, 3: Bloody
         },
-        keys: { w: false, a: false, s: false, d: false, ' ': false, control: false },
+        keys: { w: false, a: false, s: false, d: false, ' ': false, control: false, x: false },
         isLocked: false,
         pitch: 0, yaw: 0,
-        lastArmUsed: 'right'
+        lastArmUsed: 'right',
+        isKnifeHanding: false
     };
 
     let bossGroup = null;
-    let bossParts = { rArm: null, lArm: null, lLeg: null, rLeg: null, head: null, torso: null, cape: null };
-    let playerHands = { left: null, right: null };
+    let bossParts = { rArm: null, lArm: null, lLeg: null, rLeg: null, head: null, torso: null, cape: null, emblem: null };
+    let playerHands = { left: null, right: null, knife: null };
     let particles = [];
 
     const createBlock = (w, h, d, color) => {
@@ -37,7 +44,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.4.8 Extreme Gore & Execution...');
+        console.log('Sovereign: Initializing v5.4.9...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -64,7 +71,6 @@ const Sovereign = (() => {
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // Ground
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshLambertMaterial({ color: 0x444444 }));
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
@@ -99,10 +105,12 @@ const Sovereign = (() => {
             .fill { height: 100%; transition: width 0.2s; float: right; }
             #p-fill { background: #c62828; width: 100%; }
             #o-fill { background: #ffbf00; width: 100%; }
+            #xp-bar { background: #1e88e5; width: 0%; }
             .label { font-size: 10px; font-weight: bold; }
             #status-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); color: #c62828; display: none; flex-direction: column; justify-content: center; align-items: center; font-family: 'Courier New', monospace; z-index: 200; pointer-events: auto; }
             #status-msg { font-size: 48px; font-weight: bold; margin-bottom: 20px; }
             #respawn-timer { position: fixed; bottom: 40px; width: 100%; text-align: center; color: #ffbf00; font-family: monospace; font-size: 14px; display: none; }
+            #ability-alert { position: fixed; bottom: 80px; width: 100%; text-align: center; color: #1e88e5; font-family: monospace; font-size: 18px; font-weight: bold; display: none; }
         `;
         document.head.appendChild(style);
 
@@ -111,6 +119,8 @@ const Sovereign = (() => {
         hud.innerHTML = `
             <div class="label">PLAYER HP</div>
             <div class="bar-container"><div id="p-fill" class="fill"></div></div>
+            <div class="label" style="margin-top:10px;">XP PROGRESS</div>
+            <div class="bar-container" style="border-color:#1e88e5;"><div id="xp-bar" class="fill"></div></div>
             <div id="boss-hud-section">
                 <div class="label" style="margin-top:10px;">OMNI-MAN HP</div>
                 <div class="bar-container"><div id="o-fill" class="fill"></div></div>
@@ -127,6 +137,11 @@ const Sovereign = (() => {
         respawn.id = 'respawn-timer';
         respawn.innerText = 'TARGET RESPAWN IN: 15s';
         document.body.appendChild(respawn);
+
+        const ability = document.createElement('div');
+        ability.id = 'ability-alert';
+        ability.innerText = 'NEW ABILITY: KNIFE HAND UNLOCKED (PRESS X)';
+        document.body.appendChild(ability);
     };
 
     const createPlayerHands = () => {
@@ -139,6 +154,12 @@ const Sovereign = (() => {
         scene.add(camera);
         playerHands.left = createHand('left');
         playerHands.right = createHand('right');
+        
+        // Knife hand model (sideways chop)
+        playerHands.knife = createBlock(0.3, 1.8, 2.5, 0x1e88e5);
+        playerHands.knife.position.set(0, -5, -4);
+        playerHands.knife.visible = false;
+        camera.add(playerHands.knife);
     };
 
     const spawnOmniMan = () => {
@@ -151,7 +172,8 @@ const Sovereign = (() => {
         bossParts.torso = createBlock(4, 4.5, 2, 0xffffff); bossParts.torso.position.y = 4.75; group.add(bossParts.torso);
         const emblemB = createBlock(2.2, 2.7, 0.1, 0xb71c1c); emblemB.position.set(0, 0.25, 1.05); bossParts.torso.add(emblemB);
         const emblemD = createBlock(0.8, 2.7, 0.15, 0xffffff); emblemD.position.set(0, 0.25, 1.06); bossParts.torso.add(emblemD);
-        
+        bossParts.emblem = emblemB;
+
         const createArm = (x) => {
             const a = new THREE.Group();
             const u = createBlock(1.8, 3, 1.8, 0xffffff); u.position.y = -1.5; a.add(u);
@@ -178,11 +200,29 @@ const Sovereign = (() => {
         state.boss.isDead = false;
         state.boss.isRipping = false;
         state.boss.hp = state.boss.maxHp;
-        
+        state.boss.damageState = 0;
+        state.boss.flightState = 'hover';
+        state.boss.flightTimer = 2.0;
+
         const bossHUD = document.getElementById('boss-hud-section');
         if(bossHUD) bossHUD.style.display = 'block';
         const oFill = document.getElementById('o-fill');
         if(oFill) oFill.style.width = '100%';
+    };
+
+    const updateBossDamage = () => {
+        const hpPercent = state.boss.hp / state.boss.maxHp;
+        let newState = 0;
+        if (hpPercent < 0.25) newState = 3;
+        else if (hpPercent < 0.5) newState = 2;
+        else if (hpPercent < 0.75) newState = 1;
+
+        if (newState !== state.boss.damageState) {
+            state.boss.damageState = newState;
+            const colors = [0xffffff, 0xe0e0e0, 0xaaaaaa, 0x880000];
+            bossParts.torso.material.color.setHex(colors[newState]);
+            if (newState >= 2) bossParts.emblem.material.color.setHex(0x550000);
+        }
     };
 
     const emitBlood = (pos, count = 50) => {
@@ -195,20 +235,52 @@ const Sovereign = (() => {
         }
     };
 
-    const performAttack = () => {
-        if (state.player.isDead) return;
-        state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
-        const h = playerHands[state.lastArmUsed];
-        h.position.z -= 4.0;
-        setTimeout(() => h.position.z = -2.5, 80);
+    const gainXP = (amount) => {
+        state.player.xp += amount;
+        const xpBar = document.getElementById('xp-bar');
+        if (xpBar) xpBar.style.width = Math.min(100, state.player.xp / 10) + '%';
 
-        if (bossGroup && !state.boss.isDead && camera.position.distanceTo(bossGroup.position) < 18) {
+        if (state.player.xp >= 1000 && !state.player.knifeHandUnlocked) {
+            state.player.knifeHandUnlocked = true;
+            const alert = document.getElementById('ability-alert');
+            if (alert) alert.style.display = 'block';
+            setTimeout(() => { if(alert) alert.style.display = 'none'; }, 5000);
+        }
+    };
+
+    const performAttack = (type = 'punch') => {
+        if (state.player.isDead) return;
+
+        let damage = 40;
+        if (type === 'knife') {
+            if (state.isKnifeHanding) return;
+            state.isKnifeHanding = true;
+            playerHands.knife.visible = true;
+            playerHands.knife.position.set(0, 0, -4);
+            playerHands.knife.rotation.z = Math.PI / 4;
+            damage = 120;
+            setTimeout(() => {
+                playerHands.knife.visible = false;
+                playerHands.knife.position.set(0, -5, -4);
+                state.isKnifeHanding = false;
+            }, 200);
+        } else {
+            state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
+            const h = playerHands[state.lastArmUsed];
+            h.position.z -= 4.0;
+            setTimeout(() => h.position.z = -2.5, 80);
+        }
+
+        if (bossGroup && !state.boss.isDead && camera.position.distanceTo(bossGroup.position) < 22) {
             const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp); wp.y += 5;
-            emitBlood(wp, 50); // 5x gore increase
-            state.boss.vel.add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(1.5));
-            state.boss.hp -= 40;
+            emitBlood(wp, type === 'knife' ? 100 : 50);
+            state.boss.vel.add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(type === 'knife' ? 3.0 : 1.5));
+            state.boss.hp -= damage;
+            gainXP(damage);
+            updateBossDamage();
+
             const oFill = document.getElementById('o-fill');
-            if(oFill) oFill.style.width = (state.boss.hp / state.boss.maxHp * 100) + '%';
+            if(oFill) oFill.style.width = Math.max(0, state.boss.hp / state.boss.maxHp * 100) + '%';
             
             if (state.boss.hp <= 0) {
                 state.boss.isDead = true;
@@ -226,6 +298,7 @@ const Sovereign = (() => {
             if(state.keys.hasOwnProperty(k)) state.keys[k] = true;
             if(e.code === 'Space') state.keys[' '] = true;
             if(e.code === 'ControlLeft') state.keys.control = true;
+            if(k === 'x' && state.player.knifeHandUnlocked) performAttack('knife');
         });
         document.addEventListener('keyup', (e) => { 
             const k = e.key.toLowerCase();
@@ -264,27 +337,19 @@ const Sovereign = (() => {
             camera.position.y = Math.max(5, camera.position.y);
         }
 
-        // Death/Respawn Logic
         if (state.boss.isDead) {
             if (state.boss.isRipping) {
                 state.boss.ripTimer -= dt;
-                
-                // RIPPING ANIMATION: Scale components away from center
                 const speed = 10 * dt;
                 bossParts.head.position.y += speed * 2;
-                bossParts.head.rotation.x += speed;
                 bossParts.rArm.position.x += speed * 2;
                 bossParts.lArm.position.x -= speed * 2;
                 bossParts.rLeg.position.x += speed;
-                bossParts.rLeg.position.y -= speed * 2;
                 bossParts.lLeg.position.x -= speed;
-                bossParts.lLeg.position.y -= speed * 2;
                 bossParts.cape.position.z -= speed * 3;
                 bossParts.torso.scale.multiplyScalar(0.98);
-                
                 const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp);
-                emitBlood(wp, 10); // Continuous blood spray during rip
-                
+                emitBlood(wp, 10);
                 if (state.boss.ripTimer <= 0) {
                     state.boss.isRipping = false;
                     scene.remove(bossGroup);
@@ -306,20 +371,35 @@ const Sovereign = (() => {
 
         if (bossGroup && !state.boss.isDead) {
             state.boss.animTime += dt;
-            const floatOffset = Math.sin(state.boss.animTime * 2) * 1.5;
-            
-            const distFromOrigin = bossGroup.position.length();
-            const playerDistFromOrigin = camera.position.length();
-            
-            if (playerDistFromOrigin < state.boss.boundaryRadius) {
+            state.boss.flightTimer -= dt;
+
+            if (state.boss.flightTimer <= 0) {
+                state.boss.flightState = state.boss.flightState === 'hover' ? 'superman' : 'hover';
+                state.boss.flightTimer = state.boss.flightState === 'hover' ? 4.0 : 2.5;
+            }
+
+            const playerDist = camera.position.length();
+            if (playerDist < state.boss.boundaryRadius) {
                 const toPlayer = camera.position.clone().sub(bossGroup.position);
                 const dist = toPlayer.length();
-                bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + floatOffset, 0.08);
-                if (dist > state.boss.stopDist) {
-                    bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
+
+                if (state.boss.flightState === 'superman') {
+                    // Superman flight: Belly-first tilt
+                    bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, -Math.PI / 2, 0.1);
+                    bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
+                    bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
+                } else {
+                    // Hover: Upright
+                    bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, 0, 0.1);
+                    const floatOffset = Math.sin(state.boss.animTime * 2) * 1.5;
+                    bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + floatOffset, 0.08);
+                    if (dist > state.boss.stopDist) {
+                        bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
+                    }
+                    bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
                 }
-                bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
                 
+                // Combat logic
                 if (Math.sin(state.boss.animTime * 5) > 0.85 && !state.boss.isPunching && dist < 15) {
                     state.boss.isPunching = true;
                     const arm = Math.random() > 0.5 ? bossParts.rArm : bossParts.lArm;
