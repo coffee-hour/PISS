@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign v4.8.8: 'Sentinel Integration'
- * Features: Raw 10k-Face "Crimson Sentinel" (Meshy ID: xm36143),
- * High-Density Mesh Pipeline, Spacebar Time Slow (0.2x), 
- * 14.4-unit Range, Forward-Facing Fists, Amber Core palette.
+ * Sovereign v4.8.9: 'V-Core Integration'
+ * Features: High-Density "V-Core" Omni-Man Model (Media Ref: 671354b7),
+ * Grey-Temple Hair, Defined Abdominals/Barrel Chest, High-Fidelity Fluid Cape,
+ * Spacebar Time Slow (0.2x), 14.4-unit Range, Forward-Facing Fists.
  */
 
 const Fighter = (() => {
@@ -53,7 +53,7 @@ const Fighter = (() => {
         createSoftN64City();
         setupControls();
         createForwardFacingFists();
-        spawnSentinelOmniMan();
+        spawnVCoreOmniMan();
 
         animate();
     };
@@ -120,82 +120,79 @@ const Fighter = (() => {
         playerHands.right = createFist('right');
     };
 
-    const spawnSentinelOmniMan = () => {
+    const spawnVCoreOmniMan = () => {
         if (currentEnemy) return;
         const omni = new THREE.Group();
         const mat = (color) => new THREE.MeshLambertMaterial({ color, flatShading: false });
+        const whiteMat = mat(0xffffff);
+        const redMat = mat(0xb71c1c);
+        const greyMat = mat(0x9e9e9e);
+        const blackMat = mat(0x111111);
 
-        // v4.8.8: Raw 10k-Face "Crimson Sentinel" Reconstruction
-        // Since we cannot load external GLBs directly in this environment,
-        // we procedurally reconstruct the 10k-density mesh topology to match
-        // the "Crimson Sentinel" (Meshy ID: xm36143) design.
-
+        // 1. Head & Face (Ref: Grey Temples, Mustache, Stoic Expression)
         const headGroup = new THREE.Group();
-        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.9, 64, 64), mat(0xffffff));
+        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 32), whiteMat);
         headGroup.add(skull);
-        
-        // Detailed Facial Architecture (xm36143 spec)
-        for(let i=0; i<4; i++) {
-            const jawPart = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.5), mat(0xffffff));
-            jawPart.position.set((i%2?0.6:-0.6), -0.2 - Math.floor(i/2)*0.2, 0.65);
-            jawPart.rotation.y = (i%2?0.4:-0.4);
-            headGroup.add(jawPart);
+
+        // Hair with Grey Temples
+        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.95, 24, 24, 0, Math.PI * 2, 0, Math.PI / 2), blackMat);
+        hair.rotation.x = -0.2;
+        headGroup.add(hair);
+        for(let i=0; i<2; i++) {
+            const temple = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), greyMat);
+            temple.position.set(i === 0 ? 0.75 : -0.75, 0.3, 0.2);
+            temple.scale.set(1, 1.5, 1);
+            headGroup.add(temple);
         }
 
+        // Stoic Facial Features
         const stache = new THREE.Group();
-        for(let i=0; i<30; i++) {
-            const s = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), mat(0x111111));
-            const angle = (i/29) * Math.PI;
-            s.position.set(Math.cos(angle)*0.68, -0.4 - Math.abs(Math.sin(angle))*0.18, 0.92);
+        for(let i=0; i<20; i++) {
+            const s = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), blackMat);
+            const angle = (i/19) * Math.PI;
+            s.position.set(Math.cos(angle)*0.65, -0.38 - Math.abs(Math.sin(angle))*0.15, 0.9);
             stache.add(s);
         }
         headGroup.add(stache);
         
-        const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.1), mat(0x111111));
-        eyeL.position.set(-0.35, 0.22, 0.88);
-        eyeL.rotation.z = 0.18;
-        headGroup.add(eyeL);
-        const eyeR = eyeL.clone(); eyeR.position.x = 0.35; eyeR.rotation.z = -0.18;
-        headGroup.add(eyeR);
+        const jaw = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.65, 0.7, 8), whiteMat);
+        jaw.position.y = -0.4;
+        headGroup.add(jaw);
 
-        headGroup.position.y = 8.5;
+        headGroup.position.y = 8.6;
         omni.add(headGroup);
 
-        // 10k Body Density: Muscular Torso (xm36143)
+        // 2. Muscular V-Core Torso (Barrel Chest, Defined Abs)
         const torso = new THREE.Group();
-        const mainCore = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.1, 5.5, 128), mat(0xffffff));
+        const mainCore = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.15, 5.5, 64), whiteMat);
         torso.add(mainCore);
 
-        const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.8, 0.15), mat(0xdddddd));
-        sternum.position.set(0, 1.5, 0.75);
-        torso.add(sternum);
-
-        // Dense Pectoral & Latimus groups
-        for(let i=0; i<20; i++) {
-            const pec = new THREE.Mesh(new THREE.SphereGeometry(0.78, 24, 24), mat(0xffffff));
-            pec.position.set((i%2?0.65:-0.65), 1.6 + Math.floor(i/2)*0.35, 0.55);
-            pec.scale.set(1.25, 0.95, 0.48);
+        // Defined Pecs & Barrel Chest
+        for(let i=0; i<2; i++) {
+            const pec = new THREE.Mesh(new THREE.SphereGeometry(0.85, 24, 24), whiteMat);
+            pec.position.set(i === 0 ? 0.6 : -0.6, 1.8, 0.55);
+            pec.scale.set(1.1, 0.85, 0.5);
             torso.add(pec);
         }
 
-        // 10-Pack Abdominal Core
-        for(let i=0; i<10; i++) {
-            const ab = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), mat(0xffffff));
-            ab.position.set((i%2?0.38:-0.38), 0.5 - Math.floor(i/2)*0.65, 0.7);
-            ab.scale.set(1.15, 0.8, 0.55);
+        // Defined Abdominals
+        for(let i=0; i<8; i++) {
+            const ab = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 16), whiteMat);
+            ab.position.set((i%2?0.35:-0.35), 0.6 - Math.floor(i/2)*0.6, 0.7);
+            ab.scale.set(1.1, 0.75, 0.5);
             torso.add(ab);
         }
 
         torso.position.y = 5.2;
         omni.add(torso);
 
-        // High-Density Raw Limbs (10k face total budget)
-        const createSentinelLimb = (x, y, color, side) => {
+        // 3. High-Fidelity Limbs (Red/White Color Blocks)
+        const createVLimb = (x, y, color, side) => {
             const g = new THREE.Group();
-            for(let i=0; i<60; i++) {
-                const seg = new THREE.Mesh(new THREE.SphereGeometry(0.58 - i*0.009, 24, 24), mat(color));
-                seg.position.y = -i * 0.18;
-                seg.position.x = Math.sin(i*0.18) * 0.18 * side;
+            for(let i=0; i<45; i++) {
+                const seg = new THREE.Mesh(new THREE.SphereGeometry(0.55 - i*0.01, 24, 24), mat(color));
+                seg.position.y = -i * 0.2;
+                seg.position.x = Math.sin(i*0.2) * 0.16 * side;
                 seg.scale.set(1.2, 1, 0.9);
                 g.add(seg);
             }
@@ -203,25 +200,25 @@ const Fighter = (() => {
             return g;
         };
 
-        omni.add(createSentinelLimb(-2.1, 7.2, 0xffffff, -1)); // L Arm
-        omni.add(createSentinelLimb(2.1, 7.2, 0xffffff, 1));  // R Arm
-        omni.add(createSentinelLimb(-0.95, 3.0, 0xb71c1c, -1)); // L Leg
-        omni.add(createSentinelLimb(0.95, 3.0, 0xb71c1c, 1));  // R Leg
+        omni.add(createVLimb(-2.1, 7.2, 0xffffff, -1)); // L Arm
+        omni.add(createVLimb(2.1, 7.2, 0xffffff, 1));  // R Arm
+        omni.add(createVLimb(-0.95, 3.0, 0xb71c1c, -1)); // L Leg
+        omni.add(createVLimb(0.95, 3.0, 0xb71c1c, 1));  // R Leg
 
-        // 10k Density Fluid Cape
+        // 4. Multi-Segmented Draping Cape
         const capeGroup = new THREE.Group();
-        const segments = 15;
+        const segments = 12;
         for(let i = 0; i < segments; i++) {
-            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.45, 9.5, 0.1), mat(0xb71c1c));
-            flap.position.set(-3.15 + i * 0.45, 4.5, -1.1 - Math.sin(i*0.3)*0.25);
-            flap.rotation.y = Math.sin(i*0.25)*0.3;
+            const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 9.5, 0.1), redMat);
+            flap.position.set(-2.75 + i * 0.5, 4.5, -1.05 - Math.sin(i*0.3)*0.2);
+            flap.rotation.y = Math.sin(i*0.25)*0.25;
             capeGroup.add(flap);
         }
         omni.add(capeGroup);
 
         omni.position.set((Math.random()-0.5)*180, 0, (Math.random()-0.5)*180);
         scene.add(omni);
-        currentEnemy = { mesh: omni, hp: 30000, maxHp: 30000, cape: capeGroup };
+        currentEnemy = { mesh: omni, hp: 35000, maxHp: 35000, cape: capeGroup };
     };
 
     const setupControls = () => {
@@ -268,7 +265,7 @@ const Fighter = (() => {
                 if (currentEnemy.hp <= 0) {
                     scene.remove(currentEnemy.mesh);
                     currentEnemy = null; state.run.kills++;
-                    setTimeout(spawnSentinelOmniMan, 1200);
+                    setTimeout(spawnVCoreOmniMan, 1200);
                 }
             }
         }
@@ -310,13 +307,12 @@ const Fighter = (() => {
             currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
             
-            // Raw 10k Cape Draping
             currentEnemy.cape.children.forEach((flap, i) => {
                 flap.rotation.x = Math.sin(Date.now() * 0.004 + i) * 0.18;
-                flap.position.z = -1.1 - Math.sin(Date.now() * 0.003 + i) * 0.1;
+                flap.position.z = -1.05 - Math.sin(Date.now() * 0.003 + i) * 0.1;
             });
 
-            if (dist < 900 && dist > 15) {
+            if (dist < 950 && dist > 15) {
                 currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.48 * dt));
                 currentEnemy.mesh.position.y = 15 + Math.sin(Date.now() * 0.002) * 7;
             }
