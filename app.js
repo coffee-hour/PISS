@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v6.0.1: 'PRECISION LOCK'
- * 1. Pointer Lock: Implemented the Pointer Lock API. Clicking the canvas locks the cursor for direct aim control.
- * 2. Controls: Camera yaw and pitch are now driven by raw mouse movement delta while locked.
- * 3. Scope Mechanics: Retained forensic zoom and reticle from v6.0.0.
- * 4. HUD: Stats and instructions maintained.
+ * SOVEREIGN v6.0.2: 'VISIBILITY PATCH'
+ * 1. Lighting: Significantly increased AmbientLight intensity for clearer cityscape visibility.
+ * 2. Target Visibility: Added emissive glow to R6 targets to make them 'pop' against dark buildings.
+ * 3. Mechanics: Maintained Pointer Lock and Forensic Scope from v6.0.1.
  */
 
 const SniperElite = (() => {
@@ -28,24 +27,25 @@ const SniperElite = (() => {
         if (state.initialized) return;
         state.initialized = true;
 
-        console.log('Sovereign: Initializing v6.0.1 Precision Lock...');
+        console.log('Sovereign: Initializing v6.0.2 Visibility Patch...');
         
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.Fog(0x050505, 500, 3000);
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.Fog(0x0a0a0a, 800, 4000);
 
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
         camera.position.set(0, 150, 0);
-        camera.rotation.order = 'YXZ'; // Standard FPS rotation order
+        camera.rotation.order = 'YXZ';
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        // INCREASED AMBIENT LIGHTING
+        ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
         scene.add(ambientLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
         sunLight.position.set(500, 1000, 500);
         scene.add(sunLight);
 
@@ -115,12 +115,18 @@ const SniperElite = (() => {
     };
 
     const spawnTarget = () => {
-        if(state.targets.length > 5) return;
+        if(state.targets.length > 8) return;
         const buildings = scene.children.filter(c => c.userData.isBuilding);
         const b = buildings[Math.floor(Math.random() * buildings.length)];
         const target = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 1), new THREE.MeshLambertMaterial({ color: 0xff0000 }));
+        
+        // EMISSIVE MATERIAL FOR TARGET VISIBILITY
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(2, 4, 1), 
+            new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 })
+        );
         target.add(body);
+        
         const xOff = (Math.random()-0.5) * (b.userData.width - 10);
         const yOff = (Math.random() * b.userData.height) - (b.userData.height / 2);
         target.position.copy(b.position);
@@ -132,7 +138,7 @@ const SniperElite = (() => {
         setTimeout(() => {
             scene.remove(target);
             state.targets = state.targets.filter(t => t !== target);
-        }, 5000);
+        }, 6000);
     };
 
     const setupInput = () => {
@@ -140,18 +146,17 @@ const SniperElite = (() => {
         const center = new THREE.Vector2(0, 0);
 
         document.addEventListener('mousedown', (e) => {
-            // Pointer Lock Request
             if (!state.isLocked) {
                 renderer.domElement.requestPointerLock();
                 return;
             }
 
-            if(e.button === 2) { // Right Click
+            if(e.button === 2) {
                 state.isScoped = true;
                 document.getElementById('reticle').style.display = 'block';
                 document.getElementById('scope-status').innerText = 'SCOPED';
             }
-            if(e.button === 0) { // Left Click (Fire)
+            if(e.button === 0) {
                 raycaster.setFromCamera(center, camera);
                 const intersects = raycaster.intersectObjects(state.targets, true);
                 if(intersects.length > 0) {
@@ -182,7 +187,6 @@ const SniperElite = (() => {
                 state.yaw -= e.movementX * sensitivity;
                 state.pitch -= e.movementY * sensitivity;
                 state.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, state.pitch));
-                
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
