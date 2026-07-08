@@ -1,266 +1,294 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v7.0.0: 'MAJOR REBUILD'
- * 1. Firing Logic: Switched to 'pointerdown' on window to bypass lock-request event suppression.
- * 2. Shading Fix: Buildings now use MeshPhongMaterial with calibrated light response (Grey/Concrete).
- * 3. Nest: Positioned at 200 units height on a dedicated sniper platform.
- * 4. NPCs: R6 entities with side-to-side walk loops added to target windows.
- * 5. Physics: Physical ballistics, tracers, and ragdolls maintained.
+ * SOVEREIGN v5.6.0: 'RPG STABILITY RESTORE'
+ * 1. Rollback: Complete removal of Sniper-Elite logic (v6/v7).
+ * 2. World: Restored the 5000-unit arena with city blocks and stable Hemisphere + Directional lighting.
+ * 3. RPG Engine: Re-implemented Level 1-99 system, XP tracking, and XNZ Special Attacks.
+ * 4. Rigs: Restored the R6 Omni-Man boss and player fist proxies.
+ * 5. UI: Re-deployed the Amber RPG HUD (Biological Status, XP, Cooldowns).
  */
 
-const SniperElite = (() => {
+const Sovereign = (() => {
     let scene, camera, renderer, clock;
-    let sunLight, hemiLight, ambientLight;
+    let sunLight, hemiLight;
     
     let state = {
-        initialized: false,
-        isScoped: false,
+        player: { hp: 100, maxHp: 100, punchRange: 5.5, speed: 2.8, height: 15.0, level: 1, xp: 0, nextXp: 5000 },
+        combat: { kills: 0 },
+        specials: {
+            X: { name: 'Thunderclap', cd: 8, timer: 0 },
+            N: { name: 'Sonic Dash', cd: 5, timer: 0 },
+            Z: { name: 'Eye Beam', cd: 12, timer: 0 }
+        },
+        timeDilation: 1.0,
+        keys: { w: false, a: false, s: false, d: false, ' ': false, shift: false, x: false, n: false, z: false },
         isLocked: false,
-        zoom: 75,
-        targetZoom: 15,
-        score: 0,
-        targets: [],
-        bullets: [],
-        tracers: [],
         pitch: 0,
-        yaw: 0
+        yaw: 0,
+        lastArmUsed: 'right'
+    };
+
+    let boss = null;
+    let playerHands = { left: null, right: null };
+    let bloodSystem = null;
+
+    const createBeveledBox = (w, h, d, color) => {
+        return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, flatShading: false }));
     };
 
     const init = () => {
-        if (state.initialized) return;
-        state.initialized = true;
+        console.log('Sovereign: Restoring v5.6.0 RPG Stability...');
+        
+        // CLEANUP PREVIOUS DOM ELEMENTS
+        document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('sniper')) div.remove(); });
+        document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('sniper') || s.innerHTML.includes('rpg-hud')) s.remove(); });
 
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // Bright Sky
-        scene.fog = new THREE.Fog(0x87ceeb, 2000, 8000);
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 50, 3000);
 
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-        camera.position.set(0, 205, 50); // Nest Position
-        camera.rotation.order = 'YXZ';
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(0, state.player.height, 0);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        
+        renderer.domElement.style.position = 'fixed';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+        renderer.domElement.style.zIndex = '0';
         document.body.appendChild(renderer.domElement);
 
-        // CALIBRATED SHADING LIGHTS
-        ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(ambientLight);
-        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+        clock = new THREE.Clock();
+
+        // STABLE LIGHTING ARRAY
+        hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.8);
         scene.add(hemiLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 1.8);
-        sunLight.position.set(200, 1000, 200);
+        sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        sunLight.position.set(100, 300, 100);
+        sunLight.castShadow = true;
         scene.add(sunLight);
 
-        createCityscape();
-        deploySniperHUD();
-        setupInput();
+        createArena();
+        createBeveledHands();
+        bloodSystem = new BloodParticleSystem(scene);
         
-        clock = new THREE.Clock();
+        spawnBeveledOmniMan();
+        deployRPG_HUD();
+
+        setupInput();
+        window.addEventListener('resize', onWindowResize);
         animate();
     };
 
-    const deploySniperHUD = () => {
-        const hudId = 'sniper-hud';
-        if(document.getElementById(hudId)) document.getElementById(hudId).remove();
+    const deployRPG_HUD = () => {
         const style = document.createElement('style');
         style.innerHTML = `
-            #sniper-hud { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; font-family: 'Courier New', monospace; text-transform: uppercase; }
-            #reticle { position: absolute; top: 50%; left: 50%; width: 400px; height: 400px; border: 2px solid #ffbf00; border-radius: 50%; transform: translate(-50%, -50%); display: none; box-shadow: 0 0 0 5000px rgba(0,0,0,0.85); }
-            #cross-h { position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: #ffbf00; }
-            #cross-v { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: #ffbf00; }
-            .stats { position: fixed; top: 20px; left: 20px; color: #ffbf00; font-size: 18px; font-weight: bold; text-shadow: 2px 2px #000; }
+            .rpg-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
+            .amber-bar { background: rgba(15, 15, 15, 0.9); border: 1px solid #ffbf00; height: 10px; border-radius: 2px; overflow: hidden; }
+            .amber-fill { height: 100%; background: #ffbf00; width: 0%; transition: width 0.3s; }
+            .special-node { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; font-size: 10px; padding: 4px; }
         `;
         document.head.appendChild(style);
+
         const hud = document.createElement('div');
-        hud.id = hudId;
+        hud.id = 'rpg-master-hud';
+        hud.className = 'rpg-hud';
+        hud.style.top = '20px';
+        hud.style.left = '20px';
         hud.innerHTML = `
-            <div id="reticle"><div id="cross-h"></div><div id="cross-v"></div></div>
-            <div class="stats">KILLS: <span id="kill-count">0</span><br>SCOPE: <span id="scope-status">OFF</span></div>
+            <div style="font-size:14px; font-weight:bold;">LVL <span id="p-lvl">1</span> // SOVEREIGN</div>
+            <div class="amber-bar" style="width:250px; margin: 5px 0;">
+                <div id="p-hp-fill" class="amber-fill" style="width:100%; background:#c62828;"></div>
+            </div>
+            <div class="amber-bar" style="width:250px; height:6px;">
+                <div id="p-xp-fill" class="amber-fill" style="width:0%;"></div>
+            </div>
+            <div id="specials-container" style="margin-top:10px;">
+                <div class="special-node">X<br><span id="cd-x">READY</span></div>
+                <div class="special-node">N<br><span id="cd-n">READY</span></div>
+                <div class="special-node">Z<br><span id="cd-z">READY</span></div>
+            </div>
         `;
         document.body.appendChild(hud);
     };
 
-    const createCityscape = () => {
-        // Ground
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshPhongMaterial({ color: 0x444444 }));
+    const createArena = () => {
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshLambertMaterial({ color: 0x333333 }));
         ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
         scene.add(ground);
-
-        // Player Nest Skyscraper
-        const nestBase = new THREE.Mesh(new THREE.BoxGeometry(60, 200, 60), new THREE.MeshPhongMaterial({ color: 0x666666 }));
-        nestBase.position.set(0, 100, 50);
-        scene.add(nestBase);
-
-        // Target Buildings
-        const buildingMat = new THREE.MeshPhongMaterial({ color: 0x999999, shininess: 10 });
-        for(let i=0; i<15; i++) {
-            const h = 400 + Math.random() * 400;
-            const w = 150 + Math.random() * 50;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 100), buildingMat);
-            b.position.set((Math.random()-0.5)*1200, h/2, -800 - Math.random() * 600);
-            b.userData.isBuilding = true;
+        for (let i = 0; i < 300; i++) {
+            const h = 100 + Math.random() * 500;
+            const b = createBeveledBox(80, h, 80, 0xcccccc);
+            b.position.set((Math.random()-0.5)*4000, h/2, (Math.random()-0.5)*4000);
+            if (b.position.length() < 300) continue;
             scene.add(b);
-
-            // Add Window Targets
-            for(let j=0; j<3; j++) {
-                spawnNPC(b, h, w);
-            }
         }
     };
 
-    const spawnNPC = (b, bH, bW) => {
-        const target = new THREE.Group();
-        const r6 = new THREE.Mesh(new THREE.BoxGeometry(4, 8, 2), new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5 }));
-        target.add(r6);
-        
-        const xRange = (bW / 2) - 10;
-        const startX = (Math.random() - 0.5) * xRange;
-        const yPos = (Math.random() * bH) - (bH / 2);
-
-        target.position.copy(b.position);
-        target.position.x += startX;
-        target.position.y = Math.max(20, b.position.y + yPos);
-        target.position.z += 52; // Front of building
-
-        target.userData = {
-            isDead: false,
-            velocity: new THREE.Vector3(),
-            walkCenter: startX,
-            walkRange: 15,
-            walkSpeed: 1 + Math.random() * 2,
-            animTime: Math.random() * 10
+    const createBeveledHands = () => {
+        const createHand = (side) => {
+            const group = new THREE.Group();
+            group.add(createBeveledBox(0.8, 0.8, 1.2, 0x1e88e5));
+            group.position.set(side === 'left' ? -1.8 : 1.8, -1.2, -2.0);
+            camera.add(group);
+            return group;
         };
+        scene.add(camera);
+        playerHands.left = createHand('left');
+        playerHands.right = createHand('right');
+    };
 
-        scene.add(target);
-        state.targets.push(target);
+    const spawnBeveledOmniMan = () => {
+        if (boss) return;
+        const omni = new THREE.Group();
+        omni.add(createBeveledBox(1.5, 1.5, 1.5, 0xffdbac).set({position: new THREE.Vector3(0, 7.5, 0)}));
+        const torso = createBeveledBox(3, 3.5, 1.5, 0xffffff); torso.position.y = 5.0; omni.add(torso);
+        for(let i=0; i<12; i++) {
+            const seg = createBeveledBox(3.2, 0.62, 0.1, 0xb71c1c); 
+            seg.position.set(0, 7.5 - (i * 0.6), -0.9); omni.add(seg);
+        }
+        const lPivot = new THREE.Group(); lPivot.position.set(-2.1, 6.5, 0);
+        lPivot.add(createBeveledBox(1, 3.5, 1, 0xffffff).set({position: new THREE.Vector3(0,-1.75,0)}));
+        const rPivot = new THREE.Group(); rPivot.position.set(2.1, 6.5, 0);
+        rPivot.add(createBeveledBox(1, 3.5, 1, 0xffffff).set({position: new THREE.Vector3(0,-1.75,0)}));
+        omni.add(lPivot); omni.add(rPivot);
+        omni.position.set((Math.random()-0.5)*600, 150, (Math.random()-0.5)*600);
+        scene.add(omni);
+        boss = { mesh: omni, torso, hp: 100000, maxHp: 100000, animTime: 0, vel: new THREE.Vector3(), gravity: 0, leftArm: lPivot, rightArm: rPivot };
+    };
+
+    class BloodParticleSystem {
+        constructor(scene) {
+            this.count = 2000;
+            this.geometry = new THREE.BufferGeometry();
+            this.positions = new Float32Array(this.count * 3);
+            this.velocities = Array.from({length: this.count}, () => new THREE.Vector3());
+            this.lifetimes = new Float32Array(this.count);
+            for(let i=0; i<this.count; i++) this.positions[i*3] = 10000;
+            this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+            this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.3, transparent: true });
+            this.points = new THREE.Points(this.geometry, this.material);
+            this.points.frustumCulled = false; scene.add(this.points);
+        }
+        emit(pos, dir) {
+            let n = 0;
+            for(let i=0; i<this.count && n < 80; i++) {
+                if(this.lifetimes[i] <= 0) {
+                    this.lifetimes[i] = 1.0;
+                    this.positions[i*3] = pos.x; this.positions[i*3+1] = pos.y; this.positions[i*3+2] = pos.z;
+                    this.velocities[i].set((Math.random()-0.5)*15 + dir.x*10, Math.random()*15 + dir.y*10, (Math.random()-0.5)*15 + dir.z*10);
+                    n++;
+                }
+            }
+        }
+        update(dt) {
+            const posAttr = this.geometry.getAttribute('position');
+            for(let i=0; i<this.count; i++) {
+                if(this.lifetimes[i] > 0) {
+                    this.lifetimes[i] -= dt * 1.5;
+                    this.positions[i*3] += this.velocities[i].x * dt * 60;
+                    this.positions[i*3+1] += this.velocities[i].y * dt * 60;
+                    this.positions[i*3+2] += this.velocities[i].z * dt * 60;
+                    this.velocities[i].y -= 0.5;
+                } else { this.positions[i*3] = 10000; }
+            }
+            posAttr.needsUpdate = true;
+        }
+    }
+
+    const triggerSpecial = (key) => {
+        const spec = state.specials[key];
+        if (spec.timer > 0 || !boss) return;
+        spec.timer = spec.cd;
+        const fwd = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+        if (key === 'X') { boss.hp -= 20000; boss.gravity = -2.5; bloodSystem.emit(boss.mesh.position, fwd.clone().multiplyScalar(2)); }
+        else if (key === 'N') { camera.position.add(fwd.clone().multiplyScalar(50)); }
+        else if (key === 'Z') { boss.hp -= 35000; bloodSystem.emit(boss.mesh.position, fwd.clone().multiplyScalar(8)); }
+        checkBossDeath();
+    };
+
+    const checkBossDeath = () => {
+        if (boss && boss.hp <= 0) {
+            scene.remove(boss.mesh); boss = null;
+            state.player.xp += 2500;
+            if (state.player.xp >= state.player.nextXp) {
+                state.player.level++; state.player.xp = 0; state.player.nextXp *= 1.2;
+                const lvlEl = document.getElementById('p-lvl'); if(lvlEl) lvlEl.innerText = state.player.level;
+            }
+            const xpFill = document.getElementById('p-xp-fill'); if(xpFill) xpFill.style.width = `${(state.player.xp / state.player.nextXp) * 100}%`;
+            setTimeout(spawnBeveledOmniMan, 4000);
+        }
+    };
+
+    const performAttack = () => {
+        state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
+        const h = playerHands[state.lastArmUsed]; h.position.z -= 3.0; setTimeout(() => h.position.z = -2.0, 70);
+        if (boss && camera.position.distanceTo(boss.mesh.position) < state.player.punchRange) {
+            boss.hp -= 5000; boss.gravity = -1.5; 
+            const wp = new THREE.Vector3(); boss.torso.getWorldPosition(wp);
+            bloodSystem.emit(wp, new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion).multiplyScalar(5));
+            checkBossDeath();
+        }
     };
 
     const setupInput = () => {
-        // Use window pointerdown to ensure capture even during lock phase
-        window.addEventListener('pointerdown', (e) => {
-            if (!state.isLocked) {
-                renderer.domElement.requestPointerLock();
-            } else {
-                if(e.button === 0) fireBullet();
-            }
-
-            if(e.button === 2) {
-                state.isScoped = true;
-                const ret = document.getElementById('reticle');
-                if(ret) ret.style.display = 'block';
-                const status = document.getElementById('scope-status');
-                if(status) status.innerText = 'ACTIVE';
-            }
+        document.addEventListener('keydown', (e) => {
+            const k = e.key.toUpperCase();
+            if(k === ' ') state.timeDilation = 0.2;
+            if(e.shiftKey) state.keys.shift = true;
+            if(state.specials[k]) triggerSpecial(k);
+            if(state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = true;
         });
-
-        window.addEventListener('pointerup', (e) => {
-            if(e.button === 2) {
-                state.isScoped = false;
-                const ret = document.getElementById('reticle');
-                if(ret) ret.style.display = 'none';
-                const status = document.getElementById('scope-status');
-                if(status) status.innerText = 'OFF';
-            }
+        document.addEventListener('keyup', (e) => {
+            if(e.key === ' ') state.timeDilation = 1.0;
+            if(!e.shiftKey) state.keys.shift = false;
+            if(state.keys.hasOwnProperty(e.key.toLowerCase())) state.keys[e.key.toLowerCase()] = false;
         });
-
-        document.addEventListener('pointerlockchange', () => {
-            state.isLocked = document.pointerLockElement === renderer.domElement;
-        });
-
+        document.addEventListener('mousedown', () => { if(!state.isLocked) document.body.requestPointerLock(); else performAttack(); });
+        document.addEventListener('pointerlockchange', () => { state.isLocked = document.pointerLockElement === document.body; });
         document.addEventListener('mousemove', (e) => {
-            if (state.isLocked) {
-                const sensitivity = state.isScoped ? 0.0002 : 0.002;
-                state.yaw -= e.movementX * sensitivity;
-                state.pitch -= e.movementY * sensitivity;
-                state.pitch = Math.max(-1.2, Math.min(1.2, state.pitch));
+            if(state.isLocked) {
+                state.yaw -= e.movementX * 0.0025; state.pitch -= e.movementY * 0.0025;
+                state.pitch = Math.max(-1.5, Math.min(1.5, state.pitch));
                 camera.rotation.set(state.pitch, state.yaw, 0, 'YXZ');
             }
         });
-        document.addEventListener('contextmenu', e => e.preventDefault());
     };
 
-    const fireBullet = () => {
-        const bullet = {
-            position: camera.position.clone(),
-            velocity: new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(600),
-            gravity: new THREE.Vector3(0, -9.8, 0)
-        };
-        state.bullets.push(bullet);
-
-        const lineGeo = new THREE.BufferGeometry().setFromPoints([bullet.position, bullet.position]);
-        const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
-        const line = new THREE.Line(lineGeo, lineMat);
-        scene.add(line);
-        state.tracers.push({ mesh: line, life: 1.0 });
+    const onWindowResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
     };
 
     const animate = () => {
         requestAnimationFrame(animate);
-        const dt = Math.min(clock.getDelta(), 0.1);
-        
-        camera.fov = THREE.MathUtils.lerp(camera.fov, state.isScoped ? state.targetZoom : 75, 0.15);
-        camera.updateProjectionMatrix();
-
-        // NPCs - Walk Loop & Ragdoll
-        state.targets.forEach((t) => {
-            if (t.userData.isDead) {
-                t.userData.velocity.y -= 0.5 * dt * 60;
-                t.position.add(t.userData.velocity);
-                t.rotation.x += 0.1;
-            } else {
-                t.userData.animTime += dt;
-                const offset = Math.sin(t.userData.animTime * t.userData.walkSpeed) * t.userData.walkRange;
-                t.position.x = t.userData.walkCenter + offset;
-            }
-        });
-
-        // Bullet Physics
-        for (let i = state.bullets.length - 1; i >= 0; i--) {
-            const b = state.bullets[i];
-            const prev = b.position.clone();
-            b.velocity.add(b.gravity.clone().multiplyScalar(dt));
-            b.position.add(b.velocity.clone().multiplyScalar(dt));
-
-            const ray = new THREE.Raycaster(prev, b.velocity.clone().normalize(), 0, prev.distanceTo(b.position));
-            
-            const buildings = scene.children.filter(c => c.userData.isBuilding);
-            const bHits = ray.intersectObjects(buildings);
-            if (bHits.length > 0) {
-                const hit = bHits[0];
-                const decal = new THREE.Mesh(new THREE.CircleGeometry(0.8, 8), new THREE.MeshBasicMaterial({ color: 0x111111 }));
-                decal.position.copy(hit.point).add(hit.face.normal.multiplyScalar(0.1));
-                decal.lookAt(hit.point.clone().add(hit.face.normal));
-                scene.add(decal);
-                state.bullets.splice(i, 1);
-                continue;
-            }
-
-            const tHits = ray.intersectObjects(state.targets.filter(t => !t.userData.isDead), true);
-            if (tHits.length > 0) {
-                const target = tHits[0].object.parent;
-                target.userData.isDead = true;
-                target.userData.velocity = b.velocity.clone().multiplyScalar(0.015);
-                state.score++;
-                document.getElementById('kill-count').innerText = state.score;
-                state.bullets.splice(i, 1);
-                continue;
-            }
-
-            if (b.position.length() > 8000 || b.position.y < -50) state.bullets.splice(i, 1);
+        const dt = clock.getDelta() * state.timeDilation;
+        if (state.isLocked) {
+            const dir = new THREE.Vector3();
+            if(state.keys.w) dir.z -= 1; if(state.keys.s) dir.z += 1;
+            if(state.keys.a) dir.x -= 1; if(state.keys.d) dir.x += 1;
+            dir.normalize().applyQuaternion(camera.quaternion);
+            camera.position.add(dir.multiplyScalar(state.player.speed * (state.keys.shift ? 4 : 1) * dt * 60));
         }
-
-        state.tracers.forEach((t, i) => {
-            t.life -= dt;
-            t.mesh.material.opacity = t.life;
-            if (t.life <= 0) { scene.remove(t.mesh); state.tracers.splice(i, i); }
-        });
-
+        if (boss) {
+            boss.animTime += dt; boss.mesh.lookAt(camera.position);
+            if (boss.mesh.position.y > 1) { boss.gravity += 0.05; boss.mesh.position.y -= boss.gravity; } else { boss.mesh.position.y = 1; boss.gravity = 0; }
+            ['X','N','Z'].forEach(k => {
+                const s = state.specials[k]; if(s.timer > 0) s.timer -= dt;
+                const el = document.getElementById(`cd-${k.toLowerCase()}`); if(el) el.innerText = s.timer > 0 ? Math.ceil(s.timer) + 's' : 'READY';
+            });
+            const tDir = camera.position.clone().sub(boss.mesh.position).normalize();
+            boss.vel.lerp(tDir.multiplyScalar(0.3), 0.04); boss.mesh.position.add(boss.vel);
+        }
+        if (bloodSystem) bloodSystem.update(dt);
         renderer.render(scene, camera);
     };
-
     return { init };
 })();
 
-SniperElite.init();
+Sovereign.init();
