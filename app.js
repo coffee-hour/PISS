@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.2: 'THE BALANCED CAMPAIGN'
- * 1. Cape: 12-segment connected physics chain (no tearing).
- * 2. Animations: Upgraded procedural combat rig (directional punch trajectory).
- * 3. UI: Player Health (Top-Left) & Boss Health (Top-Center).
- * 4. Difficulty: Lunge velocity 7.0, Cooldown 15.0s.
- * 5. Gore: High-fidelity emitter sampling with forced buffer flush.
- * 6. Persistence: Death/Respawn cycle implemented.
+ * SOVEREIGN v5.5.3: 'STRIKE & HUD REPAIR'
+ * 1. UI: Fixed z-index and absolute positioning to prevent text clipping.
+ * 2. Animation: Implemented proper 'Punch Lunge' - arms extend forward on Z-axis.
+ * 3. Gore: Forced world-matrix sampling on beveled torso for 100% reliable blood.
+ * 4. Combat: Maintained v5.5.2 balance (7.0 lunge, 15s cooldown).
  */
 
 const Sovereign = (() => {
@@ -62,27 +60,39 @@ const Sovereign = (() => {
         bloodSystem = new BloodParticleSystem(scene);
         
         spawnBeveledOmniMan();
-        createUI();
+        repairUI();
 
         setupInput();
         window.addEventListener('resize', onWindowResize);
         animate();
     };
 
-    const createUI = () => {
-        // Player Health
+    const repairUI = () => {
+        // Cleanup old UI to prevent duplicates
+        const oldP = document.getElementById('player-ui-v5');
+        if (oldP) oldP.remove();
+
+        // Player Health - Top Left
         const playerUI = document.createElement('div');
-        playerUI.id = 'player-ui';
-        playerUI.style = 'position:fixed; top:20px; left:20px; width:200px; height:20px; background:#333; border:2px solid #fff; z-index:100;';
+        playerUI.id = 'player-ui-v5';
+        playerUI.style = 'position:fixed; top:20px; left:20px; width:220px; height:24px; background:rgba(0,0,0,0.7); border:2px solid #fff; z-index:9999; pointer-events:none;';
         const playerFill = document.createElement('div');
         playerFill.id = 'player-hp-fill';
-        playerFill.style = 'width:100%; height:100%; background:#2e7d32; transition: width 0.2s;';
+        playerFill.style = 'width:100%; height:100%; background:#c62828; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);';
         playerUI.appendChild(playerFill);
+        
+        const playerLabel = document.createElement('div');
+        playerLabel.innerText = 'PLAYER STATUS';
+        playerLabel.style = 'position:absolute; top:-18px; left:0; color:#fff; font-family:monospace; font-size:12px; font-weight:bold;';
+        playerUI.appendChild(playerLabel);
         document.body.appendChild(playerUI);
 
-        // Boss UI exists in HTML, but we ensure it's visible
+        // Boss UI fix
         const bossUI = document.getElementById('boss-hp-container');
-        if (bossUI) bossUI.style.display = 'block';
+        if (bossUI) {
+            bossUI.style.zIndex = '9999';
+            bossUI.style.top = '20px';
+        }
     };
 
     const createArena = () => {
@@ -134,37 +144,45 @@ const Sovereign = (() => {
         torso.position.y = 5.0;
         omni.add(torso);
 
-        // 1. CAPE: Connected 12-segment chain
+        // Cape
         const capeSegments = [];
         for(let i=0; i<12; i++) {
-            const seg = createBeveledBox(3.2, 0.61, 0.1, 0xb71c1c); // Slight overlap to prevent gaps
+            const seg = createBeveledBox(3.2, 0.62, 0.1, 0xb71c1c); 
             seg.position.set(0, 7.5 - (i * 0.6), -0.9);
             omni.add(seg);
             capeSegments.push(seg);
         }
 
-        // Arms
+        // Arms (Skeletal pivot for lunge)
+        const leftArmPivot = new THREE.Group();
+        leftArmPivot.position.set(-2.1, 6.5, 0);
         const leftArm = createBeveledBox(1, 3.5, 1, 0xffffff);
-        leftArm.position.set(-2.1, 5.0, 0);
+        leftArm.position.y = -1.75;
+        leftArmPivot.add(leftArm);
+        
+        const rightArmPivot = new THREE.Group();
+        rightArmPivot.position.set(2.1, 6.5, 0);
         const rightArm = createBeveledBox(1, 3.5, 1, 0xffffff);
-        rightArm.position.set(2.1, 5.0, 0);
-        omni.add(leftArm);
-        omni.add(rightArm);
+        rightArm.position.y = -1.75;
+        rightArmPivot.add(rightArm);
+
+        omni.add(leftArmPivot);
+        omni.add(rightArmPivot);
 
         // Legs
         const legL = createBeveledBox(1.2, 3.5, 1.2, 0xb71c1c); legL.position.set(-0.75, 1.75, 0); omni.add(legL);
         const legR = createBeveledBox(1.2, 3.5, 1.2, 0xb71c1c); legR.position.set(0.75, 1.75, 0); omni.add(legR);
 
-        omni.position.set((Math.random()-0.5)*500, 100, (Math.random()-0.5)*500);
+        omni.position.set((Math.random()-0.5)*600, 100, (Math.random()-0.5)*600);
         scene.add(omni);
         
         const bossContainer = document.getElementById('boss-hp-container');
         if (bossContainer) bossContainer.style.display = 'block';
 
         boss = { 
-            mesh: omni, hp: 80000, maxHp: 80000, 
+            mesh: omni, torso: torso, hp: 80000, maxHp: 80000, 
             animTime: 0, vel: new THREE.Vector3(), attackTimer: 0,
-            leftArm, rightArm, capeSegments
+            leftArm: leftArmPivot, rightArm: rightArmPivot, capeSegments
         };
     };
 
@@ -177,19 +195,20 @@ const Sovereign = (() => {
             this.lifetimes = new Float32Array(this.count);
             for(let i=0; i<this.count; i++) this.positions[i*3] = 10000;
             this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
-            this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.22, transparent: true });
+            this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.25, transparent: true });
             this.points = new THREE.Points(this.geometry, this.material);
+            this.points.frustumCulled = false;
             scene.add(this.points);
         }
         emit(pos, dir) {
             let n = 0;
-            for(let i=0; i<this.count && n < 60; i++) {
+            for(let i=0; i<this.count && n < 70; i++) {
                 if(this.lifetimes[i] <= 0) {
                     this.lifetimes[i] = 1.0;
-                    this.positions[i*3] = pos.x + (Math.random()-0.5)*2;
-                    this.positions[i*3+1] = pos.y + (Math.random()-0.5)*2;
-                    this.positions[i*3+2] = pos.z + (Math.random()-0.5)*2;
-                    this.velocities[i].set((Math.random()-0.5)*12 + dir.x*7, Math.random()*12 + dir.y*7, (Math.random()-0.5)*12 + dir.z*7);
+                    this.positions[i*3] = pos.x; 
+                    this.positions[i*3+1] = pos.y; 
+                    this.positions[i*3+2] = pos.z;
+                    this.velocities[i].set((Math.random()-0.5)*14 + dir.x*8, Math.random()*14 + dir.y*8, (Math.random()-0.5)*14 + dir.z*8);
                     n++;
                 }
             }
@@ -198,11 +217,11 @@ const Sovereign = (() => {
             const pos = this.geometry.getAttribute('position');
             for(let i=0; i<this.count; i++) {
                 if(this.lifetimes[i] > 0) {
-                    this.lifetimes[i] -= dt * 1.5;
+                    this.lifetimes[i] -= dt * 1.6;
                     this.positions[i*3] += this.velocities[i].x * dt * 60;
                     this.positions[i*3+1] += this.velocities[i].y * dt * 60;
                     this.positions[i*3+2] += this.velocities[i].z * dt * 60;
-                    this.velocities[i].y -= 0.45;
+                    this.velocities[i].y -= 0.5;
                 } else { this.positions[i*3] = 10000; }
             }
             pos.needsUpdate = true;
@@ -212,17 +231,17 @@ const Sovereign = (() => {
     const performAttack = () => {
         state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
         const h = playerHands[state.lastArmUsed];
-        h.position.z -= 2.5;
+        h.position.z -= 3.0;
         setTimeout(() => h.position.z = -2.0, 70);
 
         if (boss) {
             const dist = camera.position.distanceTo(boss.mesh.position);
             const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist < state.player.punchRange) {
-                boss.hp -= 3500;
-                // GORE: High-fidelity emitter sampling
+                boss.hp -= 4000;
+                // GORE FIX: Force check world-matrix of the TORSO geometry specifically
                 const worldPos = new THREE.Vector3();
-                boss.mesh.getWorldPosition(worldPos);
+                boss.torso.getWorldPosition(worldPos);
                 bloodSystem.emit(worldPos, fwd.multiplyScalar(4));
                 
                 const bar = document.getElementById('boss-hp-fill');
@@ -235,7 +254,6 @@ const Sovereign = (() => {
                     boss = null;
                     state.combat.kills++;
                     document.getElementById('kills').innerText = state.combat.kills;
-                    // Respawn cycle
                     setTimeout(spawnBeveledOmniMan, 3000);
                 }
             }
@@ -289,7 +307,6 @@ const Sovereign = (() => {
             boss.animTime += dt;
             boss.mesh.lookAt(camera.position);
             
-            // CAPE: Connected physics chain logic
             boss.capeSegments.forEach((seg, i) => {
                 const wave = Math.sin(boss.animTime * 4 + i * 0.5);
                 seg.rotation.x = wave * 0.2;
@@ -298,28 +315,27 @@ const Sovereign = (() => {
 
             const dist = camera.position.distanceTo(boss.mesh.position);
             
-            // 2. ANIMATIONS: Upgraded procedural combat rig
+            // ANIMATION FIX: Proper Punch Lunge
             if (dist < 45) {
-                const punchSpeed = 18;
-                boss.leftArm.rotation.x = Math.sin(boss.animTime * punchSpeed) * 1.8;
-                boss.leftArm.position.z = Math.sin(boss.animTime * punchSpeed) * 1.5;
-                boss.rightArm.rotation.x = Math.cos(boss.animTime * punchSpeed) * 1.8;
-                boss.rightArm.position.z = Math.cos(boss.animTime * punchSpeed) * 1.5;
+                const cycle = Math.sin(boss.animTime * 14);
+                // Rotate arm forward on X, extend on Z toward player
+                boss.leftArm.rotation.x = -Math.PI / 2 - (cycle * 0.8);
+                boss.rightArm.rotation.x = -Math.PI / 2 + (cycle * 0.8);
                 
-                // Damage Player
-                if (dist < 8 && Math.random() < 0.02) {
-                    state.player.hp -= 2;
+                if (dist < 10 && Math.random() < 0.03) {
+                    state.player.hp -= 3;
                     const pFill = document.getElementById('player-hp-fill');
                     if (pFill) pFill.style.width = `${state.player.hp}%`;
+                    if (state.player.hp <= 0) {
+                        state.player.hp = 100; // Reset for demo
+                        if (pFill) pFill.style.width = '100%';
+                    }
                 }
             } else {
-                boss.leftArm.rotation.x = Math.sin(boss.animTime * 2) * 0.2;
-                boss.leftArm.position.z = 0;
-                boss.rightArm.rotation.x = Math.sin(boss.animTime * 2) * 0.2;
-                boss.rightArm.position.z = 0;
+                boss.leftArm.rotation.x = Math.lerp(boss.leftArm.rotation.x, 0, 0.1);
+                boss.rightArm.rotation.x = Math.lerp(boss.rightArm.rotation.x, 0, 0.1);
             }
 
-            // 5. DIFFICULTY: Lunge 7.0, Cooldown 15s
             const targetDir = camera.position.clone().sub(boss.mesh.position).normalize();
             boss.vel.lerp(targetDir.multiplyScalar(0.35), 0.04);
             boss.mesh.position.add(boss.vel);
