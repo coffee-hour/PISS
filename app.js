@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v6.0.3: 'UI PURGE'
- * 1. Cleanup: Explicitly removed all lingering DOM elements from previous v5.x builds (rpg-hud, amber-bar, etc).
- * 2. Scene: Pure sniper-elite core with zero residual progression UI.
- * 3. Scope: Forensic reticle remains the primary UI element.
+ * SOVEREIGN v6.0.5: 'DAYTIME OVERHAUL'
+ * 1. Lighting: Full sun intensity with overhead DirectionalLight and noon-day HemisphereLight.
+ * 2. Atmosphere: Bright sky-blue background with pushed-back fog for maximum visibility.
+ * 3. Targets: Neon-bright emissive targets for instant identification.
+ * 4. UI: Maintained the 'UI Purge' minimalist sniper interface.
  */
 
 const SniperElite = (() => {
     let scene, camera, renderer, clock;
-    let sunLight, ambientLight;
+    let sunLight, hemiLight;
     
     let state = {
         initialized: false,
@@ -27,27 +28,14 @@ const SniperElite = (() => {
         if (state.initialized) return;
         state.initialized = true;
 
-        console.log('Sovereign: Initializing v6.0.3 UI Purge...');
+        console.log('Sovereign: Initializing v6.0.5 Daytime Overhaul...');
         
-        // 1. HARD PURGE OF LEGACY UI
-        const legacyIds = [
-            'rpg-master-hud', 'amber-master-hud', 'rpg-master-hud-v571', 
-            'rpg-master-hud-v572', 'amber-master-hud-v580', 'sovereign-diag'
-        ];
-        legacyIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        });
-        // Remove any lingering style tags from v5
-        document.querySelectorAll('style').forEach(s => {
-            if (s.innerHTML.includes('rpg-hud') || s.innerHTML.includes('amber-bar')) s.remove();
-        });
-
+        // 1. ATMOSPHERE
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a0a);
-        scene.fog = new THREE.Fog(0x0a0a0a, 800, 4000);
+        scene.background = new THREE.Color(0x87ceeb); // Bright Sky Blue
+        scene.fog = new THREE.Fog(0x87ceeb, 1500, 6000);
 
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
         camera.position.set(0, 150, 0);
         camera.rotation.order = 'YXZ';
 
@@ -56,10 +44,12 @@ const SniperElite = (() => {
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(ambientLight);
-        sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        sunLight.position.set(500, 1000, 500);
+        // 2. NOON-DAY LIGHTING SPECTRUM
+        hemiLight = new THREE.HemisphereLight(0xddeeff, 0x444444, 1.5);
+        scene.add(hemiLight);
+
+        sunLight = new THREE.DirectionalLight(0xffffff, 2.0); // Full sun intensity
+        sunLight.position.set(50, 1000, 50); // Directly overhead for edge highlights
         scene.add(sunLight);
 
         createCityscape();
@@ -85,8 +75,8 @@ const SniperElite = (() => {
             }
             #cross-h { position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: #ffbf00; }
             #cross-v { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: #ffbf00; }
-            .sniper-stats { position: fixed; top: 20px; left: 20px; color: #ffbf00; font-size: 18px; font-weight: bold; }
-            #system-alert { position: fixed; bottom: 40px; width: 100%; text-align: center; color: #ffbf00; font-size: 12px; }
+            .sniper-stats { position: fixed; top: 20px; left: 20px; color: #ffbf00; font-size: 18px; font-weight: bold; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
+            #system-alert { position: fixed; bottom: 40px; width: 100%; text-align: center; color: #ffbf00; font-size: 12px; text-shadow: 1px 1px 0px rgba(0,0,0,0.5); }
         `;
         document.head.appendChild(style);
 
@@ -107,19 +97,20 @@ const SniperElite = (() => {
     };
 
     const createCityscape = () => {
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+        // Concrete ground
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshLambertMaterial({ color: 0x555555 }));
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        const nest = new THREE.Mesh(new THREE.BoxGeometry(40, 300, 40), new THREE.MeshLambertMaterial({ color: 0x222222 }));
+        const nest = new THREE.Mesh(new THREE.BoxGeometry(40, 300, 40), new THREE.MeshLambertMaterial({ color: 0x333333 }));
         nest.position.set(0, 140, 20);
         scene.add(nest);
 
-        for(let i=0; i<15; i++) {
-            const h = 400 + Math.random() * 400;
-            const w = 100 + Math.random() * 50;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 100), new THREE.MeshLambertMaterial({ color: 0x1a1a1a }));
-            b.position.set((Math.random()-0.5)*1000, h/2, -400 - Math.random() * 400);
+        for(let i=0; i<20; i++) {
+            const h = 400 + Math.random() * 500;
+            const w = 120 + Math.random() * 80;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 150), new THREE.MeshLambertMaterial({ color: 0x222222 }));
+            b.position.set((Math.random()-0.5)*1500, h/2, -600 - Math.random() * 800);
             b.userData.isBuilding = true;
             b.userData.height = h;
             b.userData.width = w;
@@ -128,27 +119,31 @@ const SniperElite = (() => {
     };
 
     const spawnTarget = () => {
-        if(state.targets.length > 8) return;
+        if(state.targets.length > 10) return;
         const buildings = scene.children.filter(c => c.userData.isBuilding);
         const b = buildings[Math.floor(Math.random() * buildings.length)];
         const target = new THREE.Group();
+        
+        // NEON-BRIGHT EMISSIVE TARGETS
         const body = new THREE.Mesh(
-            new THREE.BoxGeometry(2, 4, 1), 
-            new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 })
+            new THREE.BoxGeometry(3, 6, 1.5), 
+            new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.0 })
         );
         target.add(body);
-        const xOff = (Math.random()-0.5) * (b.userData.width - 10);
+        
+        const xOff = (Math.random()-0.5) * (b.userData.width - 20);
         const yOff = (Math.random() * b.userData.height) - (b.userData.height / 2);
         target.position.copy(b.position);
         target.position.x += xOff;
         target.position.y = Math.max(10, b.position.y + yOff);
-        target.position.z += 51;
+        target.position.z += 76; // Just in front of building face
         scene.add(target);
         state.targets.push(target);
+        
         setTimeout(() => {
             scene.remove(target);
             state.targets = state.targets.filter(t => t !== target);
-        }, 6000);
+        }, 7000);
     };
 
     const setupInput = () => {
