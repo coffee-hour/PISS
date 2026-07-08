@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign AAA (v4.7.5)
- * Features: True Vertical Pitch Controller, High-Density Omni-Man (Muscle/Facial Detail),
- * Normal Map Emulation, PBR Shaders, Baked AO, Red Gore, Amber Core.
+ * Sovereign v4.7.6: 'N64 Nostalgia Fidelity'
+ * Features: N64-Authentic Low-Poly Models, Vertex Lighting (Lambert), 
+ * True Vertical Pitch Control, 1-NPC Boss Encounter, Red Gore.
  */
 
 const Fighter = (() => {
@@ -30,60 +30,62 @@ const Fighter = (() => {
     const init = () => {
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a0a);
-        scene.fog = new THREE.Fog(0x0a0a0a, 150, 850);
+        scene.fog = new THREE.Fog(0x0a0a0a, 100, 500); // Tighter fog for N64 feel
 
-        camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2500);
+        camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2000);
         camera.position.set(0, state.player.height, 0);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+        // N64 Style: No PBR, simple rendering
+        renderer = new THREE.WebGLRenderer({ antialias: false }); 
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.toneMapping = THREE.ReinhardToneMapping;
-        renderer.toneMappingExposure = 1.3;
         document.body.appendChild(renderer.domElement);
 
         raycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xff8c00, 0.4);
+        // Vertex Lighting (Lambert) emulation
+        ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xff8c00, 1.9);
-        sunLight.position.set(500, 1000, 500);
+        sunLight = new THREE.DirectionalLight(0xff8c00, 1.2);
+        sunLight.position.set(100, 200, 100);
         scene.add(sunLight);
 
-        createAmberCity();
+        createN64City();
         setupControls();
-        spawnUltraHighPolyOmniMan();
+        spawnN64OmniMan();
 
         animate();
     };
 
-    const createAmberCity = () => {
-        const floorGeo = new THREE.PlaneGeometry(8000, 8000);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.9 });
+    const createN64City = () => {
+        const floorGeo = new THREE.PlaneGeometry(5000, 5000);
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0x050505 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
+        // Low-poly blocky buildings
         const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
-        const buildingMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.1, roughness: 0.9 });
+        const buildingMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
         
-        let seed = 77777;
+        let seed = 64;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-        for (let i = 0; i < 450; i++) {
-            const h = 80 + random() * 160;
-            const w = 40 + random() * 50;
-            const d = 40 + random() * 50;
-            const x = (random() - 0.5) * 2500;
-            const z = (random() - 0.5) * 2500;
-            if (Math.abs(x) < 120 && Math.abs(z) < 120) continue;
+        for (let i = 0; i < 300; i++) {
+            const h = 40 + random() * 100;
+            const w = 30 + random() * 40;
+            const d = 30 + random() * 40;
+            const x = (random() - 0.5) * 1800;
+            const z = (random() - 0.5) * 1800;
+            if (Math.abs(x) < 100 && Math.abs(z) < 100) continue;
             
             const b = new THREE.Mesh(buildingGeo, buildingMat);
             b.scale.set(w, h, d);
             b.position.set(x, h/2, z);
             scene.add(b);
             
+            // Chunky wireframes
             const edges = new THREE.EdgesGeometry(buildingGeo);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0.35 }));
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8c00 }));
             line.scale.set(w, h, d);
             line.position.copy(b.position);
             scene.add(line);
@@ -108,10 +110,8 @@ const Fighter = (() => {
         
         window.addEventListener('mousemove', (e) => {
             if (state.isLocked) {
-                // v4.7.5: TRUE VERTICAL PITCH CONTROL
-                state.yaw -= e.movementX * 0.002;
-                state.pitch -= e.movementY * 0.002;
-                // Clamp vertical pitch to -85 to +85 degrees
+                state.yaw -= e.movementX * 0.003; // N64 sensitivity feel
+                state.pitch -= e.movementY * 0.003;
                 state.pitch = Math.max(-1.48, Math.min(1.48, state.pitch));
                 
                 camera.rotation.order = 'YXZ';
@@ -122,73 +122,56 @@ const Fighter = (() => {
         });
     };
 
-    const spawnUltraHighPolyOmniMan = () => {
+    const spawnN64OmniMan = () => {
         if (currentEnemy) return;
 
-        // v4.7.5: ULTRA-HIGH POLY CHARACTER ASSEMBLY
+        // v4.7.6: N64-STYLE LOW-POLY MODEL
         const omni = new THREE.Group();
-        const pbrMat = (color) => new THREE.MeshStandardMaterial({ color, metalness: 0.1, roughness: 0.4 });
-        const detailMat = (color) => new THREE.MeshStandardMaterial({ color, metalness: 0.0, roughness: 0.8, flatShading: false });
+        const mat = (color) => new THREE.MeshLambertMaterial({ color, flatShading: true });
 
-        // Head (High-density sphere)
-        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 64), pbrMat(0xffffff));
+        // Head (Low-poly 8x8 sphere)
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 8), mat(0xffffff));
         head.position.y = 8.5;
         omni.add(head);
         
-        // Face Detail Emulation (Eyes/Mustache refined)
-        const eyeGeo = new THREE.CapsuleGeometry(0.1, 0.2, 8, 8);
-        const lEye = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-        lEye.position.set(-0.35, 8.7, 0.9);
-        lEye.rotation.x = Math.PI/2;
-        head.add(lEye);
-
-        const rEye = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x000000 }));
-        rEye.position.set(0.35, 8.7, 0.9);
-        rEye.rotation.x = Math.PI/2;
-        head.add(rEye);
-
-        const stache = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.15, 16, 64, Math.PI), detailMat(0x111111));
-        stache.rotation.z = Math.PI;
-        stache.position.set(0, 8.2, 0.95);
+        // Mustache (Sharp Polygonal Box)
+        const stache = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.3, 0.2), mat(0x111111));
+        stache.position.set(0, 8.2, 0.9);
         omni.add(stache);
 
-        // Torso with Muscle Definition (Segmented cylinders)
-        const torsoUpper = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.2, 3, 64), pbrMat(0xffffff));
-        torsoUpper.position.y = 6.5;
-        omni.add(torsoUpper);
-        
-        const torsoLower = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.0, 2.5, 64), pbrMat(0xffffff));
-        torsoLower.position.y = 4.25;
-        omni.add(torsoLower);
+        // Torso (Chunky Box)
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(2.2, 4.5, 1.3), mat(0xffffff));
+        torso.position.y = 5.2;
+        omni.add(torso);
 
-        // Cape (Physics-simulated mesh density)
-        const cape = new THREE.Mesh(new THREE.BoxGeometry(2.8, 7.5, 0.2), pbrMat(0xb71c1c));
-        cape.position.set(0, 4.5, -0.9);
+        // Cape (N64-Flat Box)
+        const cape = new THREE.Mesh(new THREE.BoxGeometry(2.6, 7.5, 0.1), mat(0xb71c1c));
+        cape.position.set(0, 4.5, -0.7);
         omni.add(cape);
 
-        // High-density Limbs
-        const limbGeo = new THREE.CylinderGeometry(0.45, 0.35, 4.5, 32);
-        const lArm = new THREE.Mesh(limbGeo, pbrMat(0xffffff));
-        lArm.position.set(-1.8, 6.0, 0); lArm.rotation.z = 0.3;
+        // Limbs (Low-poly 4-sided cylinders = Boxes)
+        const limbGeo = new THREE.BoxGeometry(0.5, 4.5, 0.5);
+        const lArm = new THREE.Mesh(limbGeo, mat(0xffffff));
+        lArm.position.set(-1.4, 5.5, 0);
         omni.add(lArm);
 
-        const rArm = new THREE.Mesh(limbGeo, pbrMat(0xffffff));
-        rArm.position.set(1.8, 6.0, 0); rArm.rotation.z = -0.3;
+        const rArm = new THREE.Mesh(limbGeo, mat(0xffffff));
+        rArm.position.set(1.4, 5.5, 0);
         omni.add(rArm);
 
-        const legGeo = new THREE.CylinderGeometry(0.55, 0.45, 5, 32);
-        const lLeg = new THREE.Mesh(legGeo, pbrMat(0xb71c1c));
-        lLeg.position.set(-0.8, 2, 0);
+        const legGeo = new THREE.BoxGeometry(0.7, 5, 0.7);
+        const lLeg = new THREE.Mesh(legGeo, mat(0xb71c1c));
+        lLeg.position.set(-0.6, 2, 0);
         omni.add(lLeg);
 
-        const rLeg = new THREE.Mesh(legGeo, pbrMat(0xb71c1c));
-        rLeg.position.set(0.8, 2, 0);
+        const rLeg = new THREE.Mesh(legGeo, mat(0xb71c1c));
+        rLeg.position.set(0.6, 2, 0);
         omni.add(rLeg);
 
         omni.position.set((Math.random()-0.5)*150, 0, (Math.random()-0.5)*150);
         scene.add(omni);
 
-        currentEnemy = { mesh: omni, hp: 8000, maxHp: 8000, name: 'OMNI-MAN' };
+        currentEnemy = { mesh: omni, hp: 5000, maxHp: 5000, name: 'OMNI-MAN' };
     };
 
     const performStrike = () => {
@@ -202,33 +185,33 @@ const Fighter = (() => {
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             const dot = dirToEnemy.dot(forward);
 
-            if (dist <= state.player.punchRange && dot > 0.6) {
+            if (dist <= state.player.punchRange && dot > 0.65) {
                 hitEnemy();
             }
         }
     };
 
     const hitEnemy = () => {
-        currentEnemy.hp -= 250;
-        spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 6, 0)));
+        currentEnemy.hp -= 300;
+        spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 5, 0)));
         updateBossUI();
         
         if (currentEnemy.hp <= 0) {
             scene.remove(currentEnemy.mesh);
             currentEnemy = null;
             state.run.kills++;
-            setTimeout(spawnUltraHighPolyOmniMan, 1500);
+            setTimeout(spawnN64OmniMan, 1000);
         }
     };
 
     const spawnGore = (pos) => {
-        const geo = new THREE.SphereGeometry(0.45, 4, 4);
+        const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4); // Chunky particles
         const mat = new THREE.MeshBasicMaterial({ color: 0xaa0000 });
-        for (let i = 0; i < 55; i++) {
+        for (let i = 0; i < 40; i++) {
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
             p.userData = { 
-                vel: new THREE.Vector3((Math.random()-0.5)*2.8, Math.random()*2.8, (Math.random()-0.5)*2.8), 
+                vel: new THREE.Vector3((Math.random()-0.5)*2.5, Math.random()*2.5, (Math.random()-0.5)*2.5), 
                 life: 1.0 
             };
             scene.add(p); 
@@ -239,7 +222,7 @@ const Fighter = (() => {
     const animate3DFist = (side) => {
         const fist = document.getElementById(`fist-${side}`);
         if (fist) {
-            fist.style.transform = `translateY(-280px) scale(1.35) rotate(${side === 'left' ? 32 : -32}deg)`;
+            fist.style.transform = `translateY(-240px) scale(1.3) rotate(${side === 'left' ? 25 : -25}deg)`;
             setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
         }
     };
@@ -257,7 +240,7 @@ const Fighter = (() => {
         let moving = state.keys.w || state.keys.a || state.keys.s || state.keys.d;
         if (moving) {
             state.timeDilation = state.keys[' '] ? 0.12 : 1.0; 
-            const speed = (state.keys[' '] ? 3.8 : 1.15);
+            const speed = (state.keys[' '] ? 3.2 : 1.0);
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
             if (state.keys.s) moveDir.z += 1;
@@ -266,8 +249,8 @@ const Fighter = (() => {
             moveDir.normalize().applyQuaternion(camera.quaternion);
             camera.position.add(moveDir.multiplyScalar(speed));
             
-            if (state.player.isFlying) camera.position.y = Math.min(800, camera.position.y + 1.8);
-            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.8);
+            if (state.player.isFlying) camera.position.y = Math.min(500, camera.position.y + 1.2);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.4);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
@@ -278,16 +261,16 @@ const Fighter = (() => {
             const dist = camera.position.distanceTo(currentEnemy.mesh.position);
             currentEnemy.mesh.lookAt(camera.position.x, currentEnemy.mesh.position.y, camera.position.z);
             
-            if (dist < 700 && dist > 14) {
-                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.35 * dt));
-                currentEnemy.mesh.position.y = 10 + Math.sin(Date.now() * 0.003) * 4;
+            if (dist < 600 && dist > 12) {
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.25 * dt));
+                currentEnemy.mesh.position.y = 8 + Math.sin(Date.now() * 0.003) * 2;
             }
         }
 
         bloodParticles.forEach((p, i) => {
             p.position.add(p.userData.vel.clone().multiplyScalar(dt));
-            p.userData.vel.y -= 0.022 * dt; 
-            p.userData.life -= 0.025 * dt;
+            p.userData.vel.y -= 0.02 * dt; 
+            p.userData.life -= 0.02 * dt;
             p.scale.setScalar(p.userData.life);
             if (p.userData.life <= 0) { 
                 scene.remove(p); 
