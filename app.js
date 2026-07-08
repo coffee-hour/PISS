@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.7.1: 'RENDER RECOVERY'
- * 1. Rendering Fix: Forced absolute container sizing and z-index for the canvas.
- * 2. Scene-Graph Safety: Wrapped initialization in a try-catch with a fallback scene-reset.
- * 3. Light Array: Ensured Hemisphere and Directional lights are attached BEFORE any objects.
- * 4. Environment: Verified clearColor and Fog are set immediately to prevent black-screen buffer.
+ * SOVEREIGN v5.7.1: 'RENDER RECOVERY & MINIMAP'
+ * 1. Rendering Fix: Forced absolute container sizing and z-index for the canvas to fix black-screen.
+ * 2. Minimap: Re-implemented top-right radar using an Orthographic camera.
+ * 3. Scene-Graph Integrity: Scene, Lighting, and Camera established BEFORE R6 rigs.
+ * 4. Cleanup: Removed references to deprecated 3MF assets.
  */
 
 const Sovereign = (() => {
     let scene, camera, renderer, clock;
+    let mapScene, mapCamera, mapRenderer;
     let sunLight, hemiLight;
     
     let state = {
@@ -34,6 +35,7 @@ const Sovereign = (() => {
     let civilians = [];
     let playerHands = { left: null, right: null };
     let bloodSystem = null;
+    let playerMarker = null;
 
     const createBeveledBox = (w, h, d, color) => {
         return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color, flatShading: false }));
@@ -41,9 +43,7 @@ const Sovereign = (() => {
 
     const init = () => {
         try {
-            console.log('Sovereign: Initializing Render Engine...');
-            
-            // 1. SCENE & LIGHTS FIRST
+            // 1. SCENE & LIGHTS (CORE FIRST)
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87ceeb);
             scene.fog = new THREE.Fog(0x87ceeb, 100, 4000);
@@ -57,23 +57,41 @@ const Sovereign = (() => {
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
             camera.position.set(0, state.player.height, 100);
 
-            // 2. RENDERER SETUP WITH SAFETY
+            // 2. RENDERER SETUP (FIX BLACK SCREEN)
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setClearColor(0x87ceeb, 1);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             
-            // Force canvas layout
             renderer.domElement.style.position = 'absolute';
             renderer.domElement.style.top = '0';
             renderer.domElement.style.left = '0';
             renderer.domElement.style.zIndex = '0';
             document.body.appendChild(renderer.domElement);
 
+            // 3. MINIMAP SYSTEM
+            const mapSize = 200;
+            mapCamera = new THREE.OrthographicCamera(-2000, 2000, 2000, -2000, 1, 1000);
+            mapCamera.position.set(0, 500, 0);
+            mapCamera.lookAt(0, 0, 0);
+
+            const mapDiv = document.createElement('div');
+            mapDiv.style = `position:fixed; top:20px; right:20px; width:${mapSize}px; height:${mapSize}px; border:2px solid #ffbf00; z-index:9999; background:rgba(0,0,0,0.8); overflow:hidden;`;
+            document.body.appendChild(mapDiv);
+
+            mapRenderer = new THREE.WebGLRenderer({ antialias: true });
+            mapRenderer.setSize(mapSize, mapSize);
+            mapDiv.appendChild(mapRenderer.domElement);
+
+            playerMarker = new THREE.Mesh(new THREE.CircleGeometry(40, 32), new THREE.MeshBasicMaterial({ color: 0x1e88e5 }));
+            playerMarker.rotation.x = -Math.PI / 2;
+            playerMarker.position.y = 10;
+            scene.add(playerMarker);
+
             clock = new THREE.Clock();
 
-            // 3. OBJECTS
+            // 4. OBJECTS
             createWorld();
             createBeveledHands();
             bloodSystem = new BloodParticleSystem(scene);
@@ -86,10 +104,8 @@ const Sovereign = (() => {
             setupInput();
             window.addEventListener('resize', onWindowResize);
             animate();
-            
-            console.log('Sovereign: Render Cycle Active.');
         } catch (e) {
-            console.error('Sovereign: Init Failure. Forcing scene-reset.', e);
+            console.error('Sovereign: Init Failure.', e);
             location.reload();
         }
     };
@@ -97,7 +113,6 @@ const Sovereign = (() => {
     const deployRPG_HUD = () => {
         const hudId = 'rpg-master-hud-v571';
         if(document.getElementById(hudId)) document.getElementById(hudId).remove();
-        
         const style = document.createElement('style');
         style.innerHTML = `
             .rpg-hud { position: fixed; z-index: 9999; pointer-events: none; font-family: 'Courier New', monospace; text-transform: uppercase; color: #ffbf00; }
@@ -106,10 +121,8 @@ const Sovereign = (() => {
             .special-node { display: inline-block; width: 60px; background: rgba(0,0,0,0.8); border: 1px solid #ffbf00; margin-right: 5px; text-align: center; font-size: 10px; padding: 4px; }
         `;
         document.head.appendChild(style);
-
         const hud = document.createElement('div');
-        hud.id = hudId;
-        hud.className = 'rpg-hud';
+        hud.id = hudId; hud.className = 'rpg-hud';
         hud.style.top = '20px'; hud.style.left = '20px';
         hud.innerHTML = `
             <div style="font-size:14px; font-weight:bold;">LVL <span id="p-lvl">${state.player.level}</span> // SOVEREIGN</div>
@@ -127,27 +140,19 @@ const Sovereign = (() => {
 
     const createWorld = () => {
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000), new THREE.MeshLambertMaterial({ color: 0x333333 }));
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
+        ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
         const wallMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
         const wallGeo = new THREE.BoxGeometry(10000, 200, 20);
         for(let i=0; i<4; i++) {
             const w = new THREE.Mesh(wallGeo, wallMat);
             const angle = (i * Math.PI) / 2;
             w.position.set(Math.cos(angle)*5000, 100, Math.sin(angle)*5000);
-            w.rotation.y = -angle;
-            scene.add(w);
+            w.rotation.y = -angle; scene.add(w);
         }
-
         state.zones.forEach(z => {
             const ring = new THREE.Mesh(new THREE.TorusGeometry(z.radius, 2, 8, 64), new THREE.MeshBasicMaterial({ color: z.color, transparent: true, opacity: 0.5 }));
-            ring.rotation.x = Math.PI / 2;
-            ring.position.copy(z.center);
-            scene.add(ring);
+            ring.rotation.x = Math.PI / 2; ring.position.copy(z.center); scene.add(ring);
         });
-
         for (let i = 0; i < 500; i++) {
             const h = 100 + Math.random() * 600;
             const b = createBeveledBox(80, h, 80, 0xcccccc);
@@ -172,21 +177,17 @@ const Sovereign = (() => {
         const skin = 0xffdbac; const red = 0xb71c1c;
         omni.add(createBeveledBox(1.5, 1.5, 1.5, skin).set({position: new THREE.Vector3(0, 7.5, 0)}));
         const torso = createBeveledBox(3, 3.5, 1.5, color); torso.position.y = 5.0; omni.add(torso);
-        
         for(let i=0; i<12; i++) {
             const seg = createBeveledBox(3.2, 0.62, 0.1, red);
             seg.position.set(0, 7.5 - (i * 0.6), -0.9); omni.add(seg);
         }
-
         const lPivot = new THREE.Group(); lPivot.position.set(-2.1, 6.5, 0);
         lPivot.add(createBeveledBox(1, 3.5, 1, color).set({position: new THREE.Vector3(0,-1.75,0)}));
         const rPivot = new THREE.Group(); rPivot.position.set(2.1, 6.5, 0);
         rPivot.add(createBeveledBox(1, 3.5, 1, color).set({position: new THREE.Vector3(0,-1.75,0)}));
         omni.add(lPivot); omni.add(rPivot);
-
         omni.position.copy(zone.center).add(new THREE.Vector3(0, 100, 0));
         scene.add(omni);
-        
         bosses.push({ 
             name, mesh: omni, torso, hp: 120000, maxHp: 120000, zone,
             animTime: 0, vel: new THREE.Vector3(), gravity: 0,
@@ -218,8 +219,7 @@ const Sovereign = (() => {
             this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
             this.material = new THREE.PointsMaterial({ color: 0xaa0000, size: 0.35, transparent: true });
             this.points = new THREE.Points(this.geometry, this.material);
-            this.points.frustumCulled = false;
-            scene.add(this.points);
+            this.points.frustumCulled = false; scene.add(this.points);
         }
         emit(pos, dir) {
             let n = 0;
@@ -256,8 +256,7 @@ const Sovereign = (() => {
             if(camera.position.distanceTo(b.mesh.position) < 150) {
                 if(key === 'X') b.hp -= 30000;
                 if(key === 'Z') b.hp -= 50000;
-                b.gravity = -2.0;
-                bloodSystem.emit(b.mesh.position, fwd.clone().multiplyScalar(5));
+                b.gravity = -2.0; bloodSystem.emit(b.mesh.position, fwd.clone().multiplyScalar(5));
             }
         });
         if(key === 'N') camera.position.add(fwd.multiplyScalar(80));
@@ -319,6 +318,9 @@ const Sovereign = (() => {
             camera.position.add(dir.multiplyScalar(state.player.speed * (state.keys.shift ? 5 : 1) * dt * 60));
         }
 
+        playerMarker.position.set(camera.position.x, 10, camera.position.z);
+        mapCamera.position.set(camera.position.x, 500, camera.position.z);
+
         let inCombatZone = false;
         ['X','N','Z'].forEach(k => {
             const s = state.specials[k]; if(s.timer > 0) s.timer -= dt;
@@ -373,6 +375,7 @@ const Sovereign = (() => {
 
         if (bloodSystem) bloodSystem.update(dt);
         renderer.render(scene, camera);
+        mapRenderer.render(scene, mapCamera);
     };
     return { init };
 })();
