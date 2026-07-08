@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.4.3: 'HUD & AGGRO CALIBRATION'
- * 1. Boss AI: Increased pursuit speed and aggressive tracking. Omni-Man now actively chases the player.
- * 2. Combat: Reduced knockback on player punches for tighter, faster engagement.
- * 3. HUD: Relocated health bars to top-right. Cleaned up central redundant elements.
- * 4. Environment: Restored minimalist city blocks for spatial scale.
+ * SOVEREIGN v5.4.4: 'CHARACTER RIG & ANIMATION OVERHAUL'
+ * 1. Omni-Man v3: 
+ *    - Updated legs to White (matching upper suit).
+ *    - Added Hair geometry (Black blocky hair cap).
+ *    - Refined High-Res chest emblem (Composite box structure).
+ * 2. Combat Animation: 
+ *    - Implemented a 3-step punch arc: 90-degree Upward rotation -> Forward Thrust -> Return Down.
+ * 3. Mechanics: Maintained pursuit AI, blood particles, and top-right HUD.
  */
 
 const Sovereign = (() => {
@@ -34,9 +37,8 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.4.3 HUD & Aggro Calibration...');
+        console.log('Sovereign: Initializing v5.4.4 Character & Animation Overhaul...');
         
-        // CLEANUP
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud')) s.remove(); });
 
@@ -62,7 +64,6 @@ const Sovereign = (() => {
         sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // Ground
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshLambertMaterial({ color: 0x444444 }));
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
@@ -72,7 +73,6 @@ const Sovereign = (() => {
         grid.position.y = 0.05;
         scene.add(grid);
 
-        // Minimalist City Blocks
         for (let i = 0; i < 60; i++) {
             const h = 50 + Math.random() * 250;
             const b = createBlock(40, h, 40, 0x555555);
@@ -82,7 +82,7 @@ const Sovereign = (() => {
         }
 
         createPlayerHands();
-        spawnPolishedOmniMan();
+        spawnOverhauledOmniMan();
         deployHUD();
         setupInput();
         
@@ -101,7 +101,6 @@ const Sovereign = (() => {
             .label { font-size: 10px; font-weight: bold; }
         `;
         document.head.appendChild(style);
-
         const hud = document.createElement('div');
         hud.id = 'rpg-hud';
         hud.innerHTML = `
@@ -125,12 +124,20 @@ const Sovereign = (() => {
         playerHands.right = createHand('right');
     };
 
-    const spawnPolishedOmniMan = () => {
+    const spawnOverhauledOmniMan = () => {
         const group = new THREE.Group();
+        
+        // Head & Mustache & Hair
         const head = createBlock(2.2, 2.2, 2.2, 0xffdbac); head.position.y = 8; group.add(head);
         const stache = createBlock(1.5, 0.4, 0.4, 0x222222); stache.position.set(0, 7.5, 1.1); group.add(stache);
+        const hair = createBlock(2.4, 0.6, 2.4, 0x222222); hair.position.y = 9.2; group.add(hair);
+        
+        // Torso & Refined Emblem
         const torso = createBlock(4, 4.5, 2, 0xffffff); torso.position.y = 4.75; group.add(torso);
-        const emblem = createBlock(2, 2.5, 0.1, 0xb71c1c); emblem.position.set(0, 5, 1.05); group.add(emblem);
+        const emblemBase = createBlock(2.2, 2.7, 0.1, 0xb71c1c); emblemBase.position.set(0, 5, 1.05); group.add(emblemBase);
+        const emblemDetail = createBlock(0.8, 2.7, 0.15, 0xffffff); emblemDetail.position.set(0, 5, 1.06); group.add(emblemDetail);
+        
+        // Arms & Gloves
         const createArm = (x) => {
             const a = new THREE.Group();
             const upper = createBlock(1.8, 3, 1.8, 0xffffff); upper.position.y = -1.5; a.add(upper);
@@ -139,14 +146,18 @@ const Sovereign = (() => {
         };
         bossParts.rArm = createArm(3); group.add(bossParts.rArm);
         bossParts.lArm = createArm(-3); group.add(bossParts.lArm);
+
+        // Legs (Now White) & Boots
         const createLeg = (x) => {
             const l = new THREE.Group();
-            const upper = createBlock(1.8, 3, 1.8, 0x111111); upper.position.y = -1.5; l.add(upper);
+            const upper = createBlock(1.8, 3, 1.8, 0xffffff); upper.position.y = -1.5; l.add(upper);
             const boot = createBlock(1.9, 1.5, 1.9, 0xb71c1c); boot.position.y = -3.5; l.add(boot);
             l.position.set(x, 2.5, 0); return l;
         };
         group.add(createLeg(1.1)); group.add(createLeg(-1.1));
+        
         const cape = createBlock(4.5, 8, 0.3, 0xb71c1c); cape.position.set(0, 4, -1.2); group.add(cape);
+
         group.position.set(0, 5, -100);
         scene.add(group);
         bossGroup = group;
@@ -171,7 +182,6 @@ const Sovereign = (() => {
         if (bossGroup && camera.position.distanceTo(bossGroup.position) < 18) {
             const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp); wp.y += 5;
             emitBlood(wp);
-            // REDUCED KNOCKBACK for tighter combat
             state.boss.vel.add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(1.5));
             state.boss.hp -= 20;
             const oFill = document.getElementById('o-fill');
@@ -216,7 +226,6 @@ const Sovereign = (() => {
             const floatOffset = Math.sin(state.boss.animTime * 2) * 1.5;
             bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, 5.0 + floatOffset, 0.1);
             
-            // AGGRO LOGIC: Chasing the player
             const toPlayer = camera.position.clone().sub(bossGroup.position);
             const dist = toPlayer.length();
             if (dist > 15) {
@@ -227,17 +236,31 @@ const Sovereign = (() => {
             state.boss.vel.multiplyScalar(0.9);
             bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
             
-            if (Math.sin(state.boss.animTime * 4) > 0.8 && !state.boss.isPunching && dist < 20) {
+            // Overhauled 3-Step Arc Punch Animation
+            const punchCycle = (state.boss.animTime * 4) % (Math.PI * 2);
+            if (punchCycle > 0 && punchCycle < 1.5 && !state.boss.isPunching && dist < 20) {
                 state.boss.isPunching = true;
                 const arm = Math.random() > 0.5 ? bossParts.rArm : bossParts.lArm;
-                const origZ = arm.position.z;
-                arm.position.z += 4;
-                setTimeout(() => { arm.position.z = origZ; state.boss.isPunching = false; }, 150);
-                if (dist < 12) {
-                    state.player.hp -= 2;
-                    const pFill = document.getElementById('p-fill');
-                    if(pFill) pFill.style.width = (state.player.hp / state.player.maxHp * 100) + '%';
-                }
+                
+                // Step 1: Upward 90deg Rotation
+                arm.rotation.x = -Math.PI / 2;
+                
+                setTimeout(() => {
+                    // Step 2: Forward Thrust
+                    arm.position.z += 5;
+                    if (dist < 12) {
+                        state.player.hp -= 3;
+                        const pFill = document.getElementById('p-fill');
+                        if(pFill) pFill.style.width = (state.player.hp / state.player.maxHp * 100) + '%';
+                    }
+                    
+                    setTimeout(() => {
+                        // Step 3: Return Down
+                        arm.rotation.x = 0;
+                        arm.position.z = 0;
+                        state.boss.isPunching = false;
+                    }, 150);
+                }, 100);
             }
         }
 
