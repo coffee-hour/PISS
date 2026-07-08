@@ -1,43 +1,34 @@
 import * as THREE from 'three';
 
 /**
- * Sovereign AAA (v4.7.1-revert)
- * Features: 3D Engine Restored, Amber Core Aesthetic, 1-NPC Limit,
- * Expanded Combat Radius, Increased Eye-Level, Arena Lock.
+ * Sovereign AAA (v4.7.2)
+ * Features: Full 3D NPC Model, Red Gore System, Dual-Hand Animation Fix,
+ * Amber Core Aesthetic, 1-NPC Limit, Expanded Combat Radius.
  */
 
 const Fighter = (() => {
-    let scene, camera, renderer, raycaster, collisionRaycaster;
+    let scene, camera, renderer, raycaster;
     let sunLight, ambientLight;
     let state = {
         player: { 
-            hp: 100, maxHp: 100, strength: 1, speed: 1, xp: 0, points: 0,
+            hp: 100, strength: 1, 
             punchRange: 12, isFlying: false, height: 2.8
         },
-        run: { kills: 0, tier: 1, active: true },
+        run: { kills: 0, active: true },
         timeDilation: 0,
-        keys: { w: false, a: false, s: false, d: false, ' ': false, f: false, m: false },
+        keys: { w: false, a: false, s: false, d: false, ' ': false, f: false },
         lastArmUsed: 'right',
         isLocked: false
     };
 
-    const roster = [
-        { id: 'sequid', name: 'SEQUID', color: 0xff4081, hp: 120, weight: 1, unique: false, power: 5, flies: false },
-        { id: 'flaxan', name: 'FLAXAN SOLDIER', color: 0xf57c00, hp: 150, weight: 1, unique: false, power: 8, flies: false },
-        { id: 'omniman', name: 'OMNI-MAN', color: 0xff8c00, hp: 20000, weight: 10, unique: true, boss: true, power: 55, flies: true }
-    ];
-
-    let enemies = [];
+    let currentEnemy = null;
     let buildings = [];
     let bloodParticles = [];
-    const OMNI_ARENA_CENTER = new THREE.Vector3(0, 0, 400);
-    const OMNI_ARENA_RADIUS = 60;
 
     const init = () => {
         scene = new THREE.Scene();
-        // AMBER CORE AESTHETIC
         scene.background = new THREE.Color(0x0d0d0d);
-        scene.fog = new THREE.Fog(0x0d0d0d, 100, 600);
+        scene.fog = new THREE.Fog(0x0d0d0d, 100, 700);
 
         camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 2500);
         camera.position.set(0, state.player.height, 0);
@@ -48,26 +39,25 @@ const Fighter = (() => {
         document.body.appendChild(renderer.domElement);
 
         raycaster = new THREE.Raycaster();
-        collisionRaycaster = new THREE.Raycaster();
 
-        ambientLight = new THREE.AmbientLight(0xff8c00, 0.4);
+        ambientLight = new THREE.AmbientLight(0xff8c00, 0.5);
         scene.add(ambientLight);
 
-        sunLight = new THREE.DirectionalLight(0xff8c00, 1.2);
-        sunLight.position.set(200, 400, 200);
+        sunLight = new THREE.DirectionalLight(0xff8c00, 1.3);
+        sunLight.position.set(200, 500, 200);
         scene.add(sunLight);
 
-        createCity();
+        createAmberCity();
         setupControls();
         
-        // v4.7.1-revert: SPAWN EXACTLY ONE AT START
-        spawnOneNPC();
+        // v4.7.2: 1-NPC Limit
+        spawn3DEnemy();
 
         animate();
     };
 
-    const createCity = () => {
-        const floorGeo = new THREE.PlaneGeometry(5000, 5000);
+    const createAmberCity = () => {
+        const floorGeo = new THREE.PlaneGeometry(6000, 6000);
         const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
@@ -76,15 +66,15 @@ const Fighter = (() => {
         const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
         const buildingMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
         
-        let seed = 444;
+        let seed = 888;
         const random = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
         for (let i = 0; i < 400; i++) {
-            const h = 40 + random() * 80;
-            const w = 20 + random() * 30;
-            const d = 20 + random() * 30;
-            const x = (random() - 0.5) * 1800;
-            const z = (random() - 0.5) * 1800;
-            if (Math.abs(x) < 50 && Math.abs(z) < 50) continue;
+            const h = 50 + random() * 100;
+            const w = 25 + random() * 35;
+            const d = 25 + random() * 35;
+            const x = (random() - 0.5) * 2000;
+            const z = (random() - 0.5) * 2000;
+            if (Math.abs(x) < 60 && Math.abs(z) < 60) continue;
             
             const b = new THREE.Mesh(buildingGeo, buildingMat);
             b.scale.set(w, h, d);
@@ -92,7 +82,7 @@ const Fighter = (() => {
             scene.add(b);
             
             const edges = new THREE.EdgesGeometry(buildingGeo);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8c00 }));
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0.6 }));
             line.scale.set(w, h, d);
             line.position.copy(b.position);
             scene.add(line);
@@ -123,95 +113,110 @@ const Fighter = (() => {
         });
     };
 
-    const spawnOneNPC = () => {
-        if (enemies.length >= 1) return;
-        const type = roster[Math.floor(Math.random() * (roster.length - 1))]; // Only non-boss for general spawn
-        const pos = new THREE.Vector3((Math.random()-0.5)*100, 0, (Math.random()-0.5)*100);
-        spawnEnemy(type, pos);
-    };
+    const spawn3DEnemy = () => {
+        if (currentEnemy) return;
 
-    const createStickman = (data) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256; canvas.height = 512;
-        const ctx = canvas.getContext('2d');
-        const cx = 128;
-        ctx.strokeStyle = '#ff8c00'; ctx.lineWidth = 18;
-        ctx.beginPath(); ctx.arc(cx, 80, 40, 0, Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, 120); ctx.lineTo(cx, 320); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx-80, 260); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, 160); ctx.lineTo(cx+80, 260); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx-60, 480); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, 320); ctx.lineTo(cx+60, 480); ctx.stroke();
-        return new THREE.CanvasTexture(canvas);
-    };
+        // v4.7.2: FULL 3D GEOMETRY MODEL
+        const group = new THREE.Group();
+        
+        // Head
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), new THREE.MeshStandardMaterial({ color: 0xff8c00 }));
+        head.position.y = 8;
+        group.add(head);
 
-    const spawnEnemy = (data, pos) => {
-        const texture = createStickman(data);
-        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const sprite = new THREE.Sprite(material);
-        sprite.scale.set(4.5, 9, 1);
-        sprite.position.copy(pos);
-        sprite.position.y = 4.5;
-        scene.add(sprite);
-        enemies.push({ sprite, data: { ...data, hp: data.hp, maxHp: data.hp }, attackTimer: 0 });
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4, 1), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+        torso.position.y = 5;
+        group.add(torso);
+
+        // Arms
+        const armGeo = new THREE.BoxGeometry(0.5, 3.5, 0.5);
+        const leftArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xff8c00 }));
+        leftArm.position.set(-1.2, 5.5, 0);
+        group.add(leftArm);
+
+        const rightArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xff8c00 }));
+        rightArm.position.set(1.2, 5.5, 0);
+        group.add(rightArm);
+
+        // Legs
+        const legGeo = new THREE.BoxGeometry(0.6, 4, 0.6);
+        const leftLeg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        leftLeg.position.set(-0.5, 2, 0);
+        group.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        rightLeg.position.set(0.5, 2, 0);
+        group.add(rightLeg);
+
+        group.position.set((Math.random()-0.5)*150, 0, (Math.random()-0.5)*150);
+        scene.add(group);
+
+        currentEnemy = { mesh: group, hp: 1000 };
     };
 
     const performStrike = () => {
         state.timeDilation = 1.0;
-        animateFist();
         
-        enemies.forEach(enemy => {
-            const dist = camera.position.distanceTo(enemy.sprite.position);
-            const dirToEnemy = enemy.sprite.position.clone().sub(camera.position).normalize();
+        // v4.7.2: Debugged Dual-Hand Behavior
+        state.lastArmUsed = state.lastArmUsed === 'right' ? 'left' : 'right';
+        animateFist(state.lastArmUsed);
+        
+        if (currentEnemy) {
+            const dist = camera.position.distanceTo(currentEnemy.mesh.position);
+            const dirToEnemy = currentEnemy.mesh.position.clone().sub(camera.position).normalize();
             const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             const dot = dirToEnemy.dot(forward);
 
-            if (dist <= state.player.punchRange && dot > 0.75) {
-                hitEnemy(enemy);
+            if (dist <= state.player.punchRange && dot > 0.7) {
+                hitEnemy();
             }
-        });
-    };
-
-    const hitEnemy = (enemy) => {
-        enemy.data.hp -= 300;
-        spawnContactFlash(enemy.sprite.position.clone());
-        if (enemy.data.hp <= 0) {
-            scene.remove(enemy.sprite);
-            enemies = [];
-            state.run.kills++;
-            // SPAWN NEXT ONE
-            setTimeout(spawnOneNPC, 1000);
         }
     };
 
-    const spawnContactFlash = (pos) => {
-        const flashGeo = new THREE.SphereGeometry(3, 8, 8);
-        const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
-        const flash = new THREE.Mesh(flashGeo, flashMat);
-        flash.position.copy(pos);
-        scene.add(flash);
-        let life = 1.0;
-        const fade = () => {
-            life -= 0.15; flash.scale.setScalar(life); flash.material.opacity = life;
-            if (life > 0) requestAnimationFrame(fade); else scene.remove(flash);
-        };
-        fade();
+    const hitEnemy = () => {
+        currentEnemy.hp -= 250;
+        // v4.7.2: RED GORE SYSTEM
+        spawnGore(currentEnemy.mesh.position.clone().add(new THREE.Vector3(0, 5, 0)));
+        
+        if (currentEnemy.hp <= 0) {
+            scene.remove(currentEnemy.mesh);
+            currentEnemy = null;
+            state.run.kills++;
+            setTimeout(spawn3DEnemy, 800);
+        }
     };
 
-    const animateFist = () => {
-        const fists = document.querySelectorAll('.fist');
-        fists.forEach(f => {
-            f.style.transform = `translateY(-200px) scale(1.4)`;
-            setTimeout(() => f.style.transform = 'translateY(0) scale(1)', 100);
-        });
+    const spawnGore = (pos) => {
+        const geo = new THREE.SphereGeometry(0.4, 4, 4);
+        const mat = new THREE.MeshBasicMaterial({ color: 0x990000 }); // Deep Red
+        for (let i = 0; i < 40; i++) {
+            const p = new THREE.Mesh(geo, mat);
+            p.position.copy(pos);
+            p.userData = { 
+                vel: new THREE.Vector3((Math.random()-0.5)*1.8, Math.random()*1.5, (Math.random()-0.5)*1.8), 
+                life: 1.0 
+            };
+            scene.add(p); 
+            bloodParticles.push(p);
+        }
+    };
+
+    const animateFist = (side) => {
+        const fist = document.getElementById(`fist-${side}`);
+        if (fist) {
+            fist.style.transform = `translateY(-220px) scale(1.3) rotate(${side === 'left' ? 25 : -25}deg)`;
+            setTimeout(() => fist.style.transform = 'translateY(0) scale(1) rotate(0)', 100);
+        }
     };
 
     const animate = () => {
         requestAnimationFrame(animate);
+        
         let moving = state.keys.w || state.keys.a || state.keys.s || state.keys.d;
         if (moving) {
             state.timeDilation = state.keys[' '] ? 0.12 : 1.0; 
-            const speed = (state.keys[' '] ? 3.0 : 0.9);
+            const speed = (state.keys[' '] ? 3.2 : 0.95);
             const moveDir = new THREE.Vector3();
             if (state.keys.w) moveDir.z -= 1;
             if (state.keys.s) moveDir.z += 1;
@@ -220,20 +225,32 @@ const Fighter = (() => {
             moveDir.normalize().applyQuaternion(camera.quaternion);
             camera.position.add(moveDir.multiplyScalar(speed));
             
-            if (state.player.isFlying) camera.position.y = Math.min(300, camera.position.y + 1.0);
-            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.2);
+            if (state.player.isFlying) camera.position.y = Math.min(400, camera.position.y + 1.1);
+            else camera.position.y = Math.max(state.player.height, camera.position.y - 1.3);
         } else {
             state.timeDilation = Math.max(0, state.timeDilation - 0.05);
         }
 
         const dt = state.timeDilation;
-        enemies.forEach(enemy => {
-            const dist = camera.position.distanceTo(enemy.sprite.position);
-            enemy.sprite.quaternion.copy(camera.quaternion);
-            enemy.sprite.rotation.x = 0; enemy.sprite.rotation.z = 0;
+        
+        if (currentEnemy) {
+            const dist = camera.position.distanceTo(currentEnemy.mesh.position);
+            // Dynamic rotation to face player
+            currentEnemy.mesh.lookAt(camera.position.x, 0, camera.position.z);
+            
+            if (dist < 450 && dist > 8) {
+                currentEnemy.mesh.position.add(camera.position.clone().sub(currentEnemy.mesh.position).normalize().multiplyScalar(0.22 * dt));
+            }
+        }
 
-            if (dist < 400 && dist > 10) {
-                enemy.sprite.position.add(camera.position.clone().sub(enemy.sprite.position).normalize().multiplyScalar(0.2 * dt));
+        bloodParticles.forEach((p, i) => {
+            p.position.add(p.userData.vel.clone().multiplyScalar(dt));
+            p.userData.vel.y -= 0.018 * dt; 
+            p.userData.life -= 0.02 * dt;
+            p.scale.setScalar(p.userData.life);
+            if (p.userData.life <= 0) { 
+                scene.remove(p); 
+                bloodParticles.splice(i, 1); 
             }
         });
 
