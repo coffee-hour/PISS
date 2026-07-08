@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.3: 'STRIKE & HUD REPAIR'
- * 1. UI: Fixed z-index and absolute positioning to prevent text clipping.
- * 2. Animation: Implemented proper 'Punch Lunge' - arms extend forward on Z-axis.
- * 3. Gore: Forced world-matrix sampling on beveled torso for 100% reliable blood.
- * 4. Combat: Maintained v5.5.2 balance (7.0 lunge, 15s cooldown).
+ * SOVEREIGN v5.5.4: 'AMBER CORE HUD'
+ * 1. UI Redesign: Sleek Obsidian/Amber health bars with high-fidelity styling.
+ * 2. Maintained v5.5.3: Z-index lock, Punch Lunge, and world-space Gore binding.
+ * 3. Aesthetics: Integrated Amber Core brand accents into the HUD.
  */
 
 const Sovereign = (() => {
@@ -60,39 +59,80 @@ const Sovereign = (() => {
         bloodSystem = new BloodParticleSystem(scene);
         
         spawnBeveledOmniMan();
-        repairUI();
+        deployAmberHUD();
 
         setupInput();
         window.addEventListener('resize', onWindowResize);
         animate();
     };
 
-    const repairUI = () => {
-        // Cleanup old UI to prevent duplicates
-        const oldP = document.getElementById('player-ui-v5');
-        if (oldP) oldP.remove();
+    const deployAmberHUD = () => {
+        // Cleanup old UI
+        ['player-ui-v5', 'boss-hp-container'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none'; // We'll hide the old boss bar and build new
+        });
 
-        // Player Health - Top Left
-        const playerUI = document.createElement('div');
-        playerUI.id = 'player-ui-v5';
-        playerUI.style = 'position:fixed; top:20px; left:20px; width:220px; height:24px; background:rgba(0,0,0,0.7); border:2px solid #fff; z-index:9999; pointer-events:none;';
-        const playerFill = document.createElement('div');
-        playerFill.id = 'player-hp-fill';
-        playerFill.style = 'width:100%; height:100%; background:#c62828; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);';
-        playerUI.appendChild(playerFill);
-        
-        const playerLabel = document.createElement('div');
-        playerLabel.innerText = 'PLAYER STATUS';
-        playerLabel.style = 'position:absolute; top:-18px; left:0; color:#fff; font-family:monospace; font-size:12px; font-weight:bold;';
-        playerUI.appendChild(playerLabel);
-        document.body.appendChild(playerUI);
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .amber-hud-container {
+                position: fixed;
+                z-index: 9999;
+                pointer-events: none;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .hud-bar-bg {
+                background: rgba(15, 15, 15, 0.9); /* Obsidian */
+                border: 1px solid rgba(255, 191, 0, 0.4); /* Faint Amber */
+                box-shadow: 0 0 15px rgba(0,0,0,0.5);
+                padding: 2px;
+                overflow: hidden;
+            }
+            .hud-bar-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #ff8c00, #ffbf00); /* Amber Gradient */
+                box-shadow: 0 0 10px rgba(255, 191, 0, 0.6);
+                transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .hud-label {
+                color: #ffbf00; /* Amber */
+                font-size: 10px;
+                font-weight: 800;
+                margin-bottom: 4px;
+                text-shadow: 0 0 5px rgba(255, 191, 0, 0.5);
+            }
+        `;
+        document.head.appendChild(style);
 
-        // Boss UI fix
-        const bossUI = document.getElementById('boss-hp-container');
-        if (bossUI) {
-            bossUI.style.zIndex = '9999';
-            bossUI.style.top = '20px';
-        }
+        // Player HUD (Top Left)
+        const pCont = document.createElement('div');
+        pCont.className = 'amber-hud-container';
+        pCont.style.top = '30px';
+        pCont.style.left = '30px';
+        pCont.innerHTML = \`
+            <div class="hud-label">Sovereign // Biological Status</div>
+            <div class="hud-bar-bg" style="width: 240px; height: 12px; border-radius: 2px;">
+                <div id="amber-player-fill" class="hud-bar-fill" style="width: 100%;"></div>
+            </div>
+        \`;
+        document.body.appendChild(pCont);
+
+        // Boss HUD (Top Center)
+        const bCont = document.createElement('div');
+        bCont.id = 'amber-boss-hud';
+        bCont.className = 'amber-hud-container';
+        bCont.style.top = '30px';
+        bCont.style.left = '50%';
+        bCont.style.transform = 'translateX(-50%)';
+        bCont.innerHTML = \`
+            <div class="hud-label" style="text-align: center;">Anomaly Detected // Omni-Man</div>
+            <div class="hud-bar-bg" style="width: 400px; height: 14px; border-radius: 2px;">
+                <div id="amber-boss-fill" class="hud-bar-fill" style="width: 100%; background: linear-gradient(90deg, #c62828, #ff8c00);"></div>
+            </div>
+        \`;
+        document.body.appendChild(bCont);
     };
 
     const createArena = () => {
@@ -131,7 +171,6 @@ const Sovereign = (() => {
         if (boss) return;
         const omni = new THREE.Group();
         
-        // Head
         const head = createBeveledBox(1.5, 1.5, 1.5, 0xffdbac);
         head.position.y = 7.5;
         const stache = createBeveledBox(1.0, 0.3, 0.2, 0x111111);
@@ -139,12 +178,10 @@ const Sovereign = (() => {
         head.add(stache);
         omni.add(head);
 
-        // Torso
         const torso = createBeveledBox(3, 3.5, 1.5, 0xffffff);
         torso.position.y = 5.0;
         omni.add(torso);
 
-        // Cape
         const capeSegments = [];
         for(let i=0; i<12; i++) {
             const seg = createBeveledBox(3.2, 0.62, 0.1, 0xb71c1c); 
@@ -153,7 +190,6 @@ const Sovereign = (() => {
             capeSegments.push(seg);
         }
 
-        // Arms (Skeletal pivot for lunge)
         const leftArmPivot = new THREE.Group();
         leftArmPivot.position.set(-2.1, 6.5, 0);
         const leftArm = createBeveledBox(1, 3.5, 1, 0xffffff);
@@ -169,15 +205,14 @@ const Sovereign = (() => {
         omni.add(leftArmPivot);
         omni.add(rightArmPivot);
 
-        // Legs
         const legL = createBeveledBox(1.2, 3.5, 1.2, 0xb71c1c); legL.position.set(-0.75, 1.75, 0); omni.add(legL);
         const legR = createBeveledBox(1.2, 3.5, 1.2, 0xb71c1c); legR.position.set(0.75, 1.75, 0); omni.add(legR);
 
         omni.position.set((Math.random()-0.5)*600, 100, (Math.random()-0.5)*600);
         scene.add(omni);
         
-        const bossContainer = document.getElementById('boss-hp-container');
-        if (bossContainer) bossContainer.style.display = 'block';
+        const bHud = document.getElementById('amber-boss-hud');
+        if (bHud) bHud.style.display = 'block';
 
         boss = { 
             mesh: omni, torso: torso, hp: 80000, maxHp: 80000, 
@@ -239,21 +274,19 @@ const Sovereign = (() => {
             const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             if (dist < state.player.punchRange) {
                 boss.hp -= 4000;
-                // GORE FIX: Force check world-matrix of the TORSO geometry specifically
                 const worldPos = new THREE.Vector3();
                 boss.torso.getWorldPosition(worldPos);
                 bloodSystem.emit(worldPos, fwd.multiplyScalar(4));
                 
-                const bar = document.getElementById('boss-hp-fill');
-                if (bar) bar.style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+                const bar = document.getElementById('amber-boss-fill');
+                if (bar) bar.style.width = \`\${(boss.hp / boss.maxHp) * 100}%\`;
                 
                 if (boss.hp <= 0) {
                     scene.remove(boss.mesh);
-                    const bossUI = document.getElementById('boss-hp-container');
-                    if (bossUI) bossUI.style.display = 'none';
+                    const bHud = document.getElementById('amber-boss-hud');
+                    if (bHud) bHud.style.display = 'none';
                     boss = null;
                     state.combat.kills++;
-                    document.getElementById('kills').innerText = state.combat.kills;
                     setTimeout(spawnBeveledOmniMan, 3000);
                 }
             }
@@ -315,25 +348,23 @@ const Sovereign = (() => {
 
             const dist = camera.position.distanceTo(boss.mesh.position);
             
-            // ANIMATION FIX: Proper Punch Lunge
             if (dist < 45) {
                 const cycle = Math.sin(boss.animTime * 14);
-                // Rotate arm forward on X, extend on Z toward player
                 boss.leftArm.rotation.x = -Math.PI / 2 - (cycle * 0.8);
                 boss.rightArm.rotation.x = -Math.PI / 2 + (cycle * 0.8);
                 
                 if (dist < 10 && Math.random() < 0.03) {
                     state.player.hp -= 3;
-                    const pFill = document.getElementById('player-hp-fill');
-                    if (pFill) pFill.style.width = `${state.player.hp}%`;
+                    const pFill = document.getElementById('amber-player-fill');
+                    if (pFill) pFill.style.width = \`\${state.player.hp}%\`;
                     if (state.player.hp <= 0) {
-                        state.player.hp = 100; // Reset for demo
+                        state.player.hp = 100;
                         if (pFill) pFill.style.width = '100%';
                     }
                 }
             } else {
-                boss.leftArm.rotation.x = Math.lerp(boss.leftArm.rotation.x, 0, 0.1);
-                boss.rightArm.rotation.x = Math.lerp(boss.rightArm.rotation.x, 0, 0.1);
+                boss.leftArm.rotation.x *= 0.9;
+                boss.rightArm.rotation.x *= 0.9;
             }
 
             const targetDir = camera.position.clone().sub(boss.mesh.position).normalize();
