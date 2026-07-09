@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.5: 'UNIFIED FLIGHT HIERARCHY'
- * 1. Animation: Unified Omni-Man's flight pose by rotating the entire bossGroup 90 degrees.
- * 2. Animation: Removed torso-only rotation logic to maintain entity structural integrity.
+ * SOVEREIGN v5.5.6: 'RANGE-BASED FLIGHT DYNAMICS'
+ * 1. Animation: Implemented distance-based rotation. Omni-Man lays flat ('—') when far, stays upright ('|') when close.
+ * 2. Animation: Added a 25-unit hysteresis buffer to prevent rotation jitter at the threshold.
  * 3. Combat: Tier 1 impact effects - Hit-pause and Camera Shake maintained.
  * 4. XP System: Level 10/20 unlock thresholds maintained.
  */
@@ -22,7 +22,7 @@ const Sovereign = (() => {
             isPunching: false, pursuitSpeed: 0.55, stopDist: 8.0, 
             isDead: false, isRipping: false, ripTimer: 0, respawnTimer: 0, 
             boundaryRadius: 1500, flightState: 'hover', flightTimer: 0,
-            damageState: 0
+            damageState: 0, isHorizontal: false
         },
         keys: { w: false, a: false, s: false, d: false, ' ': false, control: false, x: false },
         isLocked: false,
@@ -50,7 +50,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.5 Unified Flight Hierarchy...');
+        console.log('Sovereign: Initializing v5.5.6 Range-Based Flight Dynamics...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -255,6 +255,7 @@ const Sovereign = (() => {
         state.boss.damageState = 0;
         state.boss.flightState = 'hover';
         state.boss.flightTimer = 2.0;
+        state.boss.isHorizontal = false;
 
         const oFill = document.getElementById('o-fill');
         if(oFill) oFill.style.width = '100%';
@@ -487,17 +488,26 @@ const Sovereign = (() => {
             }
             const toPlayer = camera.position.clone().sub(bossGroup.position);
             const dist = toPlayer.length();
+
+            // Distance-based rotation logic with hysteresis buffer (25 units)
+            if (state.boss.isHorizontal) {
+                if (dist < 75) state.boss.isHorizontal = false;
+            } else {
+                if (dist > 100) state.boss.isHorizontal = true;
+            }
+
             if (state.boss.flightState === 'superman') {
-                bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, -Math.PI / 2, 0.1);
+                const targetRotX = state.boss.isHorizontal ? -Math.PI / 2 : 0;
+                bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, targetRotX, 0.1);
                 
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
                 
-                bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, Math.PI, 0.1);
-                bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, Math.PI, 0.1);
+                const targetArmRotX = state.boss.isHorizontal ? Math.PI : 0;
+                bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, targetArmRotX, 0.1);
+                bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, targetArmRotX, 0.1);
             } else {
                 bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, 0, 0.1);
-
                 bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + Math.sin(state.boss.animTime * 2) * 1.5, 0.08);
                 if (dist > state.boss.stopDist) bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
                 bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
