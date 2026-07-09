@@ -510,7 +510,7 @@ const Sovereign = (() => {
                 const targetModelRotX = (state.boss.isHorizontal && dist > state.boss.stopDist) ? Math.PI / 2 : 0;
                 bossModel.rotation.x = THREE.MathUtils.lerp(bossModel.rotation.x, targetModelRotX, 0.1);
                 
-                bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
+                if (dist > state.boss.stopDist) bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 
                 // Arms tilt 180° forward (relative to body) to align alongside reversed torso
                 const targetArmRotX = (state.boss.isHorizontal && dist > state.boss.stopDist) ? Math.PI : 0;
