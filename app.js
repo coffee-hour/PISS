@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.6: 'RANGE-BASED FLIGHT DYNAMICS'
- * 1. Animation: Implemented distance-based rotation. Omni-Man lays flat ('—') when far, stays upright ('|') when close.
- * 2. Animation: Added a 25-unit hysteresis buffer to prevent rotation jitter at the threshold.
- * 3. Combat: Tier 1 impact effects - Hit-pause and Camera Shake maintained.
- * 4. XP System: Level 10/20 unlock thresholds maintained.
+ * SOVEREIGN v5.5.7: 'STABLE FLIGHT ORIENTATION FIX'
+ * 1. Animation: Fixed Omni-Man's horizontal flight pose by ensuring lookAt() only affects Yaw.
+ * 2. Animation: Re-aligned arm pursuit rotation (Math.PI / 2) to point back relative to the horizontal body.
+ * 3. Animation: Maintained distance-based pose transitions with hysteresis.
  */
 
 const Sovereign = (() => {
@@ -50,7 +49,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.6 Range-Based Flight Dynamics...');
+        console.log('Sovereign: Initializing v5.5.7 Stable Flight Orientation Fix...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -496,25 +495,28 @@ const Sovereign = (() => {
                 if (dist > 100) state.boss.isHorizontal = true;
             }
 
+            // Fixed Orientation Logic: Ensure lookAt() doesn't overwrite local tilt
+            bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
+            
             if (state.boss.flightState === 'superman') {
                 const targetRotX = state.boss.isHorizontal ? -Math.PI / 2 : 0;
                 bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, targetRotX, 0.1);
                 
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
-                bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
                 
-                const targetArmRotX = state.boss.isHorizontal ? Math.PI : 0;
+                // Adjusted Arm Pose for horizontal flight (pointer back relative to horizontal body)
+                const targetArmRotX = state.boss.isHorizontal ? Math.PI / 2 : 0;
                 bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, targetArmRotX, 0.1);
                 bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, targetArmRotX, 0.1);
             } else {
                 bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, 0, 0.1);
                 bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + Math.sin(state.boss.animTime * 2) * 1.5, 0.08);
                 if (dist > state.boss.stopDist) bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
-                bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
                 
                 bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, 0, 0.1);
                 bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, 0, 0.1);
             }
+            
             if (Math.sin(state.boss.animTime * 5) > 0.85 && !state.boss.isPunching && dist < 15) {
                 state.boss.isPunching = true;
                 const arm = Math.random() > 0.5 ? bossParts.rArm : bossParts.lArm;
