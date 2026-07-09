@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.6.0: 'REVERSED FLIGHT POSE'
- * 1. Animation: Body now tilts 90° backward (feet-first) during horizontal flight.
- * 2. Animation: Arms now rotate 90° forward (relative to body) to align alongside the torso.
+ * SOVEREIGN v5.6.1: 'EXTENDED ARM FLIGHT POSE'
+ * 1. Animation: Body maintains 90° backward tilt (feet-first) during horizontal flight.
+ * 2. Animation: Arms now rotate 180° forward from neutral, aligning flat alongside the reversed torso.
  * 3. Hierarchy: Maintained 'bossGroup' (Yaw) and 'bossModel' (Pitch) separation for stable player tracking.
  */
 
@@ -50,7 +50,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.6.0 Reversed Flight Pose...');
+        console.log('Sovereign: Initializing v5.6.1 Extended Arm Flight Pose...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -485,9 +485,11 @@ const Sovereign = (() => {
         if (bossGroup && bossModel && !state.boss.isDead) {
             state.boss.animTime += dt;
             state.boss.flightTimer -= dt;
-            if (state.boss.flightTimer <= 0) {
-                state.boss.flightState = state.boss.flightState === 'hover' ? 'superman' : 'hover';
-                state.boss.flightTimer = state.boss.flightState === 'hover' ? 4.0 : 2.5;
+            if (state.boss.flightState === 'hover' || state.boss.flightState === 'superman') {
+                if (state.boss.flightTimer <= 0) {
+                    state.boss.flightState = state.boss.flightState === 'hover' ? 'superman' : 'hover';
+                    state.boss.flightTimer = state.boss.flightState === 'hover' ? 4.0 : 2.5;
+                }
             }
             const toPlayer = camera.position.clone().sub(bossGroup.position);
             const dist = toPlayer.length();
@@ -504,14 +506,14 @@ const Sovereign = (() => {
             
             if (state.boss.flightState === 'superman') {
                 // bossModel handles PITCH (horizontal tilt/pose)
-                // Reverse: Body tilts 90° backward (feet-first)
+                // Body tilts 90° backward (feet-first)
                 const targetModelRotX = state.boss.isHorizontal ? Math.PI / 2 : 0;
                 bossModel.rotation.x = THREE.MathUtils.lerp(bossModel.rotation.x, targetModelRotX, 0.1);
                 
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 
-                // Reverse: Arms tilt 90° forward (relative to body)
-                const targetArmRotX = state.boss.isHorizontal ? Math.PI / 2 : 0;
+                // Arms tilt 180° forward (relative to body) to align alongside reversed torso
+                const targetArmRotX = state.boss.isHorizontal ? Math.PI : 0;
                 bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, targetArmRotX, 0.1);
                 bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, targetArmRotX, 0.1);
             } else {
