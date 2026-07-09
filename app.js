@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.8: 'GLOBAL ROTATION HIERARCHY FIX'
- * 1. Animation: Introduced 'bossModel' sub-group to separate 'lookAt' (yaw) from 'tilt' (pitch).
- * 2. Animation: Fixed body tilt by applying it to the model group, preventing lookAt from overriding local X rotation.
- * 3. Animation: Corrected arm and cape dynamics within the new hierarchical space.
+ * SOVEREIGN v5.5.9: 'AERODYNAMIC FLIGHT POSE FIX'
+ * 1. Animation: Decoupled body tilt from arm rotation. Body now tilts 90° forward into flight.
+ * 2. Animation: Arms now rotate 90° backward (relative to body) during horizontal flight, aligning alongside the torso.
+ * 3. Hierarchy: Maintained 'bossGroup' (Yaw) and 'bossModel' (Pitch) separation for stable player tracking.
  */
 
 const Sovereign = (() => {
@@ -50,7 +50,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.8 Global Rotation Hierarchy Fix...');
+        console.log('Sovereign: Initializing v5.5.9 Aerodynamic Flight Pose Fix...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -504,13 +504,14 @@ const Sovereign = (() => {
             
             if (state.boss.flightState === 'superman') {
                 // bossModel handles PITCH (horizontal tilt/pose)
+                // Tilt the body 90 degrees forward (parallel to ground)
                 const targetModelRotX = state.boss.isHorizontal ? -Math.PI / 2 : 0;
                 bossModel.rotation.x = THREE.MathUtils.lerp(bossModel.rotation.x, targetModelRotX, 0.1);
                 
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 
-                // Arms dynamically point backward when body is horizontal
-                const targetArmRotX = state.boss.isHorizontal ? Math.PI / 2 : 0;
+                // Arms dynamically point backward when body is horizontal (90 degrees relative to body)
+                const targetArmRotX = state.boss.isHorizontal ? -Math.PI / 2 : 0;
                 bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, targetArmRotX, 0.1);
                 bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, targetArmRotX, 0.1);
             } else {
