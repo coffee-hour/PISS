@@ -16,12 +16,12 @@ const Sovereign = (() => {
     
     let state = {
         player: { 
-            hp: 100, maxHp: 100, speed: 6.5, height: 10.0, flightSpeed: 5.5, isDead: false,
+            hp: 100, maxHp: 100, speed: 9.5, height: 10.0, flightSpeed: 8.5, isDead: false,
             xp: 0, level: 1, knifeHandUnlocked: false, timeSlowUnlocked: false
         },
         boss: { 
             hp: 1000, maxHp: 1000, animTime: 0, vel: new THREE.Vector3(), 
-            isPunching: false, pursuitSpeed: 0.35, stopDist: 8.0, 
+            isPunching: false, pursuitSpeed: 0.55, stopDist: 8.0, 
             isDead: false, isRipping: false, ripTimer: 0, respawnTimer: 0, 
             boundaryRadius: 1500, flightState: 'hover', flightTimer: 0,
             damageState: 0
@@ -196,7 +196,7 @@ const Sovereign = (() => {
 
     const createPlayerHands = () => {
         const createHand = (side) => {
-            const h = createBlock(0.8, 0.8, 1.5, 0x1e88e5);
+            const h = createBlock(0.8, 0.8, 1.5, 0xffeb3b);
             h.position.set(side === 'left' ? -2.2 : 2.2, -1.8, -2.5);
             camera.add(h);
             return h;
@@ -207,7 +207,7 @@ const Sovereign = (() => {
         
         playerHands.knife = new THREE.Group();
         const fArm = createBlock(0.6, 0.6, 2.0, 0x1e88e5);
-        const hand = createBlock(0.2, 1.2, 1.5, 0x1e88e5);
+        const hand = createBlock(0.2, 1.2, 1.5, 0xffeb3b);
         hand.position.z = -1.75;
         playerHands.knife.add(fArm);
         playerHands.knife.add(hand);
