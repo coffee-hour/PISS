@@ -484,21 +484,17 @@ const Sovereign = (() => {
 
         if (bossGroup && bossModel && !state.boss.isDead) {
             state.boss.animTime += dt;
-            state.boss.flightTimer -= dt;
-            if (state.boss.flightState === 'hover' || state.boss.flightState === 'superman') {
-                if (state.boss.flightTimer <= 0) {
-                    state.boss.flightState = state.boss.flightState === 'hover' ? 'superman' : 'hover';
-                    state.boss.flightTimer = state.boss.flightState === 'hover' ? 4.0 : 2.5;
-                }
-            }
+            
             const toPlayer = camera.position.clone().sub(bossGroup.position);
             const dist = toPlayer.length();
 
-            // Hysteresis for pose switching
-            if (state.boss.isHorizontal) {
-                if (dist < 75) state.boss.isHorizontal = false;
+            // REFACTORED: Distance-driven flight state and pose
+            if (dist > 75) {
+                state.boss.flightState = 'superman';
+                state.boss.isHorizontal = true;
             } else {
-                if (dist > 100) state.boss.isHorizontal = true;
+                state.boss.flightState = 'hover';
+                state.boss.isHorizontal = false;
             }
 
             // bossGroup handles YAW (horizontal rotation to look at player)
