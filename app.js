@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.3: 'COMBAT & ANIMATION REFINEMENT'
- * 1. Animation: Fixed Omni-Man flight rotation and added hand inversion during pursuit.
- * 2. Combat: Tier 1 impact effects - Hit-pause and Camera Shake.
- * 3. XP System: Level 10/20 unlock thresholds maintained.
- * 4. Fix: Particle optimization and stable WebGL loop.
+ * SOVEREIGN v5.5.4: 'ANIMATION ISOLATION & HIERARCHY FIX'
+ * 1. Animation: Isolated the 90-degree flight tilt to the Torso Mesh to prevent arm/head inheritance glitches.
+ * 2. Animation: Corrected arm rotation during 'superman' flight to maintain independent posing.
+ * 3. Combat: Tier 1 impact effects - Hit-pause and Camera Shake maintained.
+ * 4. XP System: Level 10/20 unlock thresholds maintained.
  */
 
 const Sovereign = (() => {
@@ -50,7 +50,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.3 Combat & Animation Refinement...');
+        console.log('Sovereign: Initializing v5.5.4 Animation Isolation & Hierarchy Fix...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -488,14 +488,20 @@ const Sovereign = (() => {
             const toPlayer = camera.position.clone().sub(bossGroup.position);
             const dist = toPlayer.length();
             if (state.boss.flightState === 'superman') {
-                bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, -Math.PI / 2, 0.1);
+                bossParts.torso.rotation.x = THREE.MathUtils.lerp(bossParts.torso.rotation.x, -Math.PI / 2, 0.1);
+                bossParts.head.rotation.x = THREE.MathUtils.lerp(bossParts.head.rotation.x, -Math.PI / 2, 0.1);
+                bossParts.cape.rotation.x = THREE.MathUtils.lerp(bossParts.cape.rotation.x, -Math.PI / 2, 0.1);
+                
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
                 
-                bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, Math.PI, 0.1);
-                bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, Math.PI, 0.1);
+                bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, Math.PI / 2, 0.1);
+                bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, Math.PI / 2, 0.1);
             } else {
-                bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, 0, 0.1);
+                bossParts.torso.rotation.x = THREE.MathUtils.lerp(bossParts.torso.rotation.x, 0, 0.1);
+                bossParts.head.rotation.x = THREE.MathUtils.lerp(bossParts.head.rotation.x, 0, 0.1);
+                bossParts.cape.rotation.x = THREE.MathUtils.lerp(bossParts.cape.rotation.x, 0, 0.1);
+
                 bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + Math.sin(state.boss.animTime * 2) * 1.5, 0.08);
                 if (dist > state.boss.stopDist) bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
                 bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
