@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.2: 'STABILITY & PERFORMANCE'
- * 1. Animation: Full arm "sideways chop" for Knife Hand move (X key), gated by Level 10.
- * 2. XP System: Level 10 unlock threshold maintained.
- * 3. Feature: Random "Sequid Area" for XP grinding with weak Sequid enemies.
- * 4. Mechanic: Slow-time effect on Space bar, gated by Level 20.
- * 5. Player: Increased base movement speed (Invincible Speed).
- * 6. Fix: Reduced particle count and optimized WebGL calls for Chromebook stability.
+ * SOVEREIGN v5.5.3: 'COMBAT & ANIMATION REFINEMENT'
+ * 1. Animation: Fixed Omni-Man flight rotation and added hand inversion during pursuit.
+ * 2. Combat: Tier 1 impact effects - Hit-pause and Camera Shake.
+ * 3. XP System: Level 10/20 unlock thresholds maintained.
+ * 4. Fix: Particle optimization and stable WebGL loop.
  */
 
 const Sovereign = (() => {
@@ -31,7 +29,10 @@ const Sovereign = (() => {
         pitch: 0, yaw: 0,
         lastArmUsed: 'right',
         isKnifeHanding: false,
-        timeScale: 1.0
+        timeScale: 1.0,
+        hitPauseTimer: 0,
+        shakeTimer: 0,
+        shakeIntensity: 0
     };
 
     let bossGroup = null;
@@ -49,7 +50,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.2 Stability & Performance...');
+        console.log('Sovereign: Initializing v5.5.3 Combat & Animation Refinement...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -61,13 +62,12 @@ const Sovereign = (() => {
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
         camera.position.set(0, 50, 150);
 
-        // Fallback for WebGL context creation failure
         try {
-            renderer = new THREE.WebGLRenderer({ antialias: false }); // Disable antialias for performance
+            renderer = new THREE.WebGLRenderer({ antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Cap pixel ratio
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.BasicShadowMap; // Faster shadow maps
+            renderer.shadowMap.type = THREE.BasicShadowMap;
             document.body.appendChild(renderer.domElement);
         } catch (e) {
             console.error('WebGL Initialization Failed:', e);
@@ -93,7 +93,7 @@ const Sovereign = (() => {
         grid.position.y = 0.05;
         scene.add(grid);
 
-        for (let i = 0; i < 60; i++) { // Reduced building count
+        for (let i = 0; i < 60; i++) {
             const h = 50 + Math.random() * 400;
             const b = createBlock(60, h, 60, 0x555555);
             b.position.set((Math.random()-0.5)*4000, h/2, (Math.random()-0.5)*4000);
@@ -117,7 +117,7 @@ const Sovereign = (() => {
         sequidZone.center.set(Math.cos(ang) * dist, 5, Math.sin(ang) * dist);
         
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(sequidZone.radius - 5, sequidZone.radius, 32), // Reduced segments
+            new THREE.RingGeometry(sequidZone.radius - 5, sequidZone.radius, 32),
             new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide, transparent: true, opacity: 0.3 })
         );
         ring.rotation.x = -Math.PI / 2;
@@ -260,6 +260,12 @@ const Sovereign = (() => {
         if(oFill) oFill.style.width = '100%';
     };
 
+    const applyCombatImpact = (intensity = 1.0) => {
+        state.hitPauseTimer = 0.05 * intensity;
+        state.shakeTimer = 0.2 * intensity;
+        state.shakeIntensity = 0.5 * intensity;
+    };
+
     const updateBossDamage = () => {
         const hpPercent = state.boss.hp / state.boss.maxHp;
         let newState = 0;
@@ -275,13 +281,13 @@ const Sovereign = (() => {
         }
     };
 
-    const emitBlood = (pos, count = 30, color = 0xb71c1c) => { // Reduced particle count
+    const emitBlood = (pos, count = 30, color = 0xb71c1c) => {
         for(let i=0; i<count; i++) {
             const p = createBlock(0.2, 0.2, 0.2, color);
             p.position.copy(pos);
             const vel = new THREE.Vector3((Math.random()-0.5)*0.8, Math.random()*0.8, (Math.random()-0.5)*0.8);
             scene.add(p);
-            particles.push({ mesh: p, vel, life: 1.0 }); // Reduced life
+            particles.push({ mesh: p, vel, life: 1.0 });
         }
     };
 
@@ -345,11 +351,12 @@ const Sovereign = (() => {
     const checkCollisions = (damage, range, isKnife = false) => {
         if (bossGroup && !state.boss.isDead && camera.position.distanceTo(bossGroup.position) < range) {
             const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp); wp.y += 5;
-            emitBlood(wp, isKnife ? 80 : 30); // Reduced counts
+            emitBlood(wp, isKnife ? 80 : 30);
             state.boss.vel.add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(isKnife ? 4.0 : 1.5));
             state.boss.hp -= damage;
             gainXP(damage);
             updateBossDamage();
+            applyCombatImpact(isKnife ? 1.5 : 1.0);
             const oFill = document.getElementById('o-fill');
             if(oFill) oFill.style.width = Math.max(0, state.boss.hp / state.boss.maxHp * 100) + '%';
             if (state.boss.hp <= 0) {
@@ -408,7 +415,21 @@ const Sovereign = (() => {
     const animate = () => {
         requestAnimationFrame(animate);
         const realDt = clock.getDelta();
+        
+        if (state.hitPauseTimer > 0) {
+            state.hitPauseTimer -= realDt;
+            return;
+        }
+
         const dt = Math.min(realDt, 0.1) * state.timeScale;
+
+        if (state.shakeTimer > 0) {
+            state.shakeTimer -= dt;
+            const shakeX = (Math.random() - 0.5) * state.shakeIntensity;
+            const shakeY = (Math.random() - 0.5) * state.shakeIntensity;
+            camera.position.x += shakeX;
+            camera.position.y += shakeY;
+        }
 
         if(state.isLocked && !state.player.isDead) {
             const dir = new THREE.Vector3();
@@ -421,7 +442,7 @@ const Sovereign = (() => {
             camera.position.y = Math.max(5, camera.position.y);
         }
 
-        if (camera.position.distanceTo(sequidZone.center) < sequidZone.radius && sequids.length < 10) { // Reduced max sequids
+        if (camera.position.distanceTo(sequidZone.center) < sequidZone.radius && sequids.length < 10) {
             if (Math.random() < 0.02 * state.timeScale) spawnSequid();
         }
 
@@ -437,7 +458,7 @@ const Sovereign = (() => {
                 bossParts.cape.position.z -= speed * 3;
                 bossParts.torso.scale.multiplyScalar(0.98);
                 const wp = new THREE.Vector3(); bossGroup.getWorldPosition(wp);
-                if (Math.random() < 0.3) emitBlood(wp, 5); // Reduced rip particles
+                if (Math.random() < 0.3) emitBlood(wp, 5);
                 if (state.boss.ripTimer <= 0) {
                     state.boss.isRipping = false;
                     scene.remove(bossGroup);
@@ -470,20 +491,28 @@ const Sovereign = (() => {
                 bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, -Math.PI / 2, 0.1);
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
+                
+                bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, Math.PI, 0.1);
+                bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, Math.PI, 0.1);
             } else {
                 bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, 0, 0.1);
                 bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + Math.sin(state.boss.animTime * 2) * 1.5, 0.08);
                 if (dist > state.boss.stopDist) bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
                 bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
+                
+                bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, 0, 0.1);
+                bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, 0, 0.1);
             }
             if (Math.sin(state.boss.animTime * 5) > 0.85 && !state.boss.isPunching && dist < 15) {
                 state.boss.isPunching = true;
                 const arm = Math.random() > 0.5 ? bossParts.rArm : bossParts.lArm;
+                const oldRotX = arm.rotation.x;
                 arm.rotation.x = -Math.PI / 2;
                 setTimeout(() => {
                     arm.position.z += 6;
                     if (dist < 10 && !state.player.isDead) {
                         state.player.hp -= 10;
+                        applyCombatImpact(1.2);
                         document.getElementById('p-fill').style.width = Math.max(0, state.player.hp) + '%';
                         if (state.player.hp <= 0) {
                             state.player.isDead = true;
@@ -491,7 +520,7 @@ const Sovereign = (() => {
                             document.exitPointerLock();
                         }
                     }
-                    setTimeout(() => { arm.rotation.x = 0; arm.position.z = 0; state.boss.isPunching = false; }, 150);
+                    setTimeout(() => { arm.rotation.x = oldRotX; arm.position.z = 0; state.boss.isPunching = false; }, 150);
                 }, 80);
             }
             bossGroup.position.add(state.boss.vel);
