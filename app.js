@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 /**
- * SOVEREIGN v5.5.7: 'STABLE FLIGHT ORIENTATION FIX'
- * 1. Animation: Fixed Omni-Man's horizontal flight pose by ensuring lookAt() only affects Yaw.
- * 2. Animation: Re-aligned arm pursuit rotation (Math.PI / 2) to point back relative to the horizontal body.
- * 3. Animation: Maintained distance-based pose transitions with hysteresis.
+ * SOVEREIGN v5.5.8: 'GLOBAL ROTATION HIERARCHY FIX'
+ * 1. Animation: Introduced 'bossModel' sub-group to separate 'lookAt' (yaw) from 'tilt' (pitch).
+ * 2. Animation: Fixed body tilt by applying it to the model group, preventing lookAt from overriding local X rotation.
+ * 3. Animation: Corrected arm and cape dynamics within the new hierarchical space.
  */
 
 const Sovereign = (() => {
@@ -34,7 +34,8 @@ const Sovereign = (() => {
         shakeIntensity: 0
     };
 
-    let bossGroup = null;
+    let bossGroup = null; // Container for world position and yaw (lookAt)
+    let bossModel = null; // Sub-group for local pose/tilt (flight rotation)
     let bossParts = { rArm: null, lArm: null, lLeg: null, rLeg: null, head: null, torso: null, cape: null, emblem: null };
     let playerHands = { left: null, right: null, knife: null };
     let particles = [];
@@ -49,7 +50,7 @@ const Sovereign = (() => {
     };
 
     const init = () => {
-        console.log('Sovereign: Initializing v5.5.7 Stable Flight Orientation Fix...');
+        console.log('Sovereign: Initializing v5.5.8 Global Rotation Hierarchy Fix...');
         
         document.querySelectorAll('div').forEach(div => { if (div.id.includes('hud') || div.id.includes('overlay')) div.remove(); });
         document.querySelectorAll('style').forEach(s => { if (s.innerHTML.includes('hud') || s.innerHTML.includes('overlay')) s.remove(); });
@@ -217,11 +218,14 @@ const Sovereign = (() => {
     };
 
     const spawnOmniMan = () => {
-        const group = new THREE.Group();
-        bossParts.head = createBlock(2.2, 2.2, 2.2, 0xffdbac); bossParts.head.position.y = 8; group.add(bossParts.head);
+        bossGroup = new THREE.Group();
+        bossModel = new THREE.Group();
+        bossGroup.add(bossModel);
+
+        bossParts.head = createBlock(2.2, 2.2, 2.2, 0xffdbac); bossParts.head.position.y = 8; bossModel.add(bossParts.head);
         const hair = createBlock(2.4, 0.6, 2.4, 0x222222); hair.position.y = 1.2; bossParts.head.add(hair);
         const stache = createBlock(1.5, 0.4, 0.4, 0x222222); stache.position.set(0, -0.5, 1.1); bossParts.head.add(stache);
-        bossParts.torso = createBlock(4, 4.5, 2, 0xffffff); bossParts.torso.position.y = 4.75; group.add(bossParts.torso);
+        bossParts.torso = createBlock(4, 4.5, 2, 0xffffff); bossParts.torso.position.y = 4.75; bossModel.add(bossParts.torso);
         const emblemB = createBlock(2.2, 2.7, 0.1, 0xb71c1c); emblemB.position.set(0, 0.25, 1.05); bossParts.torso.add(emblemB);
         const emblemD = createBlock(0.8, 2.7, 0.15, 0xffffff); emblemD.position.set(0, 0.25, 1.06); bossParts.torso.add(emblemD);
         bossParts.emblem = emblemB;
@@ -232,8 +236,8 @@ const Sovereign = (() => {
             const g = createBlock(1.9, 1.5, 1.9, 0xb71c1c); g.position.y = -3.5; a.add(g);
             a.position.set(x, 7, 0); return a;
         };
-        bossParts.rArm = createArm(3); group.add(bossParts.rArm);
-        bossParts.lArm = createArm(-3); group.add(bossParts.lArm);
+        bossParts.rArm = createArm(3); bossModel.add(bossParts.rArm);
+        bossParts.lArm = createArm(-3); bossModel.add(bossParts.lArm);
         
         const createLeg = (x) => {
             const l = new THREE.Group();
@@ -241,13 +245,13 @@ const Sovereign = (() => {
             const b = createBlock(1.9, 1.5, 1.9, 0xb71c1c); b.position.y = -3.5; l.add(b);
             l.position.set(x, 2.5, 0); return l;
         };
-        bossParts.rLeg = createLeg(1.1); group.add(bossParts.rLeg);
-        bossParts.lLeg = createLeg(-1.1); group.add(bossParts.lLeg);
-        bossParts.cape = createBlock(4.5, 8, 0.3, 0xb71c1c); bossParts.cape.position.set(0, 4, -1.2); group.add(bossParts.cape);
+        bossParts.rLeg = createLeg(1.1); bossModel.add(bossParts.rLeg);
+        bossParts.lLeg = createLeg(-1.1); bossModel.add(bossParts.lLeg);
+        bossParts.cape = createBlock(4.5, 8, 0.3, 0xb71c1c); bossParts.cape.position.set(0, 4, -1.2); bossModel.add(bossParts.cape);
         
-        group.position.set(0, 10, -100);
-        scene.add(group);
-        bossGroup = group;
+        bossGroup.position.set(0, 10, -100);
+        scene.add(bossGroup);
+
         state.boss.isDead = false;
         state.boss.isRipping = false;
         state.boss.hp = state.boss.maxHp;
@@ -478,7 +482,7 @@ const Sovereign = (() => {
             }
         }
 
-        if (bossGroup && !state.boss.isDead) {
+        if (bossGroup && bossModel && !state.boss.isDead) {
             state.boss.animTime += dt;
             state.boss.flightTimer -= dt;
             if (state.boss.flightTimer <= 0) {
@@ -488,28 +492,29 @@ const Sovereign = (() => {
             const toPlayer = camera.position.clone().sub(bossGroup.position);
             const dist = toPlayer.length();
 
-            // Distance-based rotation logic with hysteresis buffer (25 units)
+            // Hysteresis for pose switching
             if (state.boss.isHorizontal) {
                 if (dist < 75) state.boss.isHorizontal = false;
             } else {
                 if (dist > 100) state.boss.isHorizontal = true;
             }
 
-            // Fixed Orientation Logic: Ensure lookAt() doesn't overwrite local tilt
+            // bossGroup handles YAW (horizontal rotation to look at player)
             bossGroup.lookAt(camera.position.x, bossGroup.position.y, camera.position.z);
             
             if (state.boss.flightState === 'superman') {
-                const targetRotX = state.boss.isHorizontal ? -Math.PI / 2 : 0;
-                bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, targetRotX, 0.1);
+                // bossModel handles PITCH (horizontal tilt/pose)
+                const targetModelRotX = state.boss.isHorizontal ? -Math.PI / 2 : 0;
+                bossModel.rotation.x = THREE.MathUtils.lerp(bossModel.rotation.x, targetModelRotX, 0.1);
                 
                 bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * 1.8 * dt * 60));
                 
-                // Adjusted Arm Pose for horizontal flight (pointer back relative to horizontal body)
+                // Arms dynamically point backward when body is horizontal
                 const targetArmRotX = state.boss.isHorizontal ? Math.PI / 2 : 0;
                 bossParts.rArm.rotation.x = THREE.MathUtils.lerp(bossParts.rArm.rotation.x, targetArmRotX, 0.1);
                 bossParts.lArm.rotation.x = THREE.MathUtils.lerp(bossParts.lArm.rotation.x, targetArmRotX, 0.1);
             } else {
-                bossGroup.rotation.x = THREE.MathUtils.lerp(bossGroup.rotation.x, 0, 0.1);
+                bossModel.rotation.x = THREE.MathUtils.lerp(bossModel.rotation.x, 0, 0.1);
                 bossGroup.position.y = THREE.MathUtils.lerp(bossGroup.position.y, camera.position.y + Math.sin(state.boss.animTime * 2) * 1.5, 0.08);
                 if (dist > state.boss.stopDist) bossGroup.position.add(toPlayer.normalize().multiplyScalar(state.boss.pursuitSpeed * dt * 60));
                 
