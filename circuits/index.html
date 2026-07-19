@@ -3,15 +3,99 @@
 <head>
 <meta charset="UTF-8">
 <title>Invincible Game Circuit Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <style>
-body {margin:0; background:#121214; color:#fff; font-family:Inter, sans-serif;}
+body,html{margin:0;padding:0;width:100%;height:100%;font-family:'Inter',sans-serif;background:#121214;color:#fff;overflow:hidden}
+#toolbar{position:absolute;top:0;left:0;width:200px;height:100%;background:#1a1a1a;overflow-y:auto;padding:10px;box-sizing:border-box}
+#toolbar h2{font-size:16px;margin-top:0;color:#3b82f6}
+.component{display:flex;align-items:center;padding:5px;margin:5px 0;background:#2a2a2a;border-radius:4px;cursor:grab;color:#fff}
+#canvas{position:absolute;left:200px;top:0;width:calc(100% - 200px);height:100%;background:#121214}
+.port{stroke:#3b82f6;stroke-width:2}
+.wire{stroke:#10b981;stroke-width:3}
+.tooltip{position:absolute;background:#333;padding:4px 8px;border-radius:4px;font-size:12px;pointer-events:none}
 </style>
 </head>
 <body>
-<h1>Circuit Simulator</h1>
-<p>Circuits – xavier.poke.site Circuit Simulator</p>
-<p>UI placeholders for components: AA Battery 1.5V, Li‑ion 14500 3.7V, 12V DC Supply, SPDT Switch, Peltier TEC, Piezo Buzzer, Resistor, LED, Ground.</p>
-<!-- The full interactive simulator is hosted at the Poke site; this page provides a static placeholder linking to it. -->
-<p><a href="https://circuits.xavier.poke.site" style="color:#3b82f6;">Open interactive simulator</a></p>
+<div id="toolbar">
+<h2>Components</h2>
+<div class="component" data-type="battery" data-voltage="1.5">AA Battery (1.5V)</div>
+<div class="component" data-type="battery" data-voltage="3.7">Li‑ion 14500 (3.7V)</div>
+<div class="component" data-type="battery" data-voltage="12">12V DC Supply</div>
+<div class="component" data-type="resistor" data-ohm="100">Resistor 100Ω</div>
+<div class="component" data-type="led">LED</div>
+<div class="component" data-type="switch">SPDT Switch</div>
+<div class="component" data-type="tec">Peltier TEC</div>
+<div class="component" data-type="buzzer">Piezo Buzzer</div>
+<div class="component" data-type="ground">Ground</div>
+</div>
+<canvas id="canvas"></canvas>
+<script>
+// Basic setup
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+function resize(){canvas.width=canvas.clientWidth;canvas.height=canvas.clientHeight;}
+window.addEventListener('resize',resize);
+resize();
+let components=[]; // {id,type,x,y,props}
+let wires=[]; // not used in this simple demo
+let dragging=null;
+// Toolbar drag‑create
+document.querySelectorAll('.component').forEach(el=>{
+  el.addEventListener('mousedown',e=>{
+    const type=el.dataset.type;
+    const rect=canvas.getBoundingClientRect();
+    const x=rect.left+10;
+    const y=e.clientY-rect.top;
+    const id='c'+Date.now()+Math.random().toString(36).substr(2,5);
+    const props={};
+    if(type==='battery'){props.voltage=parseFloat(el.dataset.voltage);}
+    if(type==='resistor'){props.ohm=parseFloat(el.dataset.ohm);}
+    components.push({id,type,x,y,props});
+    dragging=id;
+    draw();
+  });
+});
+canvas.addEventListener('mousedown',e=>{
+  if(dragging){return;}
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left;
+  const y=e.clientY-rect.top;
+  const hit=components.find(c=>Math.hypot(c.x-x,c.y-y)<20);
+  if(hit){dragging=hit.id;}
+});
+canvas.addEventListener('mousemove',e=>{
+  if(!dragging){return;}
+  const rect=canvas.getBoundingClientRect();
+  const x=e.clientX-rect.left;
+  const y=e.clientY-rect.top;
+  const comp=components.find(c=>c.id===dragging);
+  if(comp){comp.x=x;comp.y=y;draw();}
+});
+canvas.addEventListener('mouseup',e=>{dragging=null;});
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // draw components
+  components.forEach(c=>{
+    ctx.fillStyle='#2a2a2a';
+    ctx.fillRect(c.x-20,c.y-20,40,40);
+    ctx.fillStyle='#fff';
+    ctx.font='12px Inter';
+    ctx.textAlign='center';
+    ctx.fillText(c.type,c.x,c.y+5);
+  });
+}
+// Simple series solver
+function solve(){
+  let totalR=0;let voltage=0;
+  components.forEach(c=>{if(c.type==='resistor'){totalR+=c.props.ohm||0;}
+    if(c.type==='battery'){voltage+=c.props.voltage||0;}
+  });
+  const current=voltage/(totalR||Infinity);
+  components.forEach(c=>{if(c.type==='led'){
+    c.on=current>0.01; // simplistic
+  }});
+}
+setInterval(()=>{solve();draw();},1000);
+</script>
 </body>
 </html>
